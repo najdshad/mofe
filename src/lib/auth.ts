@@ -6,11 +6,11 @@ import crypto from "crypto";
 const SESSION_COOKIE = "mofe_session";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-function hashToken(token: string) {
+export function hashToken(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-function generateToken() {
+export function generateToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 

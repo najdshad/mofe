@@ -72,6 +72,12 @@ export default async function AdminLayout({
             انتشار و QR
           </Link>
           <Link
+            href={`/admin/${venueId}/publications`}
+            className="border-b-2 border-transparent px-1 py-3 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
+          >
+            انتشارات
+          </Link>
+          <Link
             href={`/admin/${venueId}/settings`}
             className="border-b-2 border-transparent px-1 py-3 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
           >
