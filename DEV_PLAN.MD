@@ -1116,7 +1116,7 @@ Acceptance:
 - Publish/unpublish with confirmation modals
 - Publication history tracking
 - Unpublished changes indicator (venue + categories + items)
-- QR code export buttons (PNG/PDF via external service)
+- QR code export buttons (PNG/PDF download, initially via external service, later replaced with client-side `qrcode`)
 
 ### ✅ Milestone 7 — Static Public Menu (Completed)
 - Static HTML renderer generates complete mobile-first RTL page with inline CSS, Persian formatting, Parastoo/EB Garamond fonts

@@ -85,10 +85,42 @@ export function renderPublicMenu(snapshot: Snapshot): string {
   <meta name="theme-color" content="#f5f0e6" />
   <meta name="format-detection" content="telephone=no" />
   <title>${esc(venue.nameFa)} — منو</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Parastoo:wght@400;700&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet" />
   <style>
+    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo-Bold.woff2") format("woff2");
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Vazirmatn";
+      src: url("/fonts/Vazirmatn-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "EB Garamond";
+      src: url("/fonts/EBGaramond-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 400 800;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "EB Garamond";
+      src: url("/fonts/EBGaramond-Italic-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 400 800;
+      font-style: italic;
+      font-display: swap;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; -webkit-text-size-adjust: 100%; }
     body {
@@ -255,10 +287,42 @@ export function renderUnavailablePage(venueName: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#f5f0e6" />
   <title>${esc(venueName)}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Parastoo:wght@400;700&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet" />
   <style>
+    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo-Bold.woff2") format("woff2");
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Vazirmatn";
+      src: url("/fonts/Vazirmatn-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "EB Garamond";
+      src: url("/fonts/EBGaramond-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 400 800;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "EB Garamond";
+      src: url("/fonts/EBGaramond-Italic-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 400 800;
+      font-style: italic;
+      font-display: swap;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {

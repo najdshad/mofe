@@ -19,13 +19,13 @@
   --color-ink-muted: var(--ink-muted);
   --color-line: var(--line);
   --color-surface: var(--surface);
-  --font-serif: "EB Garamond", "Parastoo", "Times New Roman", serif;
+  --font-serif: "EB Garamond", "Parastoo", "Vazirmatn", "Times New Roman", serif;
 }
 
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: "Parastoo", "EB Garamond", "Times New Roman", serif;
+  font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
 }
 
 @font-face {
@@ -41,5 +41,29 @@ body {
   src: url("/fonts/Parastoo-Bold.woff2") format("woff2");
   font-weight: bold;
   font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("/fonts/Vazirmatn-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/fonts/EBGaramond-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "EB Garamond";
+  src: url("/fonts/EBGaramond-Italic-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 400 800;
+  font-style: italic;
   font-display: swap;
 }

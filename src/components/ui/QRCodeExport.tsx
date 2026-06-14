@@ -10,6 +10,35 @@ interface QRCodeExportProps {
   isUnpublished?: boolean;
 }
 
+// 1x layout constants matching the HTML/CSS preview card:
+const L = {
+  pad: 24, // p-6
+  nameSize: 18, // text-lg
+  nameLine: 22,
+  dividerMargin: 16, // my-4
+  qrSize: 200, // displayed size in web preview
+  urlMargin: 12, // mt-3
+  urlSize: 12, // text-xs
+  fontSize: 10,
+  footerMargin: 16,
+  radius: 28,
+};
+
+// Derived card dimensions at 1x
+const CARD_W_1X = L.pad + L.qrSize + L.pad;
+const CARD_H_1X =
+  L.pad +
+  L.nameLine +
+  L.dividerMargin +
+  1 +
+  L.dividerMargin +
+  L.qrSize +
+  L.urlMargin +
+  L.urlSize +
+  L.fontSize +
+  L.footerMargin +
+  L.pad;
+
 export function QRCodeExport({
   publicUrl,
   venueName,
@@ -19,7 +48,7 @@ export function QRCodeExport({
 
   useEffect(() => {
     QRCode.toDataURL(publicUrl, {
-      width: 280,
+      width: L.qrSize * 3, // 600 — high-res for crisp exports
       margin: 1,
       color: { dark: "#111111", light: "#f5f0e6" },
     })
@@ -30,67 +59,61 @@ export function QRCodeExport({
   const handleDownloadPng = () => {
     if (!qrDataUrl) return;
 
-    const cardW = 600;
-    const cardH = 720;
-    const pad = 40;
-    const qrSize = 280;
+    const s = 3;
+    const cardW = CARD_W_1X * s;
+    const cardH = CARD_H_1X * s;
+    const pad = L.pad * s;
+    const qrSize = L.qrSize * s;
+    const radius = L.radius * s;
+
     const c = document.createElement("canvas");
     c.width = cardW;
     c.height = cardH;
     const ctx = c.getContext("2d");
     if (!ctx) return;
 
-    ctx.save();
-
-    // Paper background with rounded corners
     ctx.fillStyle = "#f5f0e6";
-    roundRect(ctx, 0, 0, cardW, cardH, 24);
+    roundRect(ctx, 0, 0, cardW, cardH, radius);
     ctx.fill();
 
-    // Border
     ctx.strokeStyle = "#d8d1c4";
-    ctx.lineWidth = 1;
-    roundRect(ctx, 0, 0, cardW, cardH, 24);
+    ctx.lineWidth = 1 * s;
+    roundRect(ctx, 0, 0, cardW, cardH, radius);
     ctx.stroke();
 
-    // Venue name
     ctx.fillStyle = "#111111";
-    ctx.font = "bold 22px 'Times New Roman', serif";
+    ctx.font = `bold ${L.nameSize * s}px 'Times New Roman', serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.fillText(venueName, cardW / 2, pad);
 
-    // Divider
+    const divY = pad + L.nameLine * s + L.dividerMargin * s;
     ctx.strokeStyle = "#d8d1c4";
-    ctx.lineWidth = 1;
-    const divY = pad + 40;
+    ctx.lineWidth = 1 * s;
     ctx.beginPath();
     ctx.moveTo(cardW * 0.2, divY);
     ctx.lineTo(cardW * 0.8, divY);
     ctx.stroke();
 
-    // QR code
+    const qrY = divY + 1 * s + L.dividerMargin * s;
     const qrX = (cardW - qrSize) / 2;
-    const qrY = divY + 24;
     const img = new Image();
     img.onload = () => {
       ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
 
-      ctx.restore();
-
-      // URL text
+      const urlY = qrY + qrSize + L.urlMargin * s;
       ctx.fillStyle = "#5f5a52";
-      ctx.font = "13px 'Times New Roman', serif";
+      ctx.font = `${L.urlSize * s}px 'Times New Roman', serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(publicUrl, cardW / 2, qrY + qrSize + 24);
+      ctx.fillText(publicUrl, cardW / 2, urlY);
 
-      // Footer
+      const footerY = urlY + L.urlSize * s + L.footerMargin * s;
       ctx.fillStyle = "#5f5a52";
-      ctx.font = "10px 'Times New Roman', serif";
+      ctx.font = `${L.fontSize * s}px 'Times New Roman', serif`;
       ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
-      ctx.fillText("Powered by mofé", cardW / 2, cardH - pad);
+      ctx.textBaseline = "top";
+      ctx.fillText("Powered by mofé", cardW / 2, footerY);
 
       const link = document.createElement("a");
       link.download = `${venueName.replace(/\s+/g, "-")}-qr.png`;
@@ -112,7 +135,7 @@ export function QRCodeExport({
   <meta charset="utf-8">
   <title>QR Code — ${venueName}</title>
   <style>
-    @page { margin: 0; size: 100mm 150mm; }
+    @page { margin: 0; size: auto; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #f5f0e6;
@@ -120,20 +143,20 @@ export function QRCodeExport({
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      font-family: 'Times New Roman', serif;
+      font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
     }
     .card {
       background: #f5f0e6;
       border: 1px solid #d8d1c4;
-      border-radius: 28px;
-      padding: 40px;
+      border-radius: ${L.radius}px;
+      padding: ${L.pad}px;
       text-align: center;
     }
-    .name { color: #111; font-size: 22px; font-weight: bold; margin-bottom: 12px; }
-    .divider { height: 1px; background: #d8d1c4; width: 60%; margin: 0 auto 24px; }
-    .qr { width: 280px; height: 280px; display: block; margin: 0 auto; }
-    .url { color: #5f5a52; font-size: 12px; margin-top: 20px; word-break: break-all; }
-    .footer { color: #5f5a52; font-size: 10px; margin-top: 24px; letter-spacing: 0.15em; text-transform: uppercase; }
+    .name { font-family: "EB Garamond", "Georgia", serif; color: #111; font-size: ${L.nameSize}px; font-weight: 400; margin-bottom: ${L.dividerMargin}px; }
+    .divider { height: 1px; background: #d8d1c4; width: 60%; margin: ${L.dividerMargin}px auto; }
+    .qr { width: ${L.qrSize}px; height: ${L.qrSize}px; display: block; margin: 0 auto; }
+    .url { color: #5f5a52; font-size: ${L.urlSize}px; margin-top: ${L.urlMargin}px; word-break: break-all; }
+    .footer { color: #5f5a52; font-size: ${L.fontSize}px; margin-top: ${L.footerMargin}px; letter-spacing: 0.15em; text-transform: uppercase; }
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
@@ -147,7 +170,7 @@ export function QRCodeExport({
     <div class="url">${publicUrl}</div>
     <div class="footer">Powered by mofé</div>
   </div>
-  <script>window.onload = function () { setTimeout(function () { window.print(); window.close(); }, 500); };</script>
+  <script>window.onload=function(){setTimeout(function(){window.print();window.close()},500)}</script>
 </body>
 </html>`);
     w.document.close();
@@ -173,17 +196,26 @@ export function QRCodeExport({
       </div>
       <div className="mt-4 flex justify-center">
         {qrDataUrl ? (
-          <div className="inline-block rounded-[var(--radius-panel)] border border-line bg-paper p-6 text-center shadow-sm">
-            <div className="font-serif text-lg text-ink">{venueName}</div>
-            <div className="mx-auto my-4 h-px w-3/5 bg-line" />
+          <div
+            className="inline-block rounded-[var(--radius-panel)] border border-line bg-paper p-6 text-center shadow-sm"
+            style={{ padding: `${L.pad}px` }}
+          >
+            <div className="font-serif text-lg text-ink" style={{ fontSize: L.nameSize }}>
+              {venueName}
+            </div>
+            <div className="mx-auto h-px w-3/5 bg-line" style={{ margin: `${L.dividerMargin}px auto` }} />
             <img
               src={qrDataUrl}
               alt={`QR Code for ${venueName}`}
               className="mx-auto"
-              width={200}
-              height={200}
+              width={L.qrSize}
+              height={L.qrSize}
             />
-            <div className="mt-3 text-xs text-ink-muted" dir="ltr">
+            <div
+              className="text-xs text-ink-muted"
+              style={{ fontSize: L.urlSize, marginTop: L.urlMargin }}
+              dir="ltr"
+            >
               {publicUrl}
             </div>
           </div>
