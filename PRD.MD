@@ -1,37 +1,75 @@
-#### Menu Management
+# mofé — Product Requirements Document (v1 Implementation)
 
-**Categories**
-- Add, edit, delete, reorder categories via drag-and-drop
-- Each category: name (Persian), display order, active toggle
+Persian-first cafe menu management: admin panel + static QR menus.
 
-**Items**
-- Add, edit, delete menu items
-- Fields per item: name, category, price (Toman), station (`kitchen` | `bar`), photo upload, description, calories (optional), visible on public QR menu (toggle)
-- Photo upload: compressed server-side to under 200KB, stored on Arvan Object Storage
-- Bulk visibility toggle (e.g., hide all bar items during off-hours)
-- Item availability toggle (mark as sold out without deleting)
+## Built Features
 
-#### Online QR Menu
+### Auth & Venues
+- Email/password login with bcrypt hashing (12 rounds)
+- Session-based auth via HTTP-only cookie (`mofe_session`, SHA-256 token hash, 7-day TTL)
+- Multi-venue support with membership and 3 roles: owner, manager, staff
+- Role-based access enforcement on all API routes
+- Venue picker page, admin layout with header + navigation
 
-- **Menu Editor:** preview of the live public menu with all published items
-- **Appearance:** upload venue logo, set accent color, write a short welcome message
-- **Publish / Unpublish:** toggle with confirmation; unpublished venues show a "menu not available" page
-- **QR Code:** generated client-side from the menu URL; downloadable as PNG or PDF (print-ready, with venue name)
-- **URL:** default `menu.yourplatform.ir/{slug}`; custom subdomain on Professional plan; custom domain (CNAME) on Enterprise plan
+### Menu Management
+- **Categories:** add, edit, soft-delete (prevented if items exist), active toggle, drag-and-drop reorder
+- **Items:** add, edit, soft-delete; fields: nameFa, nameEn, description, priceToman, station (kitchen/bar), calories, visibleOnPublicMenu, isSoldOut
+- **Filters:** search by name, filter by category/station/visibility/sold-out
+- **Inline toggles:** visibility and sold-out
+- **Bulk visibility:** toggle `visibleOnPublicMenu` by selected IDs or station filter
+- **Drag-and-drop** reorder for categories (sidebar) and items (within category) via @dnd-kit
 
-### 6.6 Online QR Menu — Static CDN Page
+### QR Menu Editor
+- Appearance settings: venue name, welcome message, accent color
+- Live mobile preview (fetches draft data)
+- Publish/unpublish with confirmation modals
+- Publication history table
+- Unpublished changes indicator (compares max updatedAt across venue + categories + items)
+- QR code export: PNG download (ink-on-paper canvas) and PDF (print dialog)
 
-**Not a client app.** A pre-generated static HTML page served via Arvan CDN. Regenerated on every menu publish action. Customer's phone never hits the API.
+### Static Public Menu
+- Route: `GET /m/{slug}`
+- Serves from latest `published` publication snapshot
+- Static HTML: RTL, mobile-first, inline CSS, self-hosted fonts
+- Sold-out items visible with "ناموجود" badge and subdued opacity
+- Hidden items and inactive categories omitted
+- Unpublished venues show unavailable page ("منو در حال حاضر در دسترس نیست.")
+- No client JS or API calls — pure static HTML response (~10KB)
 
-#### Features
-- Mobile-first responsive layout (customers always on phone)
-- RTL Persian layout; Parastoo font
-- Venue header: logo, name, welcome message
-- Category navigation: sticky horizontal tab strip
-- Item cards: photo (lazy-loaded), name, description, price in Toman, calorie badge (if set)
-- Items marked as sold-out show a "ناموجود" badge and are grayed out but still visible
-- No ordering, no cart, no customer accounts — read only in v1
-- "Powered by [mofé]" footer
-- Page load target: under 2 seconds on a 4G connection
+### API Endpoints
+- `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me`
+- `GET /api/venues`, `GET|PATCH /api/venues/[venueId]`
+- `GET|POST /api/venues/[venueId]/categories`, `PATCH|DELETE /api/venues/[venueId]/categories/[id]`, `POST .../categories/reorder`
+- `GET|POST /api/venues/[venueId]/items`, `GET|PATCH|DELETE /api/venues/[venueId]/items/[id]`, `POST .../items/reorder`, `POST .../items/bulk-visibility`
+- `GET /api/venues/[venueId]/public-preview`
+- `POST /api/venues/[venueId]/publish`, `POST .../unpublish`
+- `GET /api/venues/[venueId]/publications`
 
+### Data Model
+9 models: User, Venue, VenueMember, Category, MenuItem, Asset, MenuPublication, Domain, AuditLog, Session
+- SQLite (dev), Prisma ORM v7
+- UUID primary keys, soft-delete, money as integer Toman
+- Generated client at `src/generated/prisma`
 
+### Design Language
+- Paper (#f5f0e6) on ink (#111111), minimal borders, no shadows
+- Persian-first: RTL layout, Parastoo font (body), EB Garamond (headings), Vazirmatn fallback
+- All fonts self-hosted — zero external CDN calls
+- Tailwind CSS v4 with custom theme tokens
+
+### Testing
+- Vitest v4, 82 tests: 48 renderer, 8 auth, 26 integration
+- Real SQLite test DB (`test.db`), created fresh per run via `global-setup.ts`
+
+## Future (Not Yet Built)
+
+- Photo upload (Sharp + Arvan Object Storage)
+- Custom domains (subdomain and CNAME flows)
+- CDN upload of static menu HTML
+- Audit log recording on mutations
+- Password reset flow
+- CSV import/export
+- Analytics for QR views
+- Scheduled visibility by station
+- Menu item variants/sizes
+- Allergen badges
