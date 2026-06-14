@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id              String    @id @default(uuid())
+  name            String
+  email           String    @unique
+  passwordHash    String?
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  status          String    @default("active")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions         Session[]
+  venueMembers     VenueMember[]
+  uploadedAssets   Asset[]       @relation("UploadedAssets")
+  authoredLogs     AuditLog[]    @relation("ActorLogs")
+  createdPublications MenuPublication[] @relation("PublicationCreator")
+}
+
+model Venue {
+  id             String    @id @default(uuid())
+  nameFa         String
+  nameEn         String?
+  slug           String    @unique
+  plan           String    @default("starter")
+  timezone       String    @default("Asia/Tehran")
+  accentColor    String?
+  welcomeMessage String?
+  logoAssetId    String?
+  publicStatus   String    @default("draft")
+  publishedAt    DateTime?
+  unpublishedAt  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  members      VenueMember[]
+  categories   Category[]
+  menuItems    MenuItem[]
+  assets       Asset[]
+  publications MenuPublication[]
+  domains      Domain[]
+  auditLogs    AuditLog[]
+}
+
+model VenueMember {
+  id          String   @id @default(uuid())
+  venueId     String
+  userId      String
+  role        String
+  permissions String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, userId])
+}
+
+model Category {
+  id           String    @id @default(uuid())
+  venueId      String
+  nameFa       String
+  displayOrder Int
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  venue     Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  menuItems MenuItem[]
+
+  @@index([venueId, displayOrder])
+  @@index([venueId, active])
+}
+
+model MenuItem {
+  id                  String    @id @default(uuid())
+  venueId             String
+  categoryId          String
+  nameFa              String
+  nameEn              String?
+  description         String?
+  priceToman          Int
+  station             String
+  calories            Int?
+  photoAssetId        String?
+  visibleOnPublicMenu Boolean   @default(true)
+  isSoldOut           Boolean   @default(false)
+  displayOrder        Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  venue    Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@index([venueId, categoryId, displayOrder])
+  @@index([venueId, visibleOnPublicMenu])
+  @@index([venueId, station])
+  @@index([venueId, isSoldOut])
+}
+
+model Asset {
+  id              String   @id @default(uuid())
+  venueId         String?
+  kind            String
+  bucket          String
+  objectKey       String
+  publicUrl       String?
+  contentType     String
+  byteSize        Int
+  width           Int?
+  height          Int?
+  checksum        String?
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  venue    Venue? @relation(fields: [venueId], references: [id])
+  uploader User?  @relation("UploadedAssets", fields: [createdByUserId], references: [id])
+}
+
+model MenuPublication {
+  id              String    @id @default(uuid())
+  venueId         String
+  status          String    @default("queued")
+  trigger         String
+  snapshot        String?
+  staticAssetId   String?
+  errorMessage    String?
+  createdByUserId String?
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  venue   Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  creator User? @relation("PublicationCreator", fields: [createdByUserId], references: [id])
+}
+
+model Domain {
+  id                String    @id @default(uuid())
+  venueId           String
+  type              String
+  hostname          String    @unique
+  status            String    @default("pending")
+  verificationToken String?
+  verifiedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  venueId     String?
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    String?
+  createdAt   DateTime @default(now())
+
+  venue Venue? @relation(fields: [venueId], references: [id])
+  actor User?  @relation("ActorLogs", fields: [actorUserId], references: [id])
+}
+
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

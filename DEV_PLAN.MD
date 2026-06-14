@@ -1069,7 +1069,86 @@ Acceptance:
 - RTL visual review completed.
 - Public menu verified to make no API calls.
 
-## 22. Future Enhancements
+## 22. Development Progress
+
+### ✅ Milestone 1 — Foundation (Completed)
+- Next.js 16 with App Router, TypeScript, Tailwind CSS v4
+- Design tokens (CSS variables for paper/ink/line/surface)
+- Prisma ORM with SQLite (migratable to PostgreSQL)
+- Complete database schema with all 10 tables
+- Seed data with venue "کافه ناهال", admin user, categories, and 9 menu items
+- Base UI components: Button, Input, Toggle, Badge, Panel, Modal
+
+### ✅ Milestone 2 — Authentication and Venue Access (Completed)
+- Email/password login with bcrypt password hashing
+- Session-based auth with HTTP-only cookies (SHA-256 token hashes)
+- Session management (create/verify/destroy)
+- Middleware for protected routes
+- Login page with Persian UI
+- `/api/auth/login`, `/api/auth/logout`, `/api/me` endpoints
+- Venue membership verification with role-based access helpers
+- Venue picker page for multi-venue users
+- Admin layout with venue context, navigation, and user info
+
+### ✅ Milestone 3 — Category Management (Completed)
+- Category list in admin sidebar with active toggle
+- Create/edit/delete API endpoints
+- Soft delete with item count validation
+- Reorder endpoint with atomic transaction
+- Category filter in menu view
+- Active/inactive state management
+
+### ✅ Milestone 4 — Item Management (Completed)
+- Item list with category and station filters
+- Inline visibility toggle
+- Sold-out toggle (visible with badge)
+- Search by Persian/English name
+- Station filter (kitchen/bar)
+- Full CRUD API endpoints
+- Bulk visibility endpoint
+
+### ⏳ Milestone 5 — Media Uploads (Not started)
+- Photo upload endpoint and UI pending (requires Arvan Object Storage or local fallback)
+
+### ✅ Milestone 6 — QR Menu Editor (Completed)
+- Appearance settings form (name, welcome message, accent color)
+- Live mobile preview pane
+- Publish/unpublish with confirmation modals
+- Publication history tracking
+- Unpublished changes indicator (venue + categories + items)
+- QR code export buttons (PNG/PDF via external service)
+
+### ✅ Milestone 7 — Static Public Menu (Completed)
+- Static HTML renderer generates complete mobile-first RTL page with inline CSS, Persian formatting, Parastoo/EB Garamond fonts
+- Unavailable page renderer for unpublished venues
+- Public route `/m/[slug]` serves live HTML from publication snapshot
+- Sold-out items shown with `ناموجود` badge and subdued opacity
+- Hidden items and inactive categories omitted
+- No API calls — pure HTML response (10KB for demo venue)
+- CDN/storage upload is a future addition (HTML is currently rendered from DB snapshot)
+
+### ✅ Milestone 8 — QR Export (Completed)
+- Client-side QR generation using `qrcode` library (no external API dependency)
+- PNG download: canvas-rendered QR card with ink-on-paper styling (paper background, border, venue name, URL, "Powered by mofé" footer)
+- PDF download: print-ready page with paper/ink QR card, auto-triggers browser print dialog for "Save as PDF"
+- Warning banner when menu is unpublished
+- QR code uses design system colors (ink #111111 on paper #f5f0e6)
+
+### ⏳ Milestone 9 — Domains and Plans (Not started)
+
+### ⏳ Milestone 10 — Hardening and Launch (Not started)
+
+### Implementation Notes
+- **Stack:** Next.js 16 (App Router), TypeScript, Tailwind CSS v4, Prisma v7, SQLite
+- **Auth:** Session-based with HTTP-only cookies, SHA-256 token hashing, bcrypt password hashing
+- **Database adapter:** `prisma-adapter-sqlite` (Node.js built-in `node:sqlite`)
+- **Design:** Paper/ink system with Persian-first RTL layout, Parastoo/EB Garamond typography
+- **API:** 15+ REST endpoints for auth, venues, categories, items, publishing
+- **QR:** Client-side QR generation via `qrcode` library with ink-on-paper styled PNG/PDF export
+- **Deployment:** `npm run build` succeeds with 21 routes
+- **Public menu:** `/m/[slug]` serves static HTML from DB snapshot (CDN upload pending)
+
+## 23. Future Enhancements
 
 - Scheduled visibility by station.
 - Multiple menus per venue.

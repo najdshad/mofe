@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f5f0e6;
+  --ink: #111111;
+  --ink-strong: #000000;
+  --ink-muted: #5f5a52;
+  --line: #d8d1c4;
+  --surface: rgba(255, 255, 255, 0.28);
+  --radius-panel: 28px;
+  --radius-card: 24px;
+  --radius-control: 16px;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-strong: var(--ink-strong);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --font-serif: "EB Garamond", "Parastoo", "Times New Roman", serif;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Parastoo", "EB Garamond", "Times New Roman", serif;
+}
+
+@font-face {
+  font-family: "Parastoo";
+  src: url("/fonts/Parastoo.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Parastoo";
+  src: url("/fonts/Parastoo-Bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
