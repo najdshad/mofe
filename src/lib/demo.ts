@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import type { PrismaClient } from "@/generated/prisma/client";
 
-export const DEMO_EMAIL = "admin@nahal-cafe.ir";
+export const DEMO_EMAIL = "admin@noghteh.ir";
 export const DEMO_PASSWORD = "demo1234";
-export const DEMO_VENUE_SLUG = "nahal-cafe";
+export const DEMO_VENUE_SLUG = "noghteh";
 
 export async function ensureDemoData(prisma: PrismaClient) {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
@@ -11,13 +11,13 @@ export async function ensureDemoData(prisma: PrismaClient) {
   const user = await prisma.user.upsert({
     where: { email: DEMO_EMAIL },
     update: {
-      name: "مدیر کافه ناهال",
+      name: "مدیر کافه نقطه",
       passwordHash,
       emailVerifiedAt: new Date(),
       status: "active",
     },
     create: {
-      name: "مدیر کافه ناهال",
+      name: "مدیر کافه نقطه",
       email: DEMO_EMAIL,
       passwordHash,
       emailVerifiedAt: new Date(),
@@ -29,8 +29,8 @@ export async function ensureDemoData(prisma: PrismaClient) {
     where: { slug: DEMO_VENUE_SLUG },
     update: {},
     create: {
-      nameFa: "کافه ناهال",
-      nameEn: "Nahal Cafe",
+      nameFa: "کافه نقطه",
+      nameEn: "Noghteh Cafe",
       slug: DEMO_VENUE_SLUG,
       plan: "starter",
       timezone: "Asia/Tehran",

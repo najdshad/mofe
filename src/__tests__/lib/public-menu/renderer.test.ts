@@ -15,11 +15,11 @@ function makeSnapshot(overrides: SnapshotOverrides = {}): Snapshot {
   return {
     venue: {
       id: "v1",
-      nameFa: "کافه ناهال",
-      nameEn: "Nahal Cafe",
+      nameFa: "کافه نقطه",
+      nameEn: "Noghteh Cafe",
       welcomeMessage: "به منوی ما خوش آمدید",
       accentColor: null,
-      slug: "nahal-cafe",
+      slug: "noghteh",
       ...overrides.venue,
     },
     categories: overrides.categories ?? [],
@@ -62,12 +62,12 @@ describe("renderPublicMenu", () => {
 
   it("includes the venue name in the title", () => {
     const html = renderPublicMenu(makeSnapshot());
-    expect(html).toContain("<title>کافه ناهال — منو</title>");
+    expect(html).toContain("<title>کافه نقطه — منو</title>");
   });
 
   it("shows venue name in the body", () => {
     const html = renderPublicMenu(makeSnapshot());
-    expect(html).toContain("کافه ناهال");
+    expect(html).toContain("کافه نقطه");
   });
 
   it("includes welcome message when present", () => {
@@ -416,7 +416,7 @@ describe("renderPublicMenu", () => {
   describe("edge cases", () => {
     it("handles zero categories", () => {
       const html = renderPublicMenu(makeSnapshot({ categories: [] }));
-      expect(html).toContain("کافه ناهال");
+      expect(html).toContain("کافه نقطه");
       expect(html).toContain("Powered by mofé");
     });
 
@@ -471,36 +471,36 @@ describe("renderPublicMenu", () => {
 
 describe("renderUnavailablePage", () => {
   it("renders a valid HTML document", () => {
-    const html = renderUnavailablePage("کافه ناهال");
+    const html = renderUnavailablePage("کافه نقطه");
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("<html");
     expect(html).toContain("</html>");
   });
 
   it("shows venue name", () => {
-    const html = renderUnavailablePage("کافه ناهال");
-    expect(html).toContain("کافه ناهال");
+    const html = renderUnavailablePage("کافه نقطه");
+    expect(html).toContain("کافه نقطه");
   });
 
   it("shows unavailable message", () => {
-    const html = renderUnavailablePage("کافه ناهال");
+    const html = renderUnavailablePage("کافه نقطه");
     expect(html).toContain("منو در حال حاضر در دسترس نیست.");
   });
 
   it("sets RTL direction", () => {
-    const html = renderUnavailablePage("کافه ناهال");
+    const html = renderUnavailablePage("کافه نقطه");
     expect(html).toContain('dir="rtl"');
   });
 
   it("includes font-face declarations", () => {
-    const html = renderUnavailablePage("کافه ناهال");
+    const html = renderUnavailablePage("کافه نقطه");
     expect(html).toContain("Parastoo.woff2");
     expect(html).toContain("Vazirmatn-VariableFont_wght.ttf");
     expect(html).toContain("EBGaramond-VariableFont_wght.ttf");
   });
 
   it("includes brand mark and footer", () => {
-    const html = renderUnavailablePage("کافه ناهال");
+    const html = renderUnavailablePage("کافه نقطه");
     expect(html).toContain("mofé");
     expect(html).toContain("Powered by mofé");
   });

@@ -188,12 +188,11 @@ export function renderPublicMenu(snapshot: Snapshot): string {
       border: 1px solid rgba(17, 17, 17, 0.72);
       border-radius: 28px;
       padding: 18px 18px 22px;
-      overflow: hidden;
     }
     .hero {
       padding-bottom: 16px;
       border-bottom: 1px solid var(--line);
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
     .hero-row {
       display: flex;
@@ -244,8 +243,12 @@ export function renderPublicMenu(snapshot: Snapshot): string {
       gap: 10px;
       overflow-x: auto;
       scrollbar-width: none;
-      padding-top: 16px;
-      padding-bottom: 2px;
+      padding: 14px 0 10px;
+      margin-bottom: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(253, 250, 242, 0.95);
     }
     .category-nav::-webkit-scrollbar {
       display: none;
@@ -268,6 +271,7 @@ export function renderPublicMenu(snapshot: Snapshot): string {
     }
     .category {
       margin-bottom: 18px;
+      scroll-margin-top: 70px;
     }
     .category:last-of-type {
       margin-bottom: 0;
@@ -462,8 +466,9 @@ export function renderPublicMenu(snapshot: Snapshot): string {
             </div>
           </div>
           ${venue.welcomeMessage ? `<p class="welcome">${esc(venue.welcomeMessage)}</p>` : ""}
-          ${categoryNav}
         </header>
+
+        ${categoryNav}
 
         ${categoryItems || emptyState}
 

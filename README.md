@@ -32,11 +32,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Email | Password | Role |
 | --- | --- | --- |
-| `admin@nahal-cafe.ir` | `demo1234` | Owner of "کافه ناهال" |
+| `admin@noghteh.ir` | `demo1234` | Owner of "کافه نقطه" |
 
 ### Seed Venue
 
-Venue "کافه ناهال" with 4 categories and 9 items including hidden, sold-out, and public items.
+Venue "کافه نقطه" with 4 categories and 9 items including hidden, sold-out, and public items.
 
 ## Scripts
 
