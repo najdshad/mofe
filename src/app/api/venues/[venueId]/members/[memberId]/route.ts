@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, hashPassword } from "@/lib/auth";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
@@ -17,23 +17,42 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { role } = await request.json();
-  if (!role || !["owner", "manager", "staff"].includes(role)) {
-    return NextResponse.json({ error: "Invalid role" }, { status: 400 });
-  }
-
   const target = await prisma.venueMember.findUnique({ where: { id: memberId } });
   if (!target || target.venueId !== venueId) {
     return NextResponse.json({ error: "Member not found" }, { status: 404 });
   }
 
-  if (membership.role !== "owner" && (target.role === "owner" || role === "owner")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { role, password } = await request.json();
+
+  const updateData: Record<string, unknown> = {};
+
+  if (role) {
+    if (!["owner", "manager", "staff"].includes(role)) {
+      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+    }
+
+    if (membership.role !== "owner" && (target.role === "owner" || role === "owner")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    updateData.role = role;
+  }
+
+  if (password) {
+    if (membership.role !== "owner") {
+      return NextResponse.json({ error: "Only owners can change passwords" }, { status: 403 });
+    }
+
+    const passwordHash = await hashPassword(password);
+    await prisma.user.update({
+      where: { id: target.userId },
+      data: { passwordHash },
+    });
   }
 
   const member = await prisma.venueMember.update({
     where: { id: memberId },
-    data: { role },
+    data: updateData,
     include: { user: true },
   });
 

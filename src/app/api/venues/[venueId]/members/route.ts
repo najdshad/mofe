@@ -35,41 +35,46 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { email, role, name, password } = await request.json();
+  const { username, role, name, password } = await request.json();
 
-  if (!email) {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  if (!username) {
+    return NextResponse.json({ error: "Username is required" }, { status: 400 });
+  }
+
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return NextResponse.json(
+      { error: "Username can only contain letters, numbers, hyphens, and underscores" },
+      { status: 400 }
+    );
   }
 
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  let targetUser = await prisma.user.findUnique({ where: { email } });
-
-  if (!targetUser) {
-    if (!password) {
-      return NextResponse.json(
-        { error: "Password is required for new users" },
-        { status: 400 }
-      );
-    }
-
-    const passwordHash = await hashPassword(password);
-    targetUser = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-      },
-    });
+  if (!password) {
+    return NextResponse.json({ error: "Password is required" }, { status: 400 });
   }
 
-  const existing = await prisma.venueMember.findUnique({
-    where: { venueId_userId: { venueId, userId: targetUser.id } },
-  });
-  if (existing) {
-    return NextResponse.json({ error: "User is already a member" }, { status: 409 });
+  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+  if (!venue) {
+    return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+  }
+
+  const email = `${username}@${venue.slug}`;
+
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    const existingMember = await prisma.venueMember.findUnique({
+      where: { venueId_userId: { venueId, userId: existingUser.id } },
+    });
+    if (existingMember) {
+      return NextResponse.json({ error: "User is already a member" }, { status: 409 });
+    }
+    return NextResponse.json(
+      { error: "Username is already taken on this venue" },
+      { status: 409 }
+    );
   }
 
   const newRole = role || "staff";
@@ -80,6 +85,17 @@ export async function POST(
   if (membership.role !== "owner" && newRole === "owner") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const passwordHash = await hashPassword(password);
+
+  const targetUser = await prisma.user.create({
+    data: {
+      name,
+      email,
+      passwordHash,
+      emailVerifiedAt: new Date(),
+    },
+  });
 
   const member = await prisma.venueMember.create({
     data: {

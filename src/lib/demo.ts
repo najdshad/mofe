@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import type { PrismaClient } from "@/generated/prisma/client";
 
-export const DEMO_EMAIL = "admin@noghteh.ir";
+export const DEMO_EMAIL = "admin@noghteh";
 export const DEMO_PASSWORD = "demo1234";
 export const DEMO_VENUE_SLUG = "noghteh";
 

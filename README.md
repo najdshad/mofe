@@ -32,7 +32,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Email | Password | Role |
 | --- | --- | --- |
-| `admin@noghteh.ir` | `demo1234` | Owner of "کافه نقطه" |
+| `admin@noghteh` | `demo1234` | Owner of "کافه نقطه" |
 
 ### Seed Venue
 

@@ -166,7 +166,7 @@ Single env var. Test suite overrides with `file:./test.db` in global-setup.
 ## Demo Credentials
 
 ```
-Email:    admin@noghteh.ir
+Email:    admin@noghteh
 Password: demo1234
 Role:     Owner of "کافه نقطه"
 ```

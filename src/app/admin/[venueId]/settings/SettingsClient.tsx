@@ -69,11 +69,14 @@ export function SettingsClient({
   const [venueStatus, setVenueStatus] = useState("");
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [addName, setAddName] = useState("");
-  const [addEmail, setAddEmail] = useState("");
+  const [addUsername, setAddUsername] = useState("");
   const [addPassword, setAddPassword] = useState("");
   const [addRole, setAddRole] = useState("staff");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [memberToEdit, setMemberToEdit] = useState<Member | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -105,7 +108,7 @@ export function SettingsClient({
   };
 
   const handleAddMember = async () => {
-    if (!addEmail.trim() || !addName.trim()) return;
+    if (!addUsername.trim() || !addName.trim() || !addPassword) return;
     setLoading(true);
     setError("");
 
@@ -114,8 +117,8 @@ export function SettingsClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: addName.trim(),
-        email: addEmail.trim(),
-        password: addPassword || undefined,
+        username: addUsername.trim(),
+        password: addPassword,
         role: addRole,
       }),
     });
@@ -133,7 +136,7 @@ export function SettingsClient({
         },
       ]);
       setAddName("");
-      setAddEmail("");
+      setAddUsername("");
       setAddPassword("");
       setShowAddModal(false);
       router.refresh();
@@ -164,6 +167,32 @@ export function SettingsClient({
       const data = await res.json();
       setError(data.error || "خطا در تغییر نقش");
     }
+  };
+
+  const handleChangePassword = async () => {
+    if (!memberToEdit || !newPassword) return;
+    setLoading(true);
+    setError("");
+
+    const res = await fetch(
+      `/api/venues/${venueId}/members/${memberToEdit.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword }),
+      }
+    );
+
+    if (res.ok) {
+      setShowPasswordModal(false);
+      setMemberToEdit(null);
+      setNewPassword("");
+      router.refresh();
+    } else {
+      const data = await res.json();
+      setError(data.error || "خطا در تغییر رمز عبور");
+    }
+    setLoading(false);
   };
 
   const handleRemoveMember = async () => {
@@ -269,6 +298,18 @@ export function SettingsClient({
                     {ROLE_LABELS[m.role]}
                   </span>
                 )}
+                {isOwner && m.userId !== currentUserId && (
+                  <button
+                    onClick={() => {
+                      setMemberToEdit(m);
+                      setNewPassword("");
+                      setShowPasswordModal(true);
+                    }}
+                    className="text-xs text-ink-muted hover:text-ink transition-colors"
+                  >
+                    رمز
+                  </button>
+                )}
                 {canDeleteMember(m) && m.userId !== currentUserId && (
                   <button
                     onClick={() => {
@@ -335,17 +376,21 @@ export function SettingsClient({
             placeholder="نام کاربر"
           />
           <Input
-            label="ایمیل کاربر"
-            value={addEmail}
-            onChange={(e) => setAddEmail(e.target.value)}
-            placeholder="user@example.com"
+            label="نام کاربری"
+            value={addUsername}
+            onChange={(e) => setAddUsername(e.target.value)}
+            placeholder="username"
+            helperText={
+              addUsername.trim()
+                ? `ایمیل: ${addUsername.trim()}@${slug}`
+                : "فقط حروف انگلیسی، اعداد، خط تیره"
+            }
           />
           <Input
-            label="رمز عبور (برای کاربر جدید)"
+            label="رمز عبور"
             type="password"
             value={addPassword}
             onChange={(e) => setAddPassword(e.target.value)}
-            helperText="اگر کاربر قبلاً ثبت‌نام کرده است، رمز عبور الزامی نیست"
           />
           <div className="space-y-1.5">
             <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
@@ -381,6 +426,33 @@ export function SettingsClient({
         <p>
           آیا از حذف {memberToRemove?.name} از مجموعه اطمینان دارید؟
         </p>
+      </Modal>
+
+      <Modal
+        open={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setMemberToEdit(null);
+          setNewPassword("");
+          setError("");
+        }}
+        onConfirm={handleChangePassword}
+        title="تغییر رمز عبور"
+        confirmLabel="ذخیره"
+        loading={loading}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-ink-muted">
+            تغییر رمز عبور برای {memberToEdit?.name}
+          </p>
+          <Input
+            label="رمز عبور جدید"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
       </Modal>
     </div>
   );
