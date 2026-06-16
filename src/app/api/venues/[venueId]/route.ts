@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { canPublish, requireVenueAccess } from "@/lib/permissions";
+import { canManageItems, canPublish, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import {
   publishVenueMenu,
@@ -49,6 +49,9 @@ export async function PATCH(
     const result = await unpublishVenueMenu(venueId, user.id);
     return NextResponse.json(result);
   }
+
+  const canManage = await canManageItems(user.id, venueId);
+  if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const venue = await prisma.venue.update({
     where: { id: venueId },

@@ -18,6 +18,8 @@ export default async function AdminLayout({
   const membership = await getVenueMembership(user.id, venueId);
   if (!membership) redirect("/venues");
 
+  if (membership.role === "staff") redirect("/venues");
+
   const venue = await prisma.venue.findUnique({ where: { id: venueId } });
   if (!venue) redirect("/venues");
 

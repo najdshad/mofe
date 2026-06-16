@@ -19,6 +19,7 @@ function makeSnapshot(overrides: SnapshotOverrides = {}): Snapshot {
       nameEn: "Noghteh Cafe",
       welcomeMessage: "به منوی ما خوش آمدید",
       accentColor: null,
+      logoUrl: null,
       slug: "noghteh",
       ...overrides.venue,
     },

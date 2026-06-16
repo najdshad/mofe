@@ -335,14 +335,15 @@ describe("Public Menu Rendering", () => {
     });
 
     const snapshot = {
-      venue: {
-        id: venue.id,
-        nameFa: venue.nameFa,
-        nameEn: venue.nameEn,
-        welcomeMessage: venue.welcomeMessage,
-        accentColor: venue.accentColor,
-        slug: venue.slug,
-      },
+        venue: {
+          id: venue.id,
+          nameFa: venue.nameFa,
+          nameEn: venue.nameEn,
+          welcomeMessage: venue.welcomeMessage,
+          accentColor: venue.accentColor,
+          logoUrl: null,
+          slug: venue.slug,
+        },
       categories: categories
         .filter((cat) => cat.menuItems.length > 0)
         .map((cat) => ({

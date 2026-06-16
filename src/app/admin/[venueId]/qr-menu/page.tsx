@@ -88,6 +88,7 @@ export default async function QRMenuPage({
       venueNameEn={venue.nameEn}
       venueWelcomeMessage={venue.welcomeMessage}
       venueAccentColor={venue.accentColor}
+      venueLogoUrl={venue.logoAssetId}
       venuePublicStatus={venue.publicStatus}
       venueSlug={venue.slug}
       canPublish={canUserPublish}

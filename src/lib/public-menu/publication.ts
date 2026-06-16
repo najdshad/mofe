@@ -26,6 +26,7 @@ export async function buildPublicSnapshot(venueId: string) {
       nameEn: venue.nameEn,
       welcomeMessage: venue.welcomeMessage,
       accentColor: venue.accentColor,
+      logoUrl: venue.logoAssetId,
       slug: venue.slug,
       publicUrl,
     },

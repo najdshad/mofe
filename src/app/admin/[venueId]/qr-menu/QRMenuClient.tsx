@@ -42,6 +42,7 @@ interface QRMenuClientProps {
   venueNameEn: string | null;
   venueWelcomeMessage: string | null;
   venueAccentColor: string | null;
+  venueLogoUrl: string | null;
   venuePublicStatus: string;
   venueSlug: string;
   canPublish: boolean;
@@ -57,6 +58,7 @@ export function QRMenuClient({
   venueNameEn: initialNameEn,
   venueWelcomeMessage: initialWelcomeMessage,
   venueAccentColor: initialAccentColor,
+  venueLogoUrl: initialLogoUrl,
   venuePublicStatus,
   canPublish,
   preview,
@@ -71,6 +73,8 @@ export function QRMenuClient({
     initialWelcomeMessage ?? ""
   );
   const [accentColor, setAccentColor] = useState(initialAccentColor ?? "");
+  const [logoUrl, setLogoUrl] = useState(initialLogoUrl ?? "");
+  const [uploading, setUploading] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -92,6 +96,47 @@ export function QRMenuClient({
       setStatusMessage("تغییرات ذخیره شد");
       setTimeout(() => setStatusMessage(""), 3000);
       router.refresh();
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("logo", file);
+
+    const res = await fetch(`/api/venues/${venueId}/logo`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setLogoUrl(data.logoUrl);
+      setStatusMessage("لوگو با موفقیت آپلود شد");
+      setTimeout(() => setStatusMessage(""), 3000);
+      router.refresh();
+    } else {
+      const data = await res.json();
+      setStatusMessage(data.error || "خطا در آپلود لوگو");
+    }
+    setUploading(false);
+  };
+
+  const handleLogoRemove = async () => {
+    const res = await fetch(`/api/venues/${venueId}/logo`, {
+      method: "DELETE",
+    });
+
+    if (res.ok) {
+      setLogoUrl("");
+      setStatusMessage("لوگو حذف شد");
+      setTimeout(() => setStatusMessage(""), 3000);
+      router.refresh();
+    } else {
+      setStatusMessage("خطا در حذف لوگو");
     }
   };
 
@@ -168,6 +213,39 @@ export function QRMenuClient({
               onChange={(e) => setAccentColor(e.target.value)}
               placeholder="#111111"
             />
+            <div className="space-y-1.5">
+              <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+                لوگوی مجموعه
+              </label>
+              {logoUrl && (
+                <div className="flex items-center gap-3 mb-2">
+                  <img
+                    src={logoUrl}
+                    alt="لوگو"
+                    className="h-14 w-14 rounded-xl border border-line object-cover"
+                  />
+                  <button
+                    onClick={handleLogoRemove}
+                    className="text-xs text-ink-muted hover:text-ink transition-colors"
+                  >
+                    حذف لوگو
+                  </button>
+                </div>
+              )}
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2.5 text-sm text-ink-muted hover:text-ink transition-colors">
+                {uploading ? "در حال آپلود..." : "انتخاب تصویر"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+              <p className="text-xs text-ink-muted">
+                تصویر به 500×500 پیکسل و زیر 50KB فشرده می‌شود
+              </p>
+            </div>
             <Button onClick={handleSaveAppearance}>ذخیره تغییرات</Button>
             {statusMessage && (
               <p className="text-sm text-ink-muted">{statusMessage}</p>
@@ -247,18 +325,39 @@ export function QRMenuClient({
         <Panel title="پیش‌نمایش موبایل">
           <div className="mx-auto w-full max-w-[360px] rounded-[36px] border border-line bg-paper p-3">
             <div className="rounded-[28px] border border-line bg-paper p-4">
-              <div className="mb-4">
-                <div className="text-[11px] uppercase tracking-wider text-ink-muted">
-                  mofé
-                </div>
-                <h3 className="font-serif text-2xl leading-none text-ink-strong">
-                  {preview.venue.nameFa}
-                </h3>
-                {preview.venue.welcomeMessage && (
-                  <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-                    {preview.venue.welcomeMessage}
-                  </p>
+              <div className="mb-4 flex items-start gap-3">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="لوگو"
+                    className="h-10 w-10 shrink-0 rounded-lg border border-line object-cover"
+                  />
+                ) : (
+                  <div className="h-10 w-10 shrink-0 rounded-lg border border-line flex items-center justify-center text-ink-muted">
+                    <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
+                      <rect x="1.5" y="1.5" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.5"/>
+                      <rect x="14.5" y="1.5" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.5"/>
+                      <rect x="1.5" y="14.5" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.5"/>
+                      <rect x="4" y="4" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
+                      <rect x="17" y="4" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
+                      <rect x="4" y="17" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
+                      <rect x="10" y="10" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
+                      <rect x="13" y="10" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
+                      <rect x="10" y="13" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
+                      <rect x="13" y="13" width="4.8" height="4.8" rx="0.8" stroke="currentColor" strokeWidth="1.5"/>
+                    </svg>
+                  </div>
                 )}
+                <div className="min-w-0">
+                  <h3 className="font-serif text-2xl leading-none text-ink-strong">
+                    {preview.venue.nameFa}
+                  </h3>
+                  {preview.venue.welcomeMessage && (
+                    <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                      {preview.venue.welcomeMessage}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {preview.categories.length === 0 ? (

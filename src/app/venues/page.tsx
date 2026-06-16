@@ -9,7 +9,7 @@ export default async function VenuesPage() {
 
   const memberships = await getAccessibleVenues(user.id);
 
-  if (memberships.length === 1) {
+  if (memberships.length === 1 && memberships[0].role !== "staff") {
     redirect(`/admin/${memberships[0].venueId}/menu`);
   }
 

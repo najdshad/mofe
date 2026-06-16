@@ -22,6 +22,7 @@ export interface Snapshot {
     nameEn: string | null;
     welcomeMessage: string | null;
     accentColor: string | null;
+    logoUrl: string | null;
     slug: string;
   };
   categories: SnapshotCategory[];
@@ -190,9 +191,9 @@ export function renderPublicMenu(snapshot: Snapshot): string {
       padding: 18px 18px 22px;
     }
     .hero {
-      padding-bottom: 16px;
+      padding-bottom: 12px;
       border-bottom: 1px solid var(--line);
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
     .hero-row {
       display: flex;
@@ -204,6 +205,15 @@ export function renderPublicMenu(snapshot: Snapshot): string {
     .hero-copy {
       min-width: 0;
       text-align: right;
+    }
+    .logo-mark {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      border: 1px solid rgba(17, 17, 17, 0.82);
+      object-fit: cover;
+      object-position: bottom right;
+      flex-shrink: 0;
     }
     .qr-mark {
       width: 46px;
@@ -270,26 +280,26 @@ export function renderPublicMenu(snapshot: Snapshot): string {
       color: #faf6ef;
     }
     .category {
-      margin-bottom: 18px;
+      margin-bottom: 14px;
       scroll-margin-top: 70px;
     }
     .category:last-of-type {
       margin-bottom: 0;
     }
     .category-head {
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
     .cat-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: #8a8275;
     }
     .item-card {
       background: var(--paper-strong);
       border: 1px solid rgba(17, 17, 17, 0.08);
-      border-radius: 24px;
-      padding: 18px 18px 16px;
-      margin-bottom: 12px;
+      border-radius: 18px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
     }
     .item-card.sold-out {
@@ -298,9 +308,9 @@ export function renderPublicMenu(snapshot: Snapshot): string {
     .item-header {
       direction: ltr;
       display: grid;
-      grid-template-columns: minmax(92px, 108px) minmax(0, 1fr);
+      grid-template-columns: minmax(80px, 96px) minmax(0, 1fr);
       align-items: flex-start;
-      gap: 18px;
+      gap: 14px;
     }
     .item-price-wrap,
     .item-info {
@@ -311,39 +321,40 @@ export function renderPublicMenu(snapshot: Snapshot): string {
     }
     .item-name {
       font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
       color: #111111;
-      line-height: 1.25;
+      line-height: 1.3;
     }
     .item-name-en {
       font-family: "EB Garamond", "Georgia", serif;
-      font-size: 18px;
+      font-size: 15px;
       color: #6f685c;
       margin-top: 1px;
     }
     .item-desc {
-      font-size: 14px;
+      font-size: 13px;
       color: #59544b;
-      margin-top: 12px;
-      line-height: 1.95;
+      margin-top: 6px;
+      line-height: 1.7;
     }
     .item-meta {
-      margin-top: 16px;
+      margin-top: 8px;
       display: flex;
-      gap: 6px;
+      gap: 4px;
       flex-wrap: wrap;
       justify-content: flex-end;
+      direction: ltr;
     }
     .badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 30px;
+      min-height: 22px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      padding: 4px 12px;
-      font-size: 12px;
+      padding: 1px 8px;
+      font-size: 11px;
       color: #82796d;
       background: rgba(255, 255, 255, 0.5);
       line-height: 1;
@@ -359,18 +370,18 @@ export function renderPublicMenu(snapshot: Snapshot): string {
     }
     .item-price-wrap {
       text-align: left;
-      padding-top: 4px;
+      padding-top: 2px;
     }
     .item-price {
       font-family: "EB Garamond", "Georgia", serif;
-      font-size: 26px;
+      font-size: 23px;
       font-weight: 500;
       color: #111111;
       line-height: 1;
     }
     .item-price-unit {
-      margin-top: 10px;
-      font-size: 13px;
+      margin-top: 6px;
+      font-size: 12px;
       color: #7a7367;
     }
     .empty-state {
@@ -391,22 +402,19 @@ export function renderPublicMenu(snapshot: Snapshot): string {
     }
     @media (max-width: 380px) {
       .menu-panel {
-        padding: 12px;
+        padding: 10px;
       }
       .menu-frame {
-        padding: 16px 14px 20px;
+        padding: 14px 12px 18px;
       }
       .item-header {
-        grid-template-columns: 84px minmax(0, 1fr);
-        gap: 14px;
+        grid-template-columns: 72px minmax(0, 1fr);
+        gap: 12px;
       }
       .item-price {
-        font-size: 23px;
-      }
-      .item-name {
         font-size: 20px;
       }
-      .item-name-en {
+      .item-name {
         font-size: 16px;
       }
     }
@@ -415,10 +423,10 @@ export function renderPublicMenu(snapshot: Snapshot): string {
         padding: 28px 18px 40px;
       }
       .menu-panel {
-        padding: 18px;
+        padding: 16px;
       }
       .menu-frame {
-        padding: 20px 20px 24px;
+        padding: 16px 16px 20px;
       }
     }
     @media print {
@@ -450,6 +458,8 @@ export function renderPublicMenu(snapshot: Snapshot): string {
               <div class="brand">mofé</div>
               <h1 class="venue-name">${esc(venue.nameFa)}</h1>
             </div>
+            ${venue.logoUrl ? `
+            <img class="logo-mark" src="${esc(venue.logoUrl)}" alt="" aria-hidden="true" />` : `
             <div class="qr-mark" aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1.5" y="1.5" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
@@ -463,7 +473,7 @@ export function renderPublicMenu(snapshot: Snapshot): string {
                 <rect x="10" y="13" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
                 <rect x="13" y="13" width="4.8" height="4.8" rx="0.8" stroke="currentColor" stroke-width="1.5"/>
               </svg>
-            </div>
+            </div>`}
           </div>
           ${venue.welcomeMessage ? `<p class="welcome">${esc(venue.welcomeMessage)}</p>` : ""}
         </header>
