@@ -2,12 +2,36 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { cleanTestData, seedTestData } from "../helpers";
 import { prisma } from "@/lib/prisma";
 import { renderPublicMenu } from "@/lib/public-menu/renderer";
+import { publishVenueMenu } from "@/lib/public-menu/publication";
+import { DEMO_EMAIL, ensureDemoData } from "@/lib/demo";
+import { verifyPassword } from "@/lib/auth";
 
 let data: Awaited<ReturnType<typeof seedTestData>>;
 
 beforeAll(async () => {
   await cleanTestData();
   data = await seedTestData();
+});
+
+describe("Auth", () => {
+  it("recreates the demo account when missing", async () => {
+    await prisma.session.deleteMany();
+    await prisma.venueMember.deleteMany({ where: { user: { email: DEMO_EMAIL } } });
+    await prisma.user.deleteMany({ where: { email: DEMO_EMAIL } });
+
+    const ensured = await ensureDemoData(prisma);
+    expect(ensured.user.email).toBe(DEMO_EMAIL);
+
+    const user = await prisma.user.findUnique({ where: { email: DEMO_EMAIL } });
+    expect(user).not.toBeNull();
+    expect(user?.status).toBe("active");
+    expect(await verifyPassword("demo1234", user!.passwordHash!)).toBe(true);
+
+    const membership = await prisma.venueMember.findFirst({
+      where: { userId: user!.id, venue: { slug: "nahal-cafe" } },
+    });
+    expect(membership?.role).toBe("owner");
+  });
 });
 
 describe("Categories CRUD", () => {
@@ -260,70 +284,14 @@ describe("Items CRUD", () => {
 describe("Publishing", () => {
   it("creates a snapshot with visible items from active categories", async () => {
     const venue = data.venue;
-    const categories = await prisma.category.findMany({
-      where: { venueId: venue.id, deletedAt: null, active: true },
-      orderBy: { displayOrder: "asc" },
-      include: {
-        menuItems: {
-          where: { deletedAt: null, visibleOnPublicMenu: true },
-          orderBy: { displayOrder: "asc" },
-        },
-      },
-    });
+    const result = await publishVenueMenu(venue.id, data.user.id);
 
-    expect(categories).toHaveLength(2);
-    expect(categories[0].nameFa).toBe("نوشیدنی‌های گرم");
-    expect(categories[1].nameFa).toBe("دسر");
-
-    const snapshot = {
-      venue: {
-        id: venue.id,
-        nameFa: venue.nameFa,
-        nameEn: venue.nameEn,
-        welcomeMessage: venue.welcomeMessage,
-        accentColor: venue.accentColor,
-        slug: venue.slug,
-      },
-      categories: categories
-        .filter((cat) => cat.menuItems.length > 0)
-        .map((cat) => ({
-          id: cat.id,
-          nameFa: cat.nameFa,
-          items: cat.menuItems.map((item) => ({
-            id: item.id,
-            nameFa: item.nameFa,
-            nameEn: item.nameEn,
-            description: item.description,
-            priceToman: item.priceToman,
-            station: item.station,
-            calories: item.calories,
-            soldOut: item.isSoldOut,
-          })),
-        })),
-      generatedAt: new Date().toISOString(),
-    };
-
-    expect(snapshot.categories).toHaveLength(2);
-    expect(snapshot.categories[0].items).toHaveLength(2);
-    expect(snapshot.categories[0].items[0].nameFa).toBe("چای نعناع");
-    expect(snapshot.categories[0].items[1].soldOut).toBe(true);
-
-    const publication = await prisma.menuPublication.create({
-      data: {
-        venueId: venue.id,
-        status: "published",
-        trigger: "manual_publish",
-        snapshot: JSON.stringify(snapshot),
-        completedAt: new Date(),
-      },
-    });
-
-    expect(publication.status).toBe("published");
-
-    await prisma.venue.update({
-      where: { id: venue.id },
-      data: { publicStatus: "published", publishedAt: new Date() },
-    });
+    expect(result).not.toBeNull();
+    expect(result?.publication.status).toBe("published");
+    expect(result?.snapshot.categories).toHaveLength(2);
+    expect(result?.snapshot.categories[0].items).toHaveLength(2);
+    expect(result?.snapshot.categories[0].items[0].nameFa).toBe("چای نعناع");
+    expect(result?.snapshot.categories[0].items[1].soldOut).toBe(true);
 
     const updatedVenue = await prisma.venue.findUnique({ where: { id: venue.id } });
     expect(updatedVenue?.publicStatus).toBe("published");

@@ -4,6 +4,15 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PublicationsClient } from "./PublicationsClient";
 
+const publicationDateFormatter = new Intl.DateTimeFormat("fa-IR", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Tehran",
+});
+
 export default async function PublicationsPage({
   params,
 }: {
@@ -26,6 +35,7 @@ export default async function PublicationsPage({
     status: p.status,
     trigger: p.trigger,
     createdAt: p.createdAt.toISOString(),
+    createdAtLabel: publicationDateFormatter.format(p.createdAt),
   }));
 
   return <PublicationsClient publications={data} />;

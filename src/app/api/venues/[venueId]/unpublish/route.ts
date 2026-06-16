@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { canPublish } from "@/lib/permissions";
-import { prisma } from "@/lib/prisma";
+import { unpublishVenueMenu } from "@/lib/public-menu/publication";
 
 export async function POST(
   _request: Request,
@@ -13,23 +13,6 @@ export async function POST(
   const { venueId } = await params;
   await canPublish(user.id, venueId);
 
-  await prisma.menuPublication.create({
-    data: {
-      venueId,
-      status: "unpublished",
-      trigger: "manual_unpublish",
-      createdByUserId: user.id,
-      completedAt: new Date(),
-    },
-  });
-
-  await prisma.venue.update({
-    where: { id: venueId },
-    data: {
-      publicStatus: "unpublished",
-      unpublishedAt: new Date(),
-    },
-  });
-
-  return NextResponse.json({ success: true });
+  const result = await unpublishVenueMenu(venueId, user.id);
+  return NextResponse.json(result);
 }

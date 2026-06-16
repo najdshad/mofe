@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { PrismaSqlite } from "prisma-adapter-sqlite";
 import { PrismaClient } from "../src/generated/prisma/client.js";
-import bcrypt from "bcryptjs";
+import { DEMO_EMAIL, DEMO_PASSWORD, ensureDemoData } from "../src/lib/demo";
 
 const adapter = new PrismaSqlite({
   url: process.env.DATABASE_URL ?? "file:./dev.db",
@@ -9,43 +9,7 @@ const adapter = new PrismaSqlite({
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const passwordHash = await bcrypt.hash("demo1234", 12);
-
-  const user = await prisma.user.upsert({
-    where: { email: "admin@nahal-cafe.ir" },
-    update: {},
-    create: {
-      name: "مدیر کافه ناهال",
-      email: "admin@nahal-cafe.ir",
-      passwordHash,
-      emailVerifiedAt: new Date(),
-      status: "active",
-    },
-  });
-
-  const venue = await prisma.venue.upsert({
-    where: { slug: "nahal-cafe" },
-    update: {},
-    create: {
-      nameFa: "کافه ناهال",
-      nameEn: "Nahal Cafe",
-      slug: "nahal-cafe",
-      plan: "starter",
-      timezone: "Asia/Tehran",
-      welcomeMessage: "به منوی ما خوش آمدید. سفارش فقط حضوری.",
-      publicStatus: "draft",
-    },
-  });
-
-  await prisma.venueMember.upsert({
-    where: { venueId_userId: { venueId: venue.id, userId: user.id } },
-    update: {},
-    create: {
-      venueId: venue.id,
-      userId: user.id,
-      role: "owner",
-    },
-  });
+  const { user, venue } = await ensureDemoData(prisma);
 
   const categories = [
     { nameFa: "نوشیدنی‌های گرم", displayOrder: 1 },
@@ -56,14 +20,26 @@ async function main() {
 
   const createdCategories: Record<string, string> = {};
   for (const cat of categories) {
-    const created = await prisma.category.create({
-      data: {
-        venueId: venue.id,
-        nameFa: cat.nameFa,
-        displayOrder: cat.displayOrder,
-        active: cat.active ?? true,
-      },
+    const existing = await prisma.category.findFirst({
+      where: { venueId: venue.id, nameFa: cat.nameFa },
     });
+    const created = existing
+      ? await prisma.category.update({
+          where: { id: existing.id },
+          data: {
+            displayOrder: cat.displayOrder,
+            active: cat.active ?? true,
+            deletedAt: null,
+          },
+        })
+      : await prisma.category.create({
+          data: {
+            venueId: venue.id,
+            nameFa: cat.nameFa,
+            displayOrder: cat.displayOrder,
+            active: cat.active ?? true,
+          },
+        });
     createdCategories[cat.nameFa] = created.id;
   }
 
@@ -179,6 +155,28 @@ async function main() {
     const catId = createdCategories[item.category];
     if (!catId) continue;
 
+    const existing = await prisma.menuItem.findFirst({
+      where: { venueId: venue.id, categoryId: catId, nameFa: item.nameFa },
+    });
+
+    if (existing) {
+      await prisma.menuItem.update({
+        where: { id: existing.id },
+        data: {
+          nameEn: item.nameEn,
+          description: item.description,
+          priceToman: item.priceToman,
+          station: item.station,
+          calories: item.calories ?? null,
+          visibleOnPublicMenu: item.visibleOnPublicMenu,
+          isSoldOut: item.isSoldOut,
+          displayOrder: item.displayOrder,
+          deletedAt: null,
+        },
+      });
+      continue;
+    }
+
     await prisma.menuItem.create({
       data: {
         venueId: venue.id,
@@ -198,8 +196,8 @@ async function main() {
 
   console.log("Seed completed successfully");
   console.log(`  Venue: ${venue.nameFa} (${venue.slug})`);
-  console.log(`  Admin email: admin@nahal-cafe.ir`);
-  console.log(`  Password: demo1234`);
+  console.log(`  Admin email: ${DEMO_EMAIL}`);
+  console.log(`  Password: ${DEMO_PASSWORD}`);
 }
 
 main()

@@ -44,6 +44,7 @@ export default async function MenuPage({
     categoryId: i.categoryId,
     categoryNameFa: i.category.nameFa,
     priceToman: i.priceToman,
+    priceFormatted: i.priceToman.toLocaleString("fa-IR"),
     station: i.station,
     visibleOnPublicMenu: i.visibleOnPublicMenu,
     isSoldOut: i.isSoldOut,

@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { requireVenueAccess } from "@/lib/permissions";
+import { canPublish, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import {
+  publishVenueMenu,
+  unpublishVenueMenu,
+} from "@/lib/public-menu/publication";
 
 export async function GET(
   _request: Request,
@@ -28,6 +32,24 @@ export async function PATCH(
   await requireVenueAccess(user.id, venueId);
 
   const body = await request.json();
+
+  if (body?.action === "publish") {
+    await canPublish(user.id, venueId);
+
+    const result = await publishVenueMenu(venueId, user.id);
+    if (!result) {
+      return NextResponse.json({ error: "Venue not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(result);
+  }
+
+  if (body?.action === "unpublish") {
+    await canPublish(user.id, venueId);
+    const result = await unpublishVenueMenu(venueId, user.id);
+    return NextResponse.json(result);
+  }
+
   const venue = await prisma.venue.update({
     where: { id: venueId },
     data: body,

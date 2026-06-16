@@ -18,6 +18,7 @@ npm run db:seed      # Seed demo data
 npm run db:reset     # Full reset + migrate + seed
 npm run db:studio    # Prisma Studio
 ```
+- for internet access, use proxy at 172.25.144.1:10808
 
 ## Must-Do After Every Change
 

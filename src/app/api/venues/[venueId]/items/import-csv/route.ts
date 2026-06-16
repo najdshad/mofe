@@ -1,0 +1,206 @@
+import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
+import { requireVenueAccess } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
+
+function parseCSV(text: string): string[][] {
+  const lines: string[][] = [];
+  let current: string[] = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"' && next === '"') {
+        field += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        field += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ",") {
+        current.push(field.trim());
+        field = "";
+      } else if (ch === "\n" || (ch === "\r" && next === "\n")) {
+        current.push(field.trim());
+        field = "";
+        if (current.some((f) => f.length > 0) || current.length > 0) {
+          lines.push(current);
+        }
+        current = [];
+        if (ch === "\r") i++;
+      } else if (ch === "\r") {
+        current.push(field.trim());
+        field = "";
+        if (current.some((f) => f.length > 0) || current.length > 0) {
+          lines.push(current);
+        }
+        current = [];
+      } else {
+        field += ch;
+      }
+    }
+  }
+
+  if (field.trim() || current.length > 0) {
+    current.push(field.trim());
+    if (current.some((f) => f.length > 0) || current.length > 0) {
+      lines.push(current);
+    }
+  }
+
+  return lines;
+}
+
+function findHeaderIndex(headers: string[], ...names: string[]): number {
+  for (const name of names) {
+    const idx = headers.findIndex(
+      (h) => h.toLowerCase().replace(/[\s_-]/g, "") === name.toLowerCase().replace(/[\s_-]/g, "")
+    );
+    if (idx !== -1) return idx;
+  }
+  return -1;
+}
+
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ venueId: string }> }
+) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { venueId } = await params;
+  await requireVenueAccess(user.id, venueId);
+
+  const body = await request.json();
+  const csvText = body.csv as string;
+
+  if (!csvText || typeof csvText !== "string" || csvText.trim().length === 0) {
+    return NextResponse.json({ error: "محتوای CSV ارسال نشده" }, { status: 400 });
+  }
+
+  const rows = parseCSV(csvText);
+  if (rows.length < 2) {
+    return NextResponse.json({ error: "فایل CSV حداقل باید شامل هدر و یک سطر داده باشد" }, { status: 400 });
+  }
+
+  const headers = rows[0].map((h) => h.trim().toLowerCase());
+  const dataRows = rows.slice(1);
+
+  const idxNameFa = findHeaderIndex(headers, "namefa", "name_fa", "نام فارسی", "name-fa");
+  const idxNameEn = findHeaderIndex(headers, "nameen", "name_en", "نام انگلیسی", "name-en");
+  const idxCategory = findHeaderIndex(headers, "categorynamefa", "category_name_fa", "category", "دسته", "categoryname", "category_name");
+  const idxPrice = findHeaderIndex(headers, "pricetoman", "price_toman", "price", "قیمت", "price-toman");
+  const idxStation = findHeaderIndex(headers, "station", "ایستگاه");
+  const idxDescription = findHeaderIndex(headers, "description", "توضیحات");
+  const idxCalories = findHeaderIndex(headers, "calories", "کالری");
+  const idxVisible = findHeaderIndex(headers, "visibleonpublicmenu", "visible_on_public_menu", "visible", "نمایش");
+  const idxSoldOut = findHeaderIndex(headers, "issoldout", "is_sold_out", "soldout", "sold_out", "ناموجود");
+
+  if (idxNameFa === -1) {
+    return NextResponse.json({ error: "ستون nameFa (نام فارسی) در CSV یافت نشد" }, { status: 400 });
+  }
+  if (idxCategory === -1) {
+    return NextResponse.json({ error: "ستون categoryNameFa (دسته) در CSV یافت نشد" }, { status: 400 });
+  }
+  if (idxPrice === -1) {
+    return NextResponse.json({ error: "ستون priceToman (قیمت) در CSV یافت نشد" }, { status: 400 });
+  }
+
+  const categories = await prisma.category.findMany({
+    where: { venueId, deletedAt: null },
+    select: { id: true, nameFa: true },
+  });
+
+  const categoryMap = new Map<string, string>();
+  for (const cat of categories) {
+    categoryMap.set(cat.nameFa.toLowerCase().trim(), cat.id);
+  }
+
+  const results: { row: number; status: string; nameFa: string; message?: string }[] = [];
+
+  for (let i = 0; i < dataRows.length; i++) {
+    const row = dataRows[i];
+    const rowNum = i + 2;
+
+    const nameFa = row[idxNameFa]?.trim();
+    if (!nameFa) {
+      results.push({ row: rowNum, status: "skipped", nameFa: "", message: "نام فارسی خالی است" });
+      continue;
+    }
+
+    const categoryNameFa = row[idxCategory]?.trim();
+    if (!categoryNameFa) {
+      results.push({ row: rowNum, status: "skipped", nameFa, message: "نام دسته خالی است" });
+      continue;
+    }
+
+    const categoryId = categoryMap.get(categoryNameFa.toLowerCase());
+    if (!categoryId) {
+      results.push({ row: rowNum, status: "skipped", nameFa, message: `دسته "${categoryNameFa}" یافت نشد` });
+      continue;
+    }
+
+    const priceRaw = row[idxPrice]?.trim().replace(/[,\s]/g, "");
+    const priceToman = parseInt(priceRaw, 10);
+    if (isNaN(priceToman) || priceToman < 0) {
+      results.push({ row: rowNum, status: "skipped", nameFa, message: "قیمت نامعتبر است" });
+      continue;
+    }
+
+    const station = row[idxStation]?.trim().toLowerCase();
+    if (station && !["kitchen", "bar"].includes(station)) {
+      results.push({ row: rowNum, status: "skipped", nameFa, message: `ایستگاه "${station}" نامعتبر است (kitchen یا bar)` });
+      continue;
+    }
+
+    const maxOrder = await prisma.menuItem.aggregate({
+      where: { venueId, categoryId, deletedAt: null },
+      _max: { displayOrder: true },
+    });
+
+    const nameEn = idxNameEn !== -1 ? row[idxNameEn]?.trim() || null : null;
+    const description = idxDescription !== -1 ? row[idxDescription]?.trim() || null : null;
+    const caloriesRaw = idxCalories !== -1 ? row[idxCalories]?.trim() : null;
+    const calories = caloriesRaw ? parseInt(caloriesRaw, 10) || null : null;
+    const visibleRaw = idxVisible !== -1 ? row[idxVisible]?.trim().toLowerCase() : null;
+    const visibleOnPublicMenu = visibleRaw === "false" || visibleRaw === "0" || visibleRaw === "no" || visibleRaw === "خیر" ? false : true;
+    const soldOutRaw = idxSoldOut !== -1 ? row[idxSoldOut]?.trim().toLowerCase() : null;
+    const isSoldOut = soldOutRaw === "true" || soldOutRaw === "1" || soldOutRaw === "yes" || soldOutRaw === "بله";
+
+    try {
+      await prisma.menuItem.create({
+        data: {
+          venueId,
+          categoryId,
+          nameFa,
+          nameEn,
+          description,
+          priceToman,
+          station: station || "kitchen",
+          calories,
+          visibleOnPublicMenu,
+          isSoldOut,
+          displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
+        },
+      });
+      results.push({ row: rowNum, status: "created", nameFa });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "خطای ناشناخته";
+      results.push({ row: rowNum, status: "error", nameFa, message });
+    }
+  }
+
+  const created = results.filter((r) => r.status === "created").length;
+  const skipped = results.filter((r) => r.status === "skipped").length;
+  const errors = results.filter((r) => r.status === "error").length;
+
+  return NextResponse.json({ results, summary: { total: results.length, created, skipped, errors } });
+}

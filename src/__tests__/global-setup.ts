@@ -5,8 +5,9 @@ import { execSync } from "child_process";
 const TEST_DB_PATH = join(__dirname, "..", "..", "test.db");
 
 export function setup() {
-  process.env.DATABASE_URL = `file:${TEST_DB_PATH}`;
-  process.env.NODE_ENV = "test";
+  const env = process.env as Record<string, string | undefined>;
+  env.DATABASE_URL = `file:${TEST_DB_PATH}`;
+  env.NODE_ENV = "test";
 
   if (existsSync(TEST_DB_PATH)) {
     unlinkSync(TEST_DB_PATH);

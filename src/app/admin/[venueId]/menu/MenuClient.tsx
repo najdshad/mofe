@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -38,6 +38,7 @@ interface Item {
   categoryId: string;
   categoryNameFa: string;
   priceToman: number;
+  priceFormatted: string;
   station: string;
   visibleOnPublicMenu: boolean;
   isSoldOut: boolean;
@@ -137,7 +138,6 @@ function SortableItemRow({
   onToggleSoldOut,
   onEdit,
   onDelete,
-  formatPrice,
 }: {
   item: Item;
   index: number;
@@ -149,7 +149,6 @@ function SortableItemRow({
   onToggleSoldOut: (v: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
-  formatPrice: (p: number) => string;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = {
@@ -197,7 +196,7 @@ function SortableItemRow({
         {item.calories && <Badge muted>{item.calories} kcal</Badge>}
       </div>
       <div className="text-sm text-ink">
-        {formatPrice(item.priceToman)}
+        {item.priceFormatted}
         <span className="mr-1 text-xs text-ink-muted">تومان</span>
       </div>
       <div>
@@ -543,6 +542,13 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
   const [newItemCategoryId, setNewItemCategoryId] = useState<string | undefined>();
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<{
+    summary: { total: number; created: number; skipped: number; errors: number };
+    details: { row: number; status: string; nameFa: string; message?: string }[];
+  } | null>(null);
+
   const filteredItems = items
     .filter((item) => {
       if (stationFilter !== "all" && item.station !== stationFilter) return false;
@@ -743,6 +749,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
         categoryId: created.categoryId,
         categoryNameFa: category?.nameFa ?? "",
         priceToman: created.priceToman,
+        priceFormatted: created.priceToman.toLocaleString("fa-IR"),
         station: created.station,
         visibleOnPublicMenu: created.visibleOnPublicMenu,
         isSoldOut: created.isSoldOut,
@@ -865,8 +872,68 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     });
   };
 
-  const formatPrice = (price: number) =>
-    price.toLocaleString("fa-IR");
+  const handleExportCSV = () => {
+    const headers = ["nameFa", "nameEn", "categoryNameFa", "priceToman", "station", "description", "calories", "visibleOnPublicMenu", "isSoldOut"];
+    const rows = items.map((item) => [
+      item.nameFa,
+      item.nameEn ?? "",
+      item.categoryNameFa,
+      String(item.priceToman),
+      item.station,
+      item.description ?? "",
+      item.calories != null ? String(item.calories) : "",
+      item.visibleOnPublicMenu ? "true" : "false",
+      item.isSoldOut ? "true" : "false",
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) =>
+        row.map((cell) => {
+          if (cell.includes(",") || cell.includes('"') || cell.includes("\n")) {
+            return `"${cell.replace(/"/g, '""')}"`;
+          }
+          return cell;
+        }).join(",")
+      ),
+    ].join("\n");
+
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `menu-items-${venueId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const res = await fetch(`/api/venues/${venueId}/items/import-csv`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csv: text }),
+      });
+      const data = await res.json();
+      setImportResults(data);
+      if (data.summary?.created > 0) {
+        window.location.reload();
+      }
+    } catch {
+      setImportResults({
+        summary: { total: 0, created: 0, skipped: 0, errors: 1 },
+        details: [{ row: 0, status: "error", nameFa: "", message: "خطا در خواندن فایل" }],
+      });
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleNewItem = (categoryId?: string) => {
     setEditingItem(null);
@@ -982,6 +1049,25 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                 >
                   {selectionMode ? "پایان انتخاب" : "انتخاب چندتایی"}
                 </button>
+                <button
+                  onClick={handleExportCSV}
+                  className="rounded-full border border-line px-3 py-1.5 text-xs text-ink-muted hover:border-ink hover:text-ink transition-colors"
+                >
+                  خروجی CSV
+                </button>
+                <label
+                  className="rounded-full border border-line px-3 py-1.5 text-xs text-ink-muted hover:border-ink hover:text-ink transition-colors cursor-pointer"
+                >
+                  {importing ? "..." : "ورودی CSV"}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={handleImportCSV}
+                    disabled={importing}
+                  />
+                </label>
               </div>
             </div>
 
@@ -1045,7 +1131,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                           setItemModalOpen(true);
                         }}
                         onDelete={() => setDeletingItem(item)}
-                        formatPrice={formatPrice}
                       />
                     ))}
                   </SortableContext>
@@ -1087,7 +1172,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                       {item.calories && <Badge muted>{item.calories} kcal</Badge>}
                     </div>
                     <div className="text-sm text-ink">
-                      {formatPrice(item.priceToman)}
+                      {item.priceFormatted}
                       <span className="mr-1 text-xs text-ink-muted">تومان</span>
                     </div>
                     <div>
@@ -1170,6 +1255,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
       </DeleteConfirmModal>
 
       <ItemModal
+        key={editingItem?.id ?? `new-${newItemCategoryId ?? "default"}`}
         open={itemModalOpen}
         onClose={() => {
           setItemModalOpen(false);
@@ -1189,6 +1275,38 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
       >
         <p>آیتم {deletingItem?.nameFa} حذف شود؟ این عمل قابل بازگشت نیست.</p>
       </DeleteConfirmModal>
+
+      <Modal
+        open={!!importResults}
+        onClose={() => setImportResults(null)}
+        title="نتیجه ورودی CSV"
+      >
+        {importResults && (
+          <div className="space-y-3">
+            <div className="flex gap-4 text-sm">
+              <span className="text-ink">مجموع: {importResults.summary.total}</span>
+              <span className="text-green-700">ایجاد: {importResults.summary.created}</span>
+              {importResults.summary.skipped > 0 && (
+                <span className="text-amber-700">رد شده: {importResults.summary.skipped}</span>
+              )}
+              {importResults.summary.errors > 0 && (
+                <span className="text-red-700">خطا: {importResults.summary.errors}</span>
+              )}
+            </div>
+            {importResults.details.some((d) => d.status !== "created") && (
+              <div className="max-h-48 overflow-y-auto space-y-1 text-xs">
+                {importResults.details
+                  .filter((d) => d.status !== "created")
+                  .map((d) => (
+                    <div key={d.row} className="rounded bg-red-50 px-2 py-1 text-red-700">
+                      سطر {d.row}: {d.nameFa || "(بدون نام)"} — {d.message}
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   );
 }

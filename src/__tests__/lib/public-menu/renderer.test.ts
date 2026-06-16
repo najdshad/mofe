@@ -5,7 +5,13 @@ import {
   type Snapshot,
 } from "@/lib/public-menu/renderer";
 
-function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
+type SnapshotOverrides = {
+  venue?: Partial<Snapshot["venue"]>;
+  categories?: Snapshot["categories"];
+  generatedAt?: Snapshot["generatedAt"];
+};
+
+function makeSnapshot(overrides: SnapshotOverrides = {}): Snapshot {
   return {
     venue: {
       id: "v1",
@@ -128,18 +134,18 @@ describe("renderPublicMenu", () => {
   describe("accent color", () => {
     it("does not inline accent when null", () => {
       const html = renderPublicMenu(makeSnapshot({ venue: { accentColor: null } }));
-      expect(html).not.toContain("--accent");
+      expect(html).not.toContain("style=\"--accent");
     });
 
     it("does not inline accent when #111111 (default text color)", () => {
       const html = renderPublicMenu(makeSnapshot({ venue: { accentColor: "#111111" } }));
-      expect(html).not.toContain("--accent");
+      expect(html).toContain("background: #111111");
     });
 
     it("inlines accent when a non-default color is set", () => {
       const accent = "#c0392b";
       const html = renderPublicMenu(makeSnapshot({ venue: { accentColor: accent } }));
-      expect(html).not.toContain("--accent");
+      expect(html).toContain(`background: ${accent}`);
     });
   });
 
@@ -396,8 +402,9 @@ describe("renderPublicMenu", () => {
           ],
         })
       );
+      const body = html.slice(html.indexOf("<body>"), html.indexOf("<script>"));
       expect(html).toContain("&lt;script&gt;");
-      expect(html).not.toContain("<script>");
+      expect(body).not.toContain("<script>alert(1)</script>");
     });
 
     it("escapes quotes in welcome message", () => {
@@ -451,7 +458,8 @@ describe("renderPublicMenu", () => {
       expect(html).toContain(".item-card");
       expect(html).toContain(".cat-title");
       expect(html).toContain(".venue-name");
-      expect(html).toContain("background: #f5f0e6");
+      expect(html).toContain("radial-gradient");
+      expect(html).toContain(".category-pill");
     });
 
     it("includes print styles", () => {

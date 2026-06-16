@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession, verifyPassword } from "@/lib/auth";
+import { DEMO_EMAIL, ensureDemoData } from "@/lib/demo";
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +14,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user && email.toLowerCase() === DEMO_EMAIL) {
+      const demo = await ensureDemoData(prisma);
+      user = demo.user;
+    }
 
     if (!user || !user.passwordHash) {
       return NextResponse.json(

@@ -97,8 +97,10 @@ export function QRMenuClient({
 
   const handlePublish = async () => {
     setPublishing(true);
-    const res = await fetch(`/api/venues/${venueId}/publish`, {
-      method: "POST",
+    const res = await fetch(`/api/venues/${venueId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "publish" }),
     });
 
     if (res.ok) {
@@ -114,8 +116,10 @@ export function QRMenuClient({
 
   const handleUnpublish = async () => {
     setPublishing(true);
-    const res = await fetch(`/api/venues/${venueId}/unpublish`, {
-      method: "POST",
+    const res = await fetch(`/api/venues/${venueId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "unpublish" }),
     });
 
     if (res.ok) {

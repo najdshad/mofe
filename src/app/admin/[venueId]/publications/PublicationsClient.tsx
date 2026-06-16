@@ -7,6 +7,7 @@ interface Publication {
   status: string;
   trigger: string;
   createdAt: string;
+  createdAtLabel: string;
 }
 
 const statusLabels: Record<string, string> = {
@@ -52,13 +53,7 @@ export function PublicationsClient({
               }`}
             >
               <div className="text-sm text-ink">
-                {new Date(pub.createdAt).toLocaleDateString("fa-IR", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {pub.createdAtLabel}
               </div>
               <div>
                 <span
