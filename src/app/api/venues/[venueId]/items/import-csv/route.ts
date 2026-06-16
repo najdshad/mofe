@@ -96,34 +96,70 @@ export async function POST(
 
   const idxNameFa = findHeaderIndex(headers, "namefa", "name_fa", "نام فارسی", "name-fa");
   const idxNameEn = findHeaderIndex(headers, "nameen", "name_en", "نام انگلیسی", "name-en");
-  const idxCategory = findHeaderIndex(headers, "categorynamefa", "category_name_fa", "category", "دسته", "categoryname", "category_name");
+  const idxCategory = findHeaderIndex(headers,
+    "categorynamefa", "category_name_fa", "category", "دسته", "categoryname", "category_name",
+    "categoryfa", "category_fa", "category-fa",
+  );
   const idxPrice = findHeaderIndex(headers, "pricetoman", "price_toman", "price", "قیمت", "price-toman");
-  const idxStation = findHeaderIndex(headers, "station", "ایستگاه");
+  const idxStation = findHeaderIndex(headers,
+    "station", "ایستگاه",
+    "kitchen|bar", "kitchen-bar", "kitchen_bar", "kitchen/bar",
+  );
   const idxDescription = findHeaderIndex(headers, "description", "توضیحات");
   const idxCalories = findHeaderIndex(headers, "calories", "کالری");
-  const idxVisible = findHeaderIndex(headers, "visibleonpublicmenu", "visible_on_public_menu", "visible", "نمایش");
+  const idxVisible = findHeaderIndex(headers,
+    "visibleonpublicmenu", "visible_on_public_menu", "visible", "نمایش",
+    "visiblepublic", "visible_public", "visible-public",
+  );
   const idxSoldOut = findHeaderIndex(headers, "issoldout", "is_sold_out", "soldout", "sold_out", "ناموجود");
 
   if (idxNameFa === -1) {
     return NextResponse.json({ error: "ستون nameFa (نام فارسی) در CSV یافت نشد" }, { status: 400 });
   }
   if (idxCategory === -1) {
-    return NextResponse.json({ error: "ستون categoryNameFa (دسته) در CSV یافت نشد" }, { status: 400 });
+    return NextResponse.json({ error: "ستون categoryFa (دسته) در CSV یافت نشد" }, { status: 400 });
   }
   if (idxPrice === -1) {
     return NextResponse.json({ error: "ستون priceToman (قیمت) در CSV یافت نشد" }, { status: 400 });
   }
 
-  const categories = await prisma.category.findMany({
+  const now = new Date();
+
+  await prisma.menuItem.updateMany({
     where: { venueId, deletedAt: null },
-    select: { id: true, nameFa: true },
+    data: { deletedAt: now },
   });
 
-  const categoryMap = new Map<string, string>();
-  for (const cat of categories) {
-    categoryMap.set(cat.nameFa.toLowerCase().trim(), cat.id);
+  await prisma.category.updateMany({
+    where: { venueId, deletedAt: null },
+    data: { deletedAt: now },
+  });
+
+  const uniqueCategoryNames: string[] = [];
+  const seenCategories = new Set<string>();
+  for (const row of dataRows) {
+    const name = row[idxCategory]?.trim();
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (!seenCategories.has(key)) {
+      seenCategories.add(key);
+      uniqueCategoryNames.push(name);
+    }
   }
 
+  const categoryMap = new Map<string, string>();
+  for (let i = 0; i < uniqueCategoryNames.length; i++) {
+    const cat = await prisma.category.create({
+      data: {
+        venueId,
+        nameFa: uniqueCategoryNames[i],
+        displayOrder: i,
+      },
+    });
+    categoryMap.set(uniqueCategoryNames[i].toLowerCase(), cat.id);
+  }
+
+  const categoryOrderCounters = new Map<string, number>();
   const results: { row: number; status: string; nameFa: string; message?: string }[] = [];
 
   for (let i = 0; i < dataRows.length; i++) {
@@ -149,8 +185,9 @@ export async function POST(
     }
 
     const priceRaw = row[idxPrice]?.trim().replace(/[,\s]/g, "");
-    const priceToman = parseInt(priceRaw, 10);
-    if (isNaN(priceToman) || priceToman < 0) {
+    let priceToman = parseInt(priceRaw, 10);
+    if (isNaN(priceToman)) priceToman = 0;
+    if (priceToman < 0) {
       results.push({ row: rowNum, status: "skipped", nameFa, message: "قیمت نامعتبر است" });
       continue;
     }
@@ -161,11 +198,6 @@ export async function POST(
       continue;
     }
 
-    const maxOrder = await prisma.menuItem.aggregate({
-      where: { venueId, categoryId, deletedAt: null },
-      _max: { displayOrder: true },
-    });
-
     const nameEn = idxNameEn !== -1 ? row[idxNameEn]?.trim() || null : null;
     const description = idxDescription !== -1 ? row[idxDescription]?.trim() || null : null;
     const caloriesRaw = idxCalories !== -1 ? row[idxCalories]?.trim() : null;
@@ -174,6 +206,9 @@ export async function POST(
     const visibleOnPublicMenu = visibleRaw === "false" || visibleRaw === "0" || visibleRaw === "no" || visibleRaw === "خیر" ? false : true;
     const soldOutRaw = idxSoldOut !== -1 ? row[idxSoldOut]?.trim().toLowerCase() : null;
     const isSoldOut = soldOutRaw === "true" || soldOutRaw === "1" || soldOutRaw === "yes" || soldOutRaw === "بله";
+
+    const order = categoryOrderCounters.get(categoryId) ?? 0;
+    categoryOrderCounters.set(categoryId, order + 1);
 
     try {
       await prisma.menuItem.create({
@@ -188,7 +223,7 @@ export async function POST(
           calories,
           visibleOnPublicMenu,
           isSoldOut,
-          displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
+          displayOrder: order,
         },
       });
       results.push({ row: rowNum, status: "created", nameFa });

@@ -87,7 +87,6 @@ export function renderPublicMenu(snapshot: Snapshot): string {
                 ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
                 <div class="item-meta">
                   ${item.soldOut ? '<span class="badge badge-status">ناموجود</span>' : ""}
-                  <span class="badge">${esc(item.station)}</span>
                   ${item.calories ? `<span class="badge badge-emphasis">${item.calories} kcal</span>` : ""}
                 </div>
               </div>
