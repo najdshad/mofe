@@ -43,6 +43,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Only owners can change passwords" }, { status: 403 });
     }
 
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters" },
+        { status: 400 }
+      );
+    }
+
     const passwordHash = await hashPassword(password);
     await prisma.user.update({
       where: { id: target.userId },

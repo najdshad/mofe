@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession, verifyPassword } from "@/lib/auth";
 import { DEMO_EMAIL, ensureDemoData } from "@/lib/demo";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +11,22 @@ export async function POST(request: Request) {
     if (!email || !password) {
       return NextResponse.json(
         { error: "ایمیل و رمز عبور الزامی است" },
+        { status: 400 }
+      );
+    }
+
+    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const rl = rateLimit(`login:${ip}`);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "تلاش‌های زیاد. لطفاً بعداً تلاش کنید." },
+        { status: 429 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: "رمز عبور باید حداقل ۶ کاراکتر باشد" },
         { status: 400 }
       );
     }

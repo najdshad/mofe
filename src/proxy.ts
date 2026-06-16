@@ -8,20 +8,33 @@ export function proxy(request: NextRequest) {
   const sessionCookie = request.cookies.get("mofe_session");
 
   if (pathname.startsWith("/_next") || pathname.startsWith("/api/auth")) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set("X-Robots-Tag", "noindex");
+    return response;
   }
 
   if (pathname === "/") {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/admin") && !sessionCookie) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(loginUrl);
+  if (pathname.startsWith("/m/")) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/")) {
+    if (!sessionCookie?.value) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  const response = NextResponse.next();
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  return response;
 }
 
 export const config = {

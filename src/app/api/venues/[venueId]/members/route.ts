@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, hashPassword } from "@/lib/auth";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(
   _request: Request,
@@ -52,8 +53,11 @@ export async function POST(
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  if (!password) {
-    return NextResponse.json({ error: "Password is required" }, { status: 400 });
+  if (!password || password.length < 6) {
+    return NextResponse.json(
+      { error: "Password must be at least 6 characters" },
+      { status: 400 }
+    );
   }
 
   const venue = await prisma.venue.findUnique({ where: { id: venueId } });
