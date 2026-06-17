@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getPublicMenuUrl } from "@/lib/config";
 
 export async function buildPublicSnapshot(venueId: string) {
   const venue = await prisma.venue.findUnique({ where: { id: venueId } });
@@ -17,7 +18,7 @@ export async function buildPublicSnapshot(venueId: string) {
     },
   });
 
-  const publicUrl = `https://menu.mofe.ir/m/${venue.slug}`;
+  const publicUrl = getPublicMenuUrl(venue.slug);
 
   return {
     venue: {

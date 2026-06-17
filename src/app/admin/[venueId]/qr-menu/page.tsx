@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { requireVenueAccess, canPublish } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getPublicMenuUrl } from "@/lib/config";
 import { QRMenuClient } from "./QRMenuClient";
 
 export default async function QRMenuPage({
@@ -95,7 +96,7 @@ export default async function QRMenuPage({
       preview={preview}
       hasUnpublishedChanges={hasUnpublishedChanges}
       lastPublicationCompletedAt={lastPublication?.completedAt?.toISOString() ?? null}
-      publicUrl={`https://menu.mofe.ir/m/${venue.slug}`}
+      publicUrl={getPublicMenuUrl(venue.slug)}
     />
   );
 }

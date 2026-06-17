@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getVenueMembership, requireVenueAccess } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getPublicMenuUrl } from "@/lib/config";
 import { SettingsClient } from "./SettingsClient";
 
 export default async function SettingsPage({
@@ -41,6 +42,7 @@ export default async function SettingsPage({
       }))}
       currentUserRole={membership.role}
       currentUserId={user.id}
+      publicMenuDomain={getPublicMenuUrl(venue.slug)}
     />
   );
 }

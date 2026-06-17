@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicPaths = ["/login", "/forgot-password", "/reset-password"];
+const DASHBOARD_PATHS = ["/login", "/forgot-password", "/reset-password", "/venues", "/admin", "/api"];
+
+function matchesDashboard(pathname: string): boolean {
+  return DASHBOARD_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host") || "";
   const sessionCookie = request.cookies.get("mofe_session");
 
   if (pathname.startsWith("/_next") || pathname.startsWith("/api/auth")) {
@@ -13,22 +18,52 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  if (pathname === "/") {
+  const hostname = host.split(":")[0];
+  const isApp = hostname.startsWith("app.");
+  const isMenu = hostname.startsWith("menu.");
+  const isRoot = !isApp && !isMenu;
+
+  if (isMenu) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/m/")) {
-    return NextResponse.next();
-  }
-
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/")) {
-    if (!sessionCookie?.value) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (isApp) {
+    if (pathname === "/") {
+      if (sessionCookie?.value) {
+        return NextResponse.redirect(new URL("/venues", request.url));
       }
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    if (pathname.startsWith("/admin") || pathname.startsWith("/api/")) {
+      if (!sessionCookie?.value) {
+        if (pathname.startsWith("/api/")) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const loginUrl = new URL("/login", request.url);
+        loginUrl.searchParams.set("redirect", pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+    }
+
+    const response = NextResponse.next();
+    response.headers.set("X-Content-Type-Options", "nosniff");
+    return response;
+  }
+
+  if (isRoot) {
+    if (pathname === "/") {
+      return NextResponse.next();
+    }
+
+    if (matchesDashboard(pathname)) {
+      const appUrl = new URL(pathname, `https://app.${hostname}`);
+      return NextResponse.redirect(appUrl, 301);
+    }
+
+    if (pathname.startsWith("/m/")) {
+      const menuUrl = new URL(pathname, `https://menu.${hostname}`);
+      return NextResponse.redirect(menuUrl, 301);
     }
   }
 

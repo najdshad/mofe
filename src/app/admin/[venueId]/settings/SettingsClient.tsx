@@ -26,6 +26,7 @@ interface SettingsClientProps {
   members: Member[];
   currentUserRole: string;
   currentUserId: string;
+  publicMenuDomain: string;
 }
 
 const TIMEZONE_LABELS: Record<string, string> = {
@@ -61,6 +62,7 @@ export function SettingsClient({
   members: initialMembers,
   currentUserRole,
   currentUserId,
+  publicMenuDomain,
 }: SettingsClientProps) {
   const router = useRouter();
   const [nameFa, setNameFa] = useState(initialNameFa);
@@ -347,7 +349,7 @@ export function SettingsClient({
         <p className="text-sm text-ink-muted">
           دامنه پیش‌فرض:{" "}
           <span dir="ltr" className="text-ink">
-            menu.mofe.ir/{slug}
+            {publicMenuDomain}
           </span>
         </p>
         {plan !== "starter" && (
