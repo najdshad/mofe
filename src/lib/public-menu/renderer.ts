@@ -497,6 +497,7 @@ ${FONT_FACE_DECLARATIONS}
           return href ? document.querySelector(href) : null;
         })
         .filter(Boolean);
+      const nav = document.querySelector(".category-nav");
       const activate = (targetId) => {
         pills.forEach((pill) => {
           const active = pill.getAttribute("href") === "#" + targetId;
@@ -504,6 +505,14 @@ ${FONT_FACE_DECLARATIONS}
           if (active) pill.setAttribute("aria-current", "true");
           else pill.removeAttribute("aria-current");
         });
+        const activePill = pills.find((p) => p.classList.contains("active"));
+        if (nav && activePill) {
+          const pillRect = activePill.getBoundingClientRect();
+          const navRect = nav.getBoundingClientRect();
+          if (pillRect.left < navRect.left || pillRect.right > navRect.right) {
+            activePill.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+          }
+        }
       };
       pills.forEach((pill) => {
         pill.addEventListener("click", () => {
@@ -511,17 +520,31 @@ ${FONT_FACE_DECLARATIONS}
           if (href) activate(href.slice(1));
         });
       });
-      if ("IntersectionObserver" in window && sections.length) {
-        const observer = new IntersectionObserver(
-          (entries) => {
-            const visible = entries
-              .filter((entry) => entry.isIntersecting)
-              .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-            if (visible?.target?.id) activate(visible.target.id);
-          },
-          { rootMargin: "-20% 0px -60% 0px", threshold: [0.25, 0.55, 0.8] }
-        );
-        sections.forEach((section) => observer.observe(section));
+      const updateActive = () => {
+        const threshold = 80;
+        let current = sections[0];
+        for (const section of sections) {
+          const top = section.getBoundingClientRect().top;
+          if (top <= threshold) {
+            current = section;
+          } else {
+            break;
+          }
+        }
+        if (current?.id) activate(current.id);
+      };
+      if (sections.length) {
+        let ticking = false;
+        window.addEventListener("scroll", () => {
+          if (!ticking) {
+            requestAnimationFrame(() => {
+              updateActive();
+              ticking = false;
+            });
+            ticking = true;
+          }
+        });
+        updateActive();
       }
     })();
   </script>
