@@ -18,6 +18,7 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | DnD | @dnd-kit/core + @dnd-kit/sortable |
 | QR | `qrcode` (client-side) |
 | CSV | papaparse |
+| Icons | lucide-react |
 | Image Processing | sharp |
 | Testing | Vitest v4 (83 tests) |
 | Runtime | Node 22 |
@@ -65,7 +66,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 
 | Route | Type | Purpose |
 | --- | --- | --- |
-| `/` | Static | Landing page |
+| `/` | Static | Landing page (hero, features, how-it-works, benefits, contact form, footer) |
 | `/login` | Static | Login page (`LoginForm` client component) |
 | `/venues` | Dynamic | Venue picker (auto-redirects if 1 membership) |
 | `/m/[slug]` | Dynamic | Static public menu (~10KB inline HTML, no client JS) |

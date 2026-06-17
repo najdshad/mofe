@@ -62,7 +62,7 @@ mofe-menu/
 │   │   ├── venues/           # Venue picker page
 │   │   ├── globals.css       # Tailwind v4 @theme + font-face declarations + tokens
 │   │   ├── layout.tsx        # Root RTL layout (lang=fa, dir=rtl)
-│   │   └── page.tsx          # Landing page
+│   │   └── page.tsx          # Full landing page with hero, nav, features, how-it-works, benefits, contact form, footer
 │   ├── components/ui/        # 8 reusable components
 │   │   ├── Badge.tsx         # Inline pill (default, soldOut, muted via variant prop)
 │   │   ├── Button.tsx        # forwardRef, 4 variants (primary/secondary/tertiary/destructive), 3 sizes
