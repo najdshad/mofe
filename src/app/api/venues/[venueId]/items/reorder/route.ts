@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManageItems } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
@@ -7,23 +7,25 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ venueId: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const user = await requireAuth();
+    const { venueId } = await params;
+    await canManageItems(user.id, venueId);
 
-  const { venueId } = await params;
-  await canManageItems(user.id, venueId);
+    const body: { orders: { id: string; displayOrder: number }[] } =
+      await request.json();
 
-  const body: { orders: { id: string; displayOrder: number }[] } =
-    await request.json();
+    await prisma.$transaction(
+      body.orders.map((o) =>
+        prisma.menuItem.update({
+          where: { id: o.id, venueId },
+          data: { displayOrder: o.displayOrder },
+        })
+      )
+    );
 
-  await prisma.$transaction(
-    body.orders.map((o) =>
-      prisma.menuItem.update({
-        where: { id: o.id, venueId },
-        data: { displayOrder: o.displayOrder },
-      })
-    )
-  );
-
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    return errorResponse(e);
+  }
 }

@@ -23,7 +23,6 @@ interface SettingsClientProps {
   slug: string;
   timezone: string;
   plan: string;
-  publicStatus: string;
   members: Member[];
   currentUserRole: string;
   currentUserId: string;
@@ -37,7 +36,6 @@ export function SettingsClient({
   slug,
   timezone: initialTimezone,
   plan,
-  publicStatus,
   members: initialMembers,
   currentUserRole,
   currentUserId,

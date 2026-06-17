@@ -83,7 +83,7 @@ Full schema in `prisma/schema.prisma`.
 
 ## 6-16. Design Specifications
 
-See `DESIGN-LANGUAGE.md` for design system, `PRD.MD` for feature details, and `src/lib/public-menu/renderer.ts` for the snapshot shape. The original DEV_PLAN sections 6–16 remain valid as forward-looking design guidance for future milestones.
+See `DESIGN-LANGUAGE.md` for design system, `PRD.md` for feature details, and `src/lib/public-menu/renderer.ts` for the snapshot shape. The original DEV_PLAN sections 6–16 remain valid as forward-looking design guidance for future milestones.
 
 ## 17. API Design
 
@@ -312,7 +312,7 @@ npm run build → 28 routes
 ## 22. Documentation
 
 - `NAVIGATION-GUIDE.md` — Project orientation guide
-- `AGENTS.MD` — AI-assisted development instructions
+- `AGENTS.md` — AI-assisted development instructions
 
 ## 23. Next Steps
 

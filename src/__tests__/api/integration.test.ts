@@ -2,9 +2,17 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { cleanTestData, seedTestData } from "../helpers";
 import { prisma } from "@/lib/prisma";
 import { renderPublicMenu } from "@/lib/public-menu/renderer";
-import { publishVenueMenu } from "@/lib/public-menu/publication";
+import { publishVenueMenu, unpublishVenueMenu, buildPublicSnapshot } from "@/lib/public-menu/publication";
 import { DEMO_EMAIL, ensureDemoData } from "@/lib/demo";
 import { verifyPassword } from "@/lib/auth";
+import {
+  requireVenueAccess,
+  requireRole,
+  canManageCategories,
+  canManageItems,
+  canPublish,
+  getAccessibleVenues,
+} from "@/lib/permissions";
 
 let data: Awaited<ReturnType<typeof seedTestData>>;
 
@@ -425,5 +433,176 @@ describe("Venue Members and Permissions", () => {
     });
     expect(memberships.length).toBeGreaterThanOrEqual(1);
     expect(memberships[0].venue.nameFa).toBe("کافه تست");
+  });
+});
+
+describe("Permission functions", () => {
+  it("requireVenueAccess returns membership for valid member", async () => {
+    const membership = await requireVenueAccess(data.user.id, data.venue.id);
+    expect(membership).not.toBeNull();
+    expect(membership.role).toBe("owner");
+  });
+
+  it("requireVenueAccess throws for non-member", async () => {
+    const otherUser = await prisma.user.create({
+      data: { email: "stranger@test.ir", name: "Stranger", passwordHash: "", status: "active" },
+    });
+    await expect(requireVenueAccess(otherUser.id, data.venue.id)).rejects.toThrow(
+      "Unauthorized: no access to this venue"
+    );
+  });
+
+  it("requireRole accepts owner for owner role", async () => {
+    const membership = await requireRole(data.user.id, data.venue.id, ["owner"]);
+    expect(membership.role).toBe("owner");
+  });
+
+  it("requireRole rejects manager for owner-only role", async () => {
+    const managerUser = await prisma.user.create({
+      data: { email: "manager@test.ir", name: "Manager", passwordHash: "", status: "active" },
+    });
+    await prisma.venueMember.create({
+      data: { venueId: data.venue.id, userId: managerUser.id, role: "manager" },
+    });
+    await expect(requireRole(managerUser.id, data.venue.id, ["owner"])).rejects.toThrow(
+      "Forbidden: requires one of roles owner"
+    );
+  });
+
+  it("requireRole rejects staff for owner/manager role", async () => {
+    const staffUser = await prisma.user.create({
+      data: { email: "staff2@test.ir", name: "Staff2", passwordHash: "", status: "active" },
+    });
+    await prisma.venueMember.create({
+      data: { venueId: data.venue.id, userId: staffUser.id, role: "staff" },
+    });
+    await expect(requireRole(staffUser.id, data.venue.id, ["owner", "manager"])).rejects.toThrow(
+      "Forbidden: requires one of roles owner, manager"
+    );
+  });
+
+  it("requireRole with empty allowedRoles rejects everyone", async () => {
+    await expect(requireRole(data.user.id, data.venue.id, [])).rejects.toThrow(
+      "Forbidden: requires one of roles "
+    );
+  });
+
+  it("canManageCategories returns true for owner", async () => {
+    expect(await canManageCategories(data.user.id, data.venue.id)).toBe(true);
+  });
+
+  it("canManageCategories returns true for manager", async () => {
+    const managerUser = await prisma.user.create({
+      data: { email: "manager2@test.ir", name: "Manager2", passwordHash: "", status: "active" },
+    });
+    await prisma.venueMember.create({
+      data: { venueId: data.venue.id, userId: managerUser.id, role: "manager" },
+    });
+    expect(await canManageCategories(managerUser.id, data.venue.id)).toBe(true);
+  });
+
+  it("canManageCategories returns false for staff", async () => {
+    const staffUser = await prisma.user.create({
+      data: { email: "staff3@test.ir", name: "Staff3", passwordHash: "", status: "active" },
+    });
+    await prisma.venueMember.create({
+      data: { venueId: data.venue.id, userId: staffUser.id, role: "staff" },
+    });
+    expect(await canManageCategories(staffUser.id, data.venue.id)).toBe(false);
+  });
+
+  it("canManageItems and canPublish match canManageCategories", async () => {
+    expect(await canManageItems(data.user.id, data.venue.id)).toBe(
+      await canManageCategories(data.user.id, data.venue.id)
+    );
+    expect(await canPublish(data.user.id, data.venue.id)).toBe(
+      await canManageCategories(data.user.id, data.venue.id)
+    );
+  });
+
+  it("getAccessibleVenues returns all venues for a user", async () => {
+    const memberships = await getAccessibleVenues(data.user.id);
+    expect(memberships.length).toBeGreaterThanOrEqual(1);
+    expect(memberships.some((m) => m.venue.nameFa === "کافه تست")).toBe(true);
+  });
+
+  it("getAccessibleVenues returns empty array for user with no memberships", async () => {
+    const isolatedUser = await prisma.user.create({
+      data: { email: "isolated@test.ir", name: "Isolated", passwordHash: "", status: "active" },
+    });
+    const memberships = await getAccessibleVenues(isolatedUser.id);
+    expect(memberships).toHaveLength(0);
+  });
+});
+
+describe("Publication edge cases", () => {
+  it("buildPublicSnapshot returns null for non-existent venue", async () => {
+    const snapshot = await buildPublicSnapshot("nonexistent-venue-id");
+    expect(snapshot).toBeNull();
+  });
+
+  it("buildPublicSnapshot filters out categories with no visible items", async () => {
+    await prisma.category.create({
+      data: {
+        venueId: data.venue.id,
+        nameFa: "دسته خالی",
+        displayOrder: 99,
+        active: true,
+      },
+    });
+
+    const snapshot = await buildPublicSnapshot(data.venue.id);
+    expect(snapshot).not.toBeNull();
+    const catNames = snapshot!.categories.map((c) => c.nameFa);
+    expect(catNames).not.toContain("دسته خالی");
+  });
+
+  it("buildPublicSnapshot includes only active categories", async () => {
+    const snapshot = await buildPublicSnapshot(data.venue.id);
+    expect(snapshot).not.toBeNull();
+    const catNames = snapshot!.categories.map((c) => c.nameFa);
+    expect(catNames).not.toContain("غذا");
+  });
+
+  it("buildPublicSnapshot includes only visible items", async () => {
+    await prisma.menuItem.update({
+      where: { id: data.items.item1.id },
+      data: { visibleOnPublicMenu: false },
+    });
+
+    const snapshot = await buildPublicSnapshot(data.venue.id);
+    const itemsForCat = snapshot!.categories.find((c) =>
+      c.items.some((i) => i.nameFa === "چای نعناع")
+    );
+    expect(itemsForCat).toBeUndefined();
+
+    await prisma.menuItem.update({
+      where: { id: data.items.item1.id },
+      data: { visibleOnPublicMenu: true },
+    });
+  });
+
+  it("unpublishVenueMenu sets venue to unpublished", async () => {
+    await publishVenueMenu(data.venue.id, data.user.id);
+    const result = await unpublishVenueMenu(data.venue.id, data.user.id);
+    expect(result.success).toBe(true);
+
+    const venue = await prisma.venue.findUnique({ where: { id: data.venue.id } });
+    expect(venue?.publicStatus).toBe("unpublished");
+    expect(venue?.unpublishedAt).not.toBeNull();
+  });
+
+  it("publishVenueMenu can be called after unpublish", async () => {
+    const result = await publishVenueMenu(data.venue.id, data.user.id);
+    expect(result).not.toBeNull();
+    expect(result!.publication.status).toBe("published");
+
+    const venue = await prisma.venue.findUnique({ where: { id: data.venue.id } });
+    expect(venue?.publicStatus).toBe("published");
+  });
+
+  it("publishVenueMenu returns null for non-existent venue", async () => {
+    const result = await publishVenueMenu("nonexistent-id", data.user.id);
+    expect(result).toBeNull();
   });
 });

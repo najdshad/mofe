@@ -9,7 +9,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (83 tests)
+npm test             # Vitest run (130 tests)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -24,7 +24,7 @@ npm run db:studio    # Prisma Studio
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 83 tests pass
+3. `npm test` — all 130 tests pass
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas
@@ -47,12 +47,14 @@ npm run db:studio    # Prisma Studio
 - **Token:** 32-byte random hex, SHA-256 hashed before DB storage
 - **Session TTL:** 7 days
 - **Password:** bcrypt with 12 rounds
-- **Helpers exported:** `hashToken`, `generateToken`, `hashPassword`, `verifyPassword`, `createSession`, `getCurrentUser`, `destroySession`
+- **Auth helpers exported:** `hashToken`, `generateToken`, `hashPassword`, `verifyPassword`, `createSession`, `getCurrentUser`, `destroySession`
+- **Route auth helper:** `requireAuth()` from `@/lib/api-helpers` — used in every API route handler (throws `ApiError` on failure)
+- **Error formatting:** `errorResponse(e)` from `@/lib/api-helpers` — wrap all route handlers in try/catch
 
 ### Permissions
 - 3 roles: `owner`, `manager`, `staff`
 - Helper functions: `requireVenueAccess`, `requireRole`, `canManageCategories`, `canManageItems`, `canPublish`
-- Every API route verifies auth + venue membership
+- Every API route verifies auth (`requireAuth`) + venue membership (`requireVenueAccess`/`requireRole`)
 
 ### Fonts (self-hosted — NO external CDN)
 - 5 font files in `public/fonts/`
@@ -111,6 +113,7 @@ All use `forwardRef` where applicable. Variants:
 | Seed data | `prisma/seed.ts` |
 | DB singleton | `src/lib/prisma.ts` |
 | Auth functions | `src/lib/auth.ts` |
+| Route auth helpers | `src/lib/api-helpers.ts` |
 | Permissions | `src/lib/permissions.ts` |
 | HTML renderer | `src/lib/public-menu/renderer.ts` |
 | Auth proxy | `src/proxy.ts` |
@@ -126,11 +129,13 @@ All use `forwardRef` where applicable. Variants:
 
 ### Adding a new API route
 1. Create `src/app/api/venues/[venueId]/your-entity/route.ts`
-2. Import `getCurrentUser` from `@/lib/auth` and `requireVenueAccess`/`requireRole` from `@/lib/permissions`
+2. Import `requireAuth`, `errorResponse` from `@/lib/api-helpers` and `requireVenueAccess`/`requireRole` from `@/lib/permissions`
 3. Await params: `const { venueId } = await params`
-4. Return `NextResponse.json(...)` with appropriate status
-5. Add tests in `src/__tests__/api/integration.test.ts`
-6. Build + typecheck + test
+4. Wrap handler body in `try { ... } catch (e) { return errorResponse(e); }`
+5. Use `const user = await requireAuth()` for auth, then permission helpers for access control
+6. Return `NextResponse.json(...)` with appropriate status
+7. Add tests in `src/__tests__/api/integration.test.ts`
+8. Build + typecheck + test
 
 ### Adding a new admin page
 1. Create `src/app/admin/[venueId]/your-page/page.tsx` (server component)

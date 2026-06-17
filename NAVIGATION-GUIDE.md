@@ -7,10 +7,10 @@ An orientation for developers working on this project. Covers directory layout, 
 | Document | Purpose |
 | --- | --- |
 | `README.md` | Quick start, routes, features, design tokens |
-| `DEV_PLAN.MD` | Development plan, milestones, API design |
-| `PRD.MD` | Product requirements, built vs. future features |
+| `DEV_PLAN.md` | Development plan, milestones, API design |
+| `PRD.md` | Product requirements, built vs. future features |
 | `DESIGN-LANGUAGE.md` | Full design system specification |
-| `AGENTS.MD` | Agentic development instructions (for AI coding tools) |
+| `AGENTS.md` | Agentic development instructions (for AI coding tools) |
 
 ---
 
@@ -92,16 +92,16 @@ mofe-menu/
 │   │   │                        #   Exports: FONT_FACE_DECLARATIONS, formatPrice
 │   │   └── rate-limit.ts    # In-memory rate limiter with periodic stale-entry cleanup
 │   └── proxy.ts             # Next.js 16 auth proxy (export name: proxy, not middleware)
-├── AGENTS.MD               # AI-assisted development instructions
-├── DESIGN-LANGUAGE.md       # Full design system
-├── DEV_PLAN.MD             # Development plan, milestones, API table
-├── PRD.MD                  # Product requirements
+├── AGENTS.md               # AI-assisted development instructions
+│
+├── DEV_PLAN.md             # Development plan, milestones, API table
+├── PRD.md                  # Product requirements
 ├── sample-csv.csv          # CSV import template (66 sample items)
 ├── docker-compose.yml      # App + nginx services
 ├── Dockerfile              # Multi-stage standalone build
 ├── nginx.conf              # 3 virtual hosts (root, app.*, menu.*)
 ├── next.config.ts           # Security headers, standalone output
-├── prisma.config.ts         # Prisma config (schema, seed, datasource)
+├── prisma.config.ts         # Prisma config (auto-generated, schema, seed, datasource)
 ├── tsconfig.json            # Path alias @/ -> src/
 ├── vitest.config.ts         # Vitest config (globalSetup, aliases)
 └── package.json
@@ -159,6 +159,8 @@ Every admin page follows this pattern:
 - 7-day TTL, revocable
 - Password hashing: bcryptjs, 12 rounds
 - In-memory rate limiter on login (5 attempts/min)
+- Route handler auth: `requireAuth()` from `@/lib/api-helpers` — all API routes use this pattern
+- Error handling: wrap handlers in try/catch with `errorResponse(e)` for consistent JSON errors
 
 ### Permissions
 
@@ -229,7 +231,7 @@ npx prisma migrate dev --name describe_change
 
 ### Running tests
 ```bash
-npm test                # Run all 83 tests
+npm test                # Run all 130 tests
 npm run test:watch      # Watch mode
 ```
 

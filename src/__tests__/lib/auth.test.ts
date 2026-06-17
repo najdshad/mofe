@@ -1,6 +1,4 @@
 import { describe, it, expect } from "vitest";
-import bcrypt from "bcryptjs";
-
 describe("Auth pure functions", () => {
   describe("hashToken", () => {
     it("produces a SHA-256 hex hash (64 chars)", async () => {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManageItems } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
@@ -7,27 +7,29 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ venueId: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const user = await requireAuth();
+    const { venueId } = await params;
+    const canManage = await canManageItems(user.id, venueId);
+    if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { venueId } = await params;
-  const canManage = await canManageItems(user.id, venueId);
-  if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const body: {
+      visible: boolean;
+      station?: string;
+      itemIds?: string[];
+    } = await request.json();
 
-  const body: {
-    visible: boolean;
-    station?: string;
-    itemIds?: string[];
-  } = await request.json();
+    const where: Record<string, unknown> = { venueId, deletedAt: null };
+    if (body.station) where.station = body.station;
+    if (body.itemIds) where.id = { in: body.itemIds };
 
-  const where: Record<string, unknown> = { venueId, deletedAt: null };
-  if (body.station) where.station = body.station;
-  if (body.itemIds) where.id = { in: body.itemIds };
+    const result = await prisma.menuItem.updateMany({
+      where,
+      data: { visibleOnPublicMenu: body.visible },
+    });
 
-  const result = await prisma.menuItem.updateMany({
-    where,
-    data: { visibleOnPublicMenu: body.visible },
-  });
-
-  return NextResponse.json({ updatedCount: result.count });
+    return NextResponse.json({ updatedCount: result.count });
+  } catch (e) {
+    return errorResponse(e);
+  }
 }

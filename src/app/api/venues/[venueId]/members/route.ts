@@ -3,7 +3,6 @@ import { hashPassword } from "@/lib/auth";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(
   _request: Request,

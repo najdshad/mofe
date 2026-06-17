@@ -182,9 +182,9 @@ Run: `npm test` (creates fresh `test.db`, runs tests, cleans up).
 | --- | --- |
 | [`NAVIGATION-GUIDE.md`](./NAVIGATION-GUIDE.md) | Project orientation: directory layout, conventions, architecture, dev tasks |
 | [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md) | Full design system specification (503 lines) |
-| [`DEV_PLAN.MD`](./DEV_PLAN.MD) | Development plan, milestones, API design tables |
-| [`PRD.MD`](./PRD.MD) | Product requirements, built vs. future features |
-| [`AGENTS.MD`](./AGENTS.MD) | AI-assisted development instructions |
+| [`DEV_PLAN.md`](./DEV_PLAN.md) | Development plan, milestones, API design tables |
+| [`PRD.md`](./PRD.md) | Product requirements, built vs. future features |
+| [`AGENTS.md`](./AGENTS.md) | AI-assisted development instructions |
 
 ## Project Structure
 
@@ -241,11 +241,11 @@ mofe-menu/
 │   │   ├── prisma.ts           # Prisma singleton (PrismaSqlite adapter)
 │   │   └── rate-limit.ts       # In-memory rate limiter with periodic cleanup
 │   └── proxy.ts                # Auth proxy (export: proxy, not middleware)
-├── AGENTS.MD                   # AI development instructions
+├── AGENTS.md                   # AI development instructions
 ├── DESIGN-LANGUAGE.md           # Design system
-├── DEV_PLAN.MD                 # Development plan
+├── DEV_PLAN.md                 # Development plan
 ├── NAVIGATION-GUIDE.md          # Project navigation guide
-├── PRD.MD                      # Product requirements
+├── PRD.md                      # Product requirements
 ├── sample-csv.csv              # CSV import template (66 items)
 ├── docker-compose.yml          # App + nginx services
 ├── Dockerfile                  # Multi-stage build
@@ -253,7 +253,7 @@ mofe-menu/
 ├── eslint.config.mjs           # ESLint (Next.js config)
 ├── next.config.ts              # Security headers, standalone output
 ├── postcss.config.mjs          # @tailwindcss/postcss
-├── prisma.config.ts            # Prisma config
+├── prisma.config.ts            # Prisma config (auto-generated)
 ├── tsconfig.json               # Path alias @/ -> src/
 └── vitest.config.ts            # Vitest config
 ```

@@ -9,7 +9,7 @@ const adapter = new PrismaSqlite({
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const { user, venue } = await ensureDemoData(prisma);
+  const { venue } = await ensureDemoData(prisma);
 
   const categories = [
     { nameFa: "نوشیدنی‌های گرم", displayOrder: 1 },

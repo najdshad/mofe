@@ -55,11 +55,6 @@ interface MenuClientProps {
   items: Item[];
 }
 
-const stations = [
-  { value: "kitchen", label: "آشپزخانه" },
-  { value: "bar", label: "بار" },
-];
-
 function SortableCategoryRow({
   cat,
   selected,

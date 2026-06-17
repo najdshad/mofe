@@ -43,10 +43,6 @@ function count(html: string, substr: string): number {
   return (body.match(new RegExp(substr.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length;
 }
 
-function includes(html: string, substr: string): boolean {
-  return html.includes(substr);
-}
-
 describe("renderPublicMenu", () => {
   it("renders a valid HTML document", () => {
     const html = renderPublicMenu(makeSnapshot());

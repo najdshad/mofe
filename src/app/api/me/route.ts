@@ -1,30 +1,30 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { getAccessibleVenues } from "@/lib/permissions";
 
 export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const user = await requireAuth();
+    const memberships = await getAccessibleVenues(user.id);
 
-  const memberships = await getAccessibleVenues(user.id);
-
-  return NextResponse.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    },
-    memberships: memberships.map((m) => ({
-      venueId: m.venueId,
-      role: m.role,
-      venue: {
-        id: m.venue.id,
-        nameFa: m.venue.nameFa,
-        slug: m.venue.slug,
-        publicStatus: m.venue.publicStatus,
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
       },
-    })),
-  });
+      memberships: memberships.map((m) => ({
+        venueId: m.venueId,
+        role: m.role,
+        venue: {
+          id: m.venue.id,
+          nameFa: m.venue.nameFa,
+          slug: m.venue.slug,
+          publicStatus: m.venue.publicStatus,
+        },
+      })),
+    });
+  } catch (e) {
+    return errorResponse(e);
+  }
 }

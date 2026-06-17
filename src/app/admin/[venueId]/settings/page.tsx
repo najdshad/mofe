@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
-import { getVenueMembership, requireVenueAccess } from "@/lib/permissions";
+import { requireVenueAccess } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
@@ -32,7 +32,6 @@ export default async function SettingsPage({
       slug={venue.slug}
       timezone={venue.timezone}
       plan={venue.plan}
-      publicStatus={venue.publicStatus}
       members={members.map((m) => ({
         id: m.id,
         userId: m.userId,
