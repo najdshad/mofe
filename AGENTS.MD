@@ -9,7 +9,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (82 tests)
+npm test             # Vitest run (83 tests)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -24,7 +24,7 @@ npm run db:studio    # Prisma Studio
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 82 tests pass
+3. `npm test` — all 83 tests pass
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas

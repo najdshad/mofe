@@ -10,6 +10,7 @@
     "db:studio": "npx prisma studio",
     "db:migrate": "npx prisma migrate dev",
     "db:seed": "npx prisma db seed",
+    "download:menus": "tsx scripts/download-menus.ts",
     "db:reset": "npx prisma migrate reset --force",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

@@ -40,7 +40,9 @@ Persian-first cafe menu management: admin panel + static QR menus.
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me`
 - `GET /api/venues`, `GET|PATCH /api/venues/[venueId]`
 - `GET|POST /api/venues/[venueId]/categories`, `PATCH|DELETE /api/venues/[venueId]/categories/[id]`, `POST .../categories/reorder`
-- `GET|POST /api/venues/[venueId]/items`, `GET|PATCH|DELETE /api/venues/[venueId]/items/[id]`, `POST .../items/reorder`, `POST .../items/bulk-visibility`
+- `GET|POST /api/venues/[venueId]/items`, `GET|PATCH|DELETE /api/venues/[venueId]/items/[id]`, `POST .../items/reorder`, `POST .../items/bulk-visibility`, `POST .../items/import-csv`
+- `GET|POST /api/venues/[venueId]/members`, `PATCH|DELETE /api/venues/[venueId]/members/[memberId]`
+- `POST|DELETE /api/venues/[venueId]/logo`
 - `GET /api/venues/[venueId]/public-preview`
 - `POST /api/venues/[venueId]/publish`, `POST .../unpublish`
 - `GET /api/venues/[venueId]/publications`
@@ -51,6 +53,27 @@ Persian-first cafe menu management: admin panel + static QR menus.
 - UUID primary keys, soft-delete, money as integer Toman
 - Generated client at `src/generated/prisma`
 
+### Member Management
+- Team members added via `username@venue.slug` email scheme
+- Roles: owner, manager, staff
+- Password management, role changes, member removal
+- Rate-limited login (5 attempts/minute, in-memory)
+
+### Logo Upload
+- sharp-based image processing: auto-resize to 500px, WebP compression (≤50KB)
+- Upload and delete via API
+
+### CSV Import
+- Bulk item import from CSV with smart header detection
+- Auto-creates categories from data rows
+- Batch creation with validation and detailed import report
+- Template available in `sample-csv.csv` (66 sample items)
+
+### Deployment
+- Docker multi-stage build (standalone Next.js output)
+- nginx reverse-proxy config with 3 virtual hosts
+- Docker Compose for app + nginx services
+
 ### Design Language
 - Paper (#f5f0e6) on ink (#111111), minimal borders, no shadows
 - Persian-first: RTL layout, Parastoo font (body), EB Garamond (headings), Vazirmatn fallback
@@ -58,7 +81,7 @@ Persian-first cafe menu management: admin panel + static QR menus.
 - Tailwind CSS v4 with custom theme tokens
 
 ### Testing
-- Vitest v4, 82 tests: 48 renderer, 8 auth, 26 integration
+- Vitest v4, 83 tests: 48 renderer, 8 auth, 27 integration
 - Real SQLite test DB (`test.db`), created fresh per run via `global-setup.ts`
 
 ## Future (Not Yet Built)

@@ -131,7 +131,29 @@ REST endpoints. All mutations require authentication and venue authorization.
 | POST | `/api/venues/:venueId/items/:id/photo` | ❌ Future |
 | DELETE | `/api/venues/:venueId/items/:id/photo` | ❌ Future |
 
-### 17.5 Publishing and QR
+### 17.5 Members
+
+| Method | Endpoint | Status |
+| --- | --- | --- |
+| GET | `/api/venues/:venueId/members` | ✅ List members |
+| POST | `/api/venues/:venueId/members` | ✅ Add member (creates user + membership) |
+| PATCH | `/api/venues/:venueId/members/:memberId` | ✅ Update member role/name/password |
+| DELETE | `/api/venues/:venueId/members/:memberId` | ✅ Remove member |
+
+### 17.6 Assets
+
+| Method | Endpoint | Status |
+| --- | --- | --- |
+| POST | `/api/venues/:venueId/logo` | ✅ Upload venue logo (sharp resize + WebP) |
+| DELETE | `/api/venues/:venueId/logo` | ✅ Delete venue logo |
+
+### 17.7 CSV Import
+
+| Method | Endpoint | Status |
+| --- | --- | --- |
+| POST | `/api/venues/:venueId/items/import-csv` | ✅ Import items from CSV (smart header detection, batch creation) |
+
+### 17.8 Publishing and QR
 
 | Method | Endpoint | Status |
 | --- | --- | --- |
@@ -154,10 +176,10 @@ REST endpoints. All mutations require authentication and venue authorization.
 
 **Framework:** Vitest v4, `singleFork` pool for sequential DB access.
 
-**Test files:** 82 tests total
+**Test files:** 83 tests total
 - `src/__tests__/lib/public-menu/renderer.test.ts` — 48 tests (HTML structure, Persian formatting, escaping, edge cases)
 - `src/__tests__/lib/auth.test.ts` — 8 tests (hashToken, generateToken, hashPassword, verifyPassword)
-- `src/__tests__/api/integration.test.ts` — 26 tests (categories/items CRUD, reorder, bulk visibility, publish workflow, permissions)
+- `src/__tests__/api/integration.test.ts` — 27 tests (categories/items CRUD, reorder, bulk visibility, publish workflow, permissions, CSV import)
 
 **Infrastructure:**
 - `src/__tests__/global-setup.ts` — creates fresh `test.db` with `prisma db push` before all tests, cleans up after
@@ -227,12 +249,12 @@ REST endpoints. All mutations require authentication and venue authorization.
 ### ⏳ Milestone 9 — Domains and Plans (Not started)
 
 ### ⏳ Milestone 10 — Hardening and Launch (Not started)
-- Completed: Vitest test suite with 82 tests
+- Completed: Vitest test suite with 83 tests
 
 ## 20. Current Build
 
 ```
-npm run build → 22 routes
+npm run build → 28 routes
 ├ ○ /                                    (static)
 ├ ○ /_not-found
 ├ ƒ /admin/[venueId]/menu
@@ -251,10 +273,15 @@ npm run build → 22 routes
 ├ ƒ /api/venues/[venueId]/items/[itemId]
 ├ ƒ /api/venues/[venueId]/items/bulk-visibility
 ├ ƒ /api/venues/[venueId]/items/reorder
+├ ƒ /api/venues/[venueId]/items/import-csv
+├ ƒ /api/venues/[venueId]/members
+├ ƒ /api/venues/[venueId]/members/[memberId]
+├ ƒ /api/venues/[venueId]/logo
 ├ ƒ /api/venues/[venueId]/public-preview
 ├ ƒ /api/venues/[venueId]/publications
 ├ ƒ /api/venues/[venueId]/publish
 ├ ƒ /api/venues/[venueId]/unpublish
+├ ƒ /admin/venues/new
 ├ ○ /login                               (static)
 ├ ƒ /m/[slug]
 └ ƒ /venues
@@ -267,19 +294,37 @@ npm run build → 22 routes
 - **Prisma v7** over Drizzle — explicit `prisma-adapter-sqlite`
 - **Query engine type:** `library` (avoids binary dependencies in serverless)
 - **SQLite** for initial dev, migrate to PostgreSQL later
-- **Session-based auth** with HTTP-only cookie
+- **Session-based auth** with HTTP-only cookie (`mofe_session`)
 - **Generated Prisma client** at `src/generated/prisma` (custom output path)
 - **proxy.ts export name** is `proxy` (not `middleware`) per Next.js 16.2.9 convention
+- **Route params** are `Promise<{...}>` — must `await` (Next.js 16 convention)
 - **Public menu** rendered on-the-fly from DB snapshot; CDN upload is future
-- **Fonts:** all self-hosted — Parastoo (primary Persian) → Vazirmatn (fallback) → Tahoma; EB Garamond for serif headings
+- **Fonts:** all self-hosted — 5 files: Parastoo.woff2, Parastoo-Bold.woff2, Vazirmatn-VariableFont_wght.ttf, EBGaramond-VariableFont_wght.ttf, EBGaramond-Italic-VariableFont_wght.ttf
 - **Bulk selection:** toggle mode (انتخاب چندتایی / پایان انتخاب) instead of persistent checkboxes
 - **DnD:** two separate DndContexts (categories sidebar, items within category)
 - **Filtered items sorted** by displayOrder after filter for DnD visual consistency
 - **Test DB:** real SQLite `test.db`, global-setup creates fresh DB per run
+- **Rate limiting:** in-memory `rateMap` on login (5 attempts/minute)
+- **CSV import:** homegrown CSV parser with smart header detection, category auto-creation, import reporting
+- **Logo upload:** sharp-based resize (500px) + WebP compression (≤50KB)
+- **Member login scheme:** `username@venue.slug` email pattern
 
-## 22. Next Steps
+## 22. Documentation
 
-- Photo upload pipeline (Milestone 5 — Sharp + storage abstraction)
-- Development draft preview of public menu
-- Custom domain flows (Milestone 9)
-- Audit log recording on mutations
+- `NAVIGATION-GUIDE.md` — Project orientation guide
+- `AGENTS.MD` — AI-assisted development instructions
+
+## 23. Next Steps
+
+- Photo upload pipeline (Milestone 5 — Sharp is already a dependency, item photo UI not built)
+- Photo management UI for items
+- Custom domain flows (Milestone 9 — Domain model exists, subdomain + CNAME flows not built)
+- CDN upload of static menu HTML
+- Audit log recording on mutations (AuditLog model exists, wiring not done)
+- Password reset flow
+- CSV export functionality
+- Analytics for QR menu views
+- Scheduled visibility by station
+- Menu item variants/sizes
+- Allergen badges
+- PostgreSQL migration path

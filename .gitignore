@@ -27,6 +27,7 @@
 /.cache/
 /tmp/
 /dist/
+downloads/
 
 # OS
 .DS_Store
