@@ -19,10 +19,16 @@ export function LoginForm() {
     setLoading(true);
 
     try {
+      const sanitizedEmail = email.trim();
+      const sanitizedPassword = password.trim();
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: sanitizedEmail,
+          password: sanitizedPassword,
+        }),
       });
 
       if (!res.ok) {
@@ -32,7 +38,8 @@ export function LoginForm() {
       }
 
       const redirect = searchParams.get("redirect") || "/venues";
-      router.push(redirect);
+      const safeRedirect = redirect.startsWith("/") ? redirect : "/venues";
+      router.push(safeRedirect);
       router.refresh();
     } catch {
       setError("خطا در ارتباط با سرور");
@@ -48,13 +55,13 @@ export function LoginForm() {
     >
       <div className="space-y-4">
         <Input
-          label="ایمیل"
-          type="email"
+          label="نام کاربری"
+          type="text"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="admin@example.ir"
+          placeholder="username@venue"
           required
-          autoComplete="email"
+          autoComplete="username"
         />
         <Input
           label="رمز عبور"

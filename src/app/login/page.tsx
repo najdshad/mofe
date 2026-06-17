@@ -13,7 +13,7 @@ export default function LoginPage() {
           <LoginForm />
         </Suspense>
         <p className="mt-4 text-center text-xs text-ink-muted">
-          ایمیل: admin@noghteh / رمز: demo1234
+          کاربر: admin@noghteh / رمز: demo1234
         </p>
       </div>
     </div>

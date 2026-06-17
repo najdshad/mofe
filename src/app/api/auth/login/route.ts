@@ -6,11 +6,20 @@ import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const raw = await request.json();
+    const email = (raw.email ?? "").trim().toLowerCase();
+    const password = (raw.password ?? "").trim();
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "ایمیل و رمز عبور الزامی است" },
+        { error: "نام کاربری و رمز عبور الزامی است" },
+        { status: 400 }
+      );
+    }
+
+    if (!/^[^\s@]+@[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { error: "نام کاربری نامعتبر است" },
         { status: 400 }
       );
     }
@@ -33,14 +42,14 @@ export async function POST(request: Request) {
 
     let user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user && email.toLowerCase() === DEMO_EMAIL) {
+    if (!user && email === DEMO_EMAIL) {
       const demo = await ensureDemoData(prisma);
       user = demo.user;
     }
 
     if (!user || !user.passwordHash) {
       return NextResponse.json(
-        { error: "ایمیل یا رمز عبور اشتباه است" },
+        { error: "نام کاربری یا رمز عبور اشتباه است" },
         { status: 401 }
       );
     }
@@ -55,7 +64,7 @@ export async function POST(request: Request) {
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
       return NextResponse.json(
-        { error: "ایمیل یا رمز عبور اشتباه است" },
+        { error: "نام کاربری یا رمز عبور اشتباه است" },
         { status: 401 }
       );
     }
