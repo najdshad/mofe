@@ -1,63 +1,8 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManageItems } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-
-function parseCSV(text: string): string[][] {
-  const lines: string[][] = [];
-  let current: string[] = [];
-  let field = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const next = text[i + 1];
-
-    if (inQuotes) {
-      if (ch === '"' && next === '"') {
-        field += '"';
-        i++;
-      } else if (ch === '"') {
-        inQuotes = false;
-      } else {
-        field += ch;
-      }
-    } else {
-      if (ch === '"') {
-        inQuotes = true;
-      } else if (ch === ",") {
-        current.push(field.trim());
-        field = "";
-      } else if (ch === "\n" || (ch === "\r" && next === "\n")) {
-        current.push(field.trim());
-        field = "";
-        if (current.some((f) => f.length > 0) || current.length > 0) {
-          lines.push(current);
-        }
-        current = [];
-        if (ch === "\r") i++;
-      } else if (ch === "\r") {
-        current.push(field.trim());
-        field = "";
-        if (current.some((f) => f.length > 0) || current.length > 0) {
-          lines.push(current);
-        }
-        current = [];
-      } else {
-        field += ch;
-      }
-    }
-  }
-
-  if (field.trim() || current.length > 0) {
-    current.push(field.trim());
-    if (current.some((f) => f.length > 0) || current.length > 0) {
-      lines.push(current);
-    }
-  }
-
-  return lines;
-}
+import Papa from "papaparse";
 
 function findHeaderIndex(headers: string[], ...names: string[]): number {
   for (const name of names) {
@@ -73,12 +18,12 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ venueId: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const user = await requireAuth();
 
-  const { venueId } = await params;
-  const canManage = await canManageItems(user.id, venueId);
-  if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const { venueId } = await params;
+    const canManage = await canManageItems(user.id, venueId);
+    if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await request.json();
   const csvText = body.csv as string;
@@ -87,7 +32,8 @@ export async function POST(
     return NextResponse.json({ error: "محتوای CSV ارسال نشده" }, { status: 400 });
   }
 
-  const rows = parseCSV(csvText);
+  const parsed = Papa.parse<string[]>(csvText, { skipEmptyLines: true });
+  const rows = parsed.data;
   if (rows.length < 2) {
     return NextResponse.json({ error: "فایل CSV حداقل باید شامل هدر و یک سطر داده باشد" }, { status: 400 });
   }
@@ -239,4 +185,7 @@ export async function POST(
   const errors = results.filter((r) => r.status === "error").length;
 
   return NextResponse.json({ results, summary: { total: results.length, created, skipped, errors } });
+  } catch (e) {
+    return errorResponse(e);
+  }
 }

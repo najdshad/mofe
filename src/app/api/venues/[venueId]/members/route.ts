@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser, hashPassword } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth";
+import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
@@ -8,29 +9,30 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ venueId: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const user = await requireAuth();
+    const { venueId } = await params;
+    await requireVenueAccess(user.id, venueId);
 
-  const { venueId } = await params;
-  await requireVenueAccess(user.id, venueId);
+    const members = await prisma.venueMember.findMany({
+      where: { venueId },
+      include: { user: true },
+    });
 
-  const members = await prisma.venueMember.findMany({
-    where: { venueId },
-    include: { user: true },
-  });
-
-  return NextResponse.json(members);
+    return NextResponse.json(members);
+  } catch (e) {
+    return errorResponse(e);
+  }
 }
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ venueId: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { venueId } = await params;
-  const membership = await requireVenueAccess(user.id, venueId);
+  try {
+    const user = await requireAuth();
+    const { venueId } = await params;
+    const membership = await requireVenueAccess(user.id, venueId);
 
   if (membership.role !== "owner" && membership.role !== "manager") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -111,4 +113,7 @@ export async function POST(
   });
 
   return NextResponse.json(member, { status: 201 });
+  } catch (e) {
+    return errorResponse(e);
+  }
 }

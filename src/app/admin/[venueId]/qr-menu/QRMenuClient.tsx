@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { QRCodeExport } from "@/components/ui/QRCodeExport";
+import { useStatusMessage } from "@/hooks/useStatusMessage";
+import { formatPrice } from "@/lib/public-menu/renderer";
 
 interface PreviewCategory {
   id: string;
@@ -66,7 +67,6 @@ export function QRMenuClient({
   lastPublicationCompletedAt,
   publicUrl,
 }: QRMenuClientProps) {
-  const router = useRouter();
   const [nameFa, setNameFa] = useState(initialNameFa);
   const [nameEn, setNameEn] = useState(initialNameEn ?? "");
   const [welcomeMessage, setWelcomeMessage] = useState(
@@ -78,7 +78,7 @@ export function QRMenuClient({
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("");
+  const { statusMessage, showStatus } = useStatusMessage();
 
   const handleSaveAppearance = async () => {
     const res = await fetch(`/api/venues/${venueId}`, {
@@ -93,9 +93,7 @@ export function QRMenuClient({
     });
 
     if (res.ok) {
-      setStatusMessage("تغییرات ذخیره شد");
-      setTimeout(() => setStatusMessage(""), 3000);
-      router.refresh();
+      showStatus("تغییرات ذخیره شد");
     }
   };
 
@@ -115,12 +113,10 @@ export function QRMenuClient({
     if (res.ok) {
       const data = await res.json();
       setLogoUrl(data.logoUrl);
-      setStatusMessage("لوگو با موفقیت آپلود شد");
-      setTimeout(() => setStatusMessage(""), 3000);
-      router.refresh();
+      showStatus("لوگو با موفقیت آپلود شد");
     } else {
       const data = await res.json();
-      setStatusMessage(data.error || "خطا در آپلود لوگو");
+      showStatus(data.error || "خطا در آپلود لوگو");
     }
     setUploading(false);
   };
@@ -132,53 +128,41 @@ export function QRMenuClient({
 
     if (res.ok) {
       setLogoUrl("");
-      setStatusMessage("لوگو حذف شد");
-      setTimeout(() => setStatusMessage(""), 3000);
-      router.refresh();
+      showStatus("لوگو حذف شد");
     } else {
-      setStatusMessage("خطا در حذف لوگو");
+      showStatus("خطا در حذف لوگو");
     }
   };
 
   const handlePublish = async () => {
     setPublishing(true);
-    const res = await fetch(`/api/venues/${venueId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "publish" }),
+    const res = await fetch(`/api/venues/${venueId}/publish`, {
+      method: "POST",
     });
 
     if (res.ok) {
       setShowPublishModal(false);
-      setStatusMessage("منو با موفقیت منتشر شد");
-      setTimeout(() => setStatusMessage(""), 3000);
-      router.refresh();
+      showStatus("منو با موفقیت منتشر شد");
     } else {
-      setStatusMessage("خطا در انتشار منو");
+      showStatus("خطا در انتشار منو");
     }
     setPublishing(false);
   };
 
   const handleUnpublish = async () => {
     setPublishing(true);
-    const res = await fetch(`/api/venues/${venueId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "unpublish" }),
+    const res = await fetch(`/api/venues/${venueId}/unpublish`, {
+      method: "POST",
     });
 
     if (res.ok) {
       setShowUnpublishModal(false);
-      setStatusMessage("منو از دسترس خارج شد");
-      setTimeout(() => setStatusMessage(""), 3000);
-      router.refresh();
+      showStatus("منو از دسترس خارج شد");
     } else {
-      setStatusMessage("خطا در لغو انتشار");
+      showStatus("خطا در لغو انتشار");
     }
     setPublishing(false);
   };
-
-  const formatPrice = (price: number) => price.toLocaleString("fa-IR");
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_400px]">

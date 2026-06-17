@@ -17,6 +17,7 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | Auth | Session-based, HTTP-only cookie `mofe_session`, bcryptjs + SHA-256 |
 | DnD | @dnd-kit/core + @dnd-kit/sortable |
 | QR | `qrcode` (client-side) |
+| CSV | papaparse |
 | Image Processing | sharp |
 | Testing | Vitest v4 (83 tests) |
 | Runtime | Node 22 |
@@ -97,7 +98,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 - Search by name (Persian/English), filter by category/station/visibility/sold-out
 - Inline visibility and sold-out toggles
 - Bulk visibility toggle (by IDs or station)
-- CSV import with smart header detection and batch creation
+- CSV import with smart header detection (papaparse) and batch creation
 - Drag-and-drop reorder for categories and items (two separate `DndContext`s)
 
 ### QR Menu Editor
@@ -122,7 +123,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 - 3 roles: owner, manager, staff
 - Role-based enforcement on all API routes via `requireRole()` / `canManage*()` helpers
 - Multi-venue support with membership verification
-- In-memory rate limiting on login (5 attempts/minute)
+- In-memory rate limiting on login (5 attempts/minute) with periodic stale-entry cleanup
 - Session-based auth: SHA-256 token hash, 7-day TTL, HTTP-only cookie, revocable
 
 ### Venue Management
@@ -133,6 +134,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 
 ### CSV Import
 - Smart column header detection (supports multiple naming conventions)
+- Parsed via `papaparse` (reliable edge-case handling)
 - Auto-creates categories from data rows
 - Batch item creation with validation
 - Detailed import report (created/skipped/errors per row)
@@ -214,23 +216,29 @@ mofe-menu/
 │   │   ├── globals.css         # Tailwind v4 @theme + font-face + design tokens
 │   │   ├── layout.tsx          # Root RTL layout
 │   │   └── page.tsx            # Landing page
-│   ├── components/ui/          # 7 reusable components
-│   │   ├── Badge.tsx           # Pills: default, soldOut, muted
+│   ├── components/ui/          # 8 reusable components
+│   │   ├── Badge.tsx           # Pills: default, soldOut, muted (via variant prop)
 │   │   ├── Button.tsx          # forwardRef, 4 variants, 3 sizes
+│   │   ├── Icons.tsx           # SVG icon components (GripIcon, EditIcon, DeleteIcon)
 │   │   ├── Input.tsx           # Label + error + helperText
 │   │   ├── Modal.tsx           # Overlay + Escape + body scroll lock
 │   │   ├── Panel.tsx           # Section container
 │   │   ├── QRCodeExport.tsx    # QR generation, PNG download, PDF print
 │   │   └── Toggle.tsx          # role="switch" pill
 │   ├── generated/prisma/       # Prisma client (auto-generated, custom output)
+│   ├── hooks/
+│   │   └── useStatusMessage.ts # Shared hook: set message + auto-dismiss + router.refresh()
 │   ├── lib/
 │   │   ├── public-menu/        # HTML renderer + publication logic
+│   │   ├── api-helpers.ts      # requireAuth(), errorResponse() — reduce route boilerplate
 │   │   ├── auth.ts             # Session management
 │   │   ├── config.ts           # Domain configuration
+│   │   ├── constants.ts        # TIMEZONE_LABELS, ROLE_LABELS, STATION_LABELS, STATUS_LABELS
 │   │   ├── demo.ts             # Demo data helpers
+│   │   ├── fetch-api.ts        # fetchApi() — typed fetch wrapper with error handling
 │   │   ├── permissions.ts      # Role-based access (owner/manager/staff)
 │   │   ├── prisma.ts           # Prisma singleton (PrismaSqlite adapter)
-│   │   └── rate-limit.ts       # In-memory rate limiter
+│   │   └── rate-limit.ts       # In-memory rate limiter with periodic cleanup
 │   └── proxy.ts                # Auth proxy (export: proxy, not middleware)
 ├── AGENTS.MD                   # AI development instructions
 ├── DESIGN-LANGUAGE.md           # Design system
@@ -253,8 +261,9 @@ mofe-menu/
 
 - **Proxy export:** `src/proxy.ts` exports `proxy` (not `middleware`) — Next.js 16.2.9 convention
 - **Route params:** `params` is `Promise<{...}>` — must `await` per Next.js 16
+- **Route auth:** Use `requireAuth()` from `lib/api-helpers` instead of inline `getCurrentUser()` + 401 check
 - **Prisma client:** Generated at `src/generated/prisma` (custom output path)
-- **Fonts:** All self-hosted at `/fonts/`, no Google Fonts or external CDN — 5 files
+- **Fonts:** All self-hosted at `/fonts/`, no Google Fonts or external CDN — 5 files; `@font-face` declarations live in a shared `FONT_FACE_DECLARATIONS` constant in `renderer.ts`
 - **Tailwind v4:** No config file — CSS-based via `@theme inline {}` in `globals.css`
 - **Query engine:** `library` mode (no binary dependencies)
 - **Design tokens:** CSS vars `--paper`, `--ink`, `--ink-strong`, `--ink-muted`, `--line`, `--surface`

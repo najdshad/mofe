@@ -63,27 +63,34 @@ mofe-menu/
 │   │   ├── globals.css       # Tailwind v4 @theme + font-face declarations + tokens
 │   │   ├── layout.tsx        # Root RTL layout (lang=fa, dir=rtl)
 │   │   └── page.tsx          # Landing page
-│   ├── components/ui/        # 7 reusable components
-│   │   ├── Badge.tsx         # Inline pill (default, soldOut, muted)
+│   ├── components/ui/        # 8 reusable components
+│   │   ├── Badge.tsx         # Inline pill (default, soldOut, muted via variant prop)
 │   │   ├── Button.tsx        # forwardRef, 4 variants (primary/secondary/tertiary/destructive), 3 sizes
+│   │   ├── Icons.tsx         # SVG icon components (GripIcon, EditIcon, DeleteIcon)
 │   │   ├── Input.tsx         # Text input with label, error, helperText; auto-id from label
 │   │   ├── Modal.tsx         # "use client" modal with overlay, Escape, body scroll lock
 │   │   ├── Panel.tsx         # Section container with title/subtitle
 │   │   ├── QRCodeExport.tsx  # Client-side QR generation, PNG download, PDF print
 │   │   └── Toggle.tsx        # role="switch" toggle pill
 │   ├── generated/prisma/     # Auto-generated Prisma client (custom output path)
+│   ├── hooks/
+│   │   └── useStatusMessage.ts  # Shared hook: set message + auto-dismiss + router.refresh()
 │   ├── lib/
+│   │   ├── api-helpers.ts    # requireAuth(), errorResponse() — reduce route auth boilerplate
 │   │   ├── auth.ts           # Session management (createSession, getCurrentUser, destroySession)
 │   │   │                     #   Cookie: mofe_session, SHA-256 token hash, 7-day TTL
 │   │   │                     #   Password: bcryptjs, 12 rounds
 │   │   ├── config.ts         # Domain config (rootDomain, appDomain, menuDomain)
+│   │   ├── constants.ts      # TIMEZONE_LABELS, ROLE_LABELS, STATION_LABELS, STATUS_LABELS
 │   │   ├── demo.ts           # Demo data helpers (ensureDemoData)
+│   │   ├── fetch-api.ts      # fetchApi() — typed fetch wrapper with error handling
 │   │   ├── permissions.ts    # Role-based access (owner/manager/staff)
 │   │   ├── prisma.ts         # Prisma singleton (PrismaSqlite adapter)
 │   │   ├── public-menu/
 │   │   │   ├── publication.ts   # buildPublicSnapshot, publishVenueMenu, unpublishVenueMenu
 │   │   │   └── renderer.ts      # renderPublicMenu (~10KB static HTML), renderUnavailablePage
-│   │   └── rate-limit.ts    # In-memory rate limiter (used on login)
+│   │   │                        #   Exports: FONT_FACE_DECLARATIONS, formatPrice
+│   │   └── rate-limit.ts    # In-memory rate limiter with periodic stale-entry cleanup
 │   └── proxy.ts             # Next.js 16 auth proxy (export name: proxy, not middleware)
 ├── AGENTS.MD               # AI-assisted development instructions
 ├── DESIGN-LANGUAGE.md       # Full design system
@@ -209,8 +216,9 @@ Enforced via `requireRole(userId, venueId, allowedRoles)` or `canManageCategorie
 
 ### Adding a new API endpoint
 1. Create route file in `src/app/api/venues/[venueId]/`
-2. Use `getCurrentUser()` and `requireVenueAccess()` / `requireRole()` for auth
-3. Return `NextResponse.json(...)` with appropriate status
+2. Use `requireAuth()` from `lib/api-helpers` and `requireVenueAccess()` / `requireRole()` for auth
+3. Wrap in try/catch with `errorResponse(e)` for consistent error formatting
+4. Return `NextResponse.json(...)` with appropriate status
 
 ### Adding a migration
 ```bash

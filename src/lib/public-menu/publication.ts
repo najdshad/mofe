@@ -30,6 +30,7 @@ export async function buildPublicSnapshot(venueId: string) {
       logoUrl: venue.logoAssetId,
       slug: venue.slug,
       publicUrl,
+      publicStatus: venue.publicStatus,
     },
     categories: categories
       .filter((cat) => cat.menuItems.length > 0)

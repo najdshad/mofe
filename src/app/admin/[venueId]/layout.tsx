@@ -3,6 +3,7 @@ import { getVenueMembership } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { STATUS_LABELS } from "@/lib/constants";
 
 export default async function AdminLayout({
   children,
@@ -23,12 +24,6 @@ export default async function AdminLayout({
   const venue = await prisma.venue.findUnique({ where: { id: venueId } });
   if (!venue) redirect("/venues");
 
-  const statusLabels: Record<string, string> = {
-    draft: "پیش‌نویس",
-    published: "منتشر شده",
-    unpublished: "منتشر نشده",
-  };
-
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-line bg-paper">
@@ -42,7 +37,7 @@ export default async function AdminLayout({
             </Link>
             <span className="text-sm text-ink-muted">{venue.nameFa}</span>
             <span className="rounded-full border border-line px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-ink-muted">
-              {statusLabels[venue.publicStatus] || venue.publicStatus}
+              {STATUS_LABELS[venue.publicStatus] || venue.publicStatus}
             </span>
           </div>
           <div className="flex items-center gap-4">

@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { GripIcon, EditIcon, DeleteIcon } from "@/components/ui/Icons";
+import { fetchApi } from "@/lib/fetch-api";
 
 interface Category {
   id: string;
@@ -94,7 +96,7 @@ function SortableCategoryRow({
         className="cursor-grab touch-none p-1 text-ink-muted hover:text-ink transition-colors"
         title="جابجایی"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+        <GripIcon size={16} />
       </button>
       <button onClick={onSelect} className="min-w-0 flex-1 text-right">
         <span className="block truncate text-sm text-ink">{cat.nameFa}</span>
@@ -126,6 +128,80 @@ function SortableCategoryRow({
 }
 
 const COL_TEMPLATE = "36px 2fr 1fr 0.8fr 0.8fr 1fr 0.5fr";
+
+function ItemRowContent({
+  item,
+  onToggleVisibility,
+  onToggleSoldOut,
+  onEdit,
+  onDelete,
+}: {
+  item: Item;
+  onToggleVisibility: (v: boolean) => void;
+  onToggleSoldOut: (v: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <>
+      <div>
+        <div className="font-serif text-lg text-ink">{item.nameFa}</div>
+        {item.nameEn && (
+          <div className="mt-0.5 text-sm text-ink-muted">{item.nameEn}</div>
+        )}
+        {item.description && (
+          <div className="mt-1 max-w-xs truncate text-xs leading-relaxed text-ink-muted">
+            {item.description}
+          </div>
+        )}
+        {item.calories && <Badge variant="muted">{item.calories} kcal</Badge>}
+      </div>
+      <div className="text-sm text-ink">
+        {item.priceFormatted}
+        <span className="mr-1 text-xs text-ink-muted">تومان</span>
+      </div>
+      <div>
+        <Badge variant="muted">
+          {item.station === "bar" ? "بار" : "آشپزخانه"}
+        </Badge>
+      </div>
+      <div>
+        <Toggle
+          on={item.visibleOnPublicMenu}
+          onChange={(v) => onToggleVisibility(v)}
+        />
+      </div>
+      <div>
+        {item.isSoldOut ? (
+          <Badge variant="soldOut">ناموجود</Badge>
+        ) : (
+          <button
+            onClick={() => onToggleSoldOut(true)}
+            className="text-xs text-ink-muted hover:text-ink transition-colors"
+          >
+            موجود
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={onEdit}
+          className="p-1 text-ink-muted hover:text-ink transition-colors"
+          title="ویرایش"
+        >
+          <EditIcon size={14} />
+        </button>
+        <button
+          onClick={onDelete}
+          className="p-1 text-ink-muted hover:text-red-600 transition-colors"
+          title="حذف"
+        >
+          <DeleteIcon size={14} />
+        </button>
+      </div>
+    </>
+  );
+}
 
 function SortableItemRow({
   item,
@@ -172,7 +248,7 @@ function SortableItemRow({
           className="cursor-grab touch-none p-0.5 text-ink-muted/40 hover:text-ink-muted transition-colors"
           title="جابجایی"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+          <GripIcon size={14} />
         </button>
         {selectionMode && (
           <input
@@ -183,61 +259,13 @@ function SortableItemRow({
           />
         )}
       </div>
-      <div>
-        <div className="font-serif text-lg text-ink">{item.nameFa}</div>
-        {item.nameEn && (
-          <div className="mt-0.5 text-sm text-ink-muted">{item.nameEn}</div>
-        )}
-        {item.description && (
-          <div className="mt-1 max-w-xs truncate text-xs leading-relaxed text-ink-muted">
-            {item.description}
-          </div>
-        )}
-        {item.calories && <Badge muted>{item.calories} kcal</Badge>}
-      </div>
-      <div className="text-sm text-ink">
-        {item.priceFormatted}
-        <span className="mr-1 text-xs text-ink-muted">تومان</span>
-      </div>
-      <div>
-        <Badge muted>
-          {item.station === "bar" ? "بار" : "آشپزخانه"}
-        </Badge>
-      </div>
-      <div>
-        <Toggle
-          on={item.visibleOnPublicMenu}
-          onChange={(v) => onToggleVisibility(v)}
-        />
-      </div>
-      <div>
-        {item.isSoldOut ? (
-          <Badge variant="soldOut">ناموجود</Badge>
-        ) : (
-          <button
-            onClick={() => onToggleSoldOut(true)}
-            className="text-xs text-ink-muted hover:text-ink transition-colors"
-          >
-            موجود
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={onEdit}
-          className="p-1 text-ink-muted hover:text-ink transition-colors"
-          title="ویرایش"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-        </button>
-        <button
-          onClick={onDelete}
-          className="p-1 text-ink-muted hover:text-red-600 transition-colors"
-          title="حذف"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-        </button>
-      </div>
+      <ItemRowContent
+        item={item}
+        onToggleVisibility={onToggleVisibility}
+        onToggleSoldOut={onToggleSoldOut}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
     </div>
   );
 }
@@ -529,7 +557,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     categories[0]?.id ?? null
   );
   const [searchQuery, setSearchQuery] = useState("");
-  const [stationFilter, setStationFilter] = useState<string>("all");
+
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
@@ -551,7 +579,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
 
   const filteredItems = items
     .filter((item) => {
-      if (stationFilter !== "all" && item.station !== stationFilter) return false;
       if (selectedCategoryId && item.categoryId !== selectedCategoryId) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -577,6 +604,32 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
   const handleClearSelection = () => {
     setSelectedItems(new Set());
     setSelectionMode(false);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedItems.size === 0) return;
+    if (!window.confirm(`آیا از حذف ${selectedItems.size} آیتم انتخاب شده اطمینان دارید؟`)) return;
+    const itemIds = Array.from(selectedItems);
+    const res = await fetch(`/api/venues/${venueId}/items/bulk-delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemIds }),
+    });
+    if (!res.ok) return;
+    const deletedItems = items.filter((i) => itemIds.includes(i.id));
+    const countsByCategory: Record<string, number> = {};
+    for (const item of deletedItems) {
+      countsByCategory[item.categoryId] = (countsByCategory[item.categoryId] || 0) + 1;
+    }
+    setItems((prev) => prev.filter((i) => !itemIds.includes(i.id)));
+    setCategories((prev) =>
+      prev.map((c) =>
+        countsByCategory[c.id]
+          ? { ...c, itemCount: Math.max(0, c.itemCount - countsByCategory[c.id]) }
+          : c
+      )
+    );
+    setSelectedItems(new Set());
   };
 
   const handleBulkVisibility = async (visible: boolean) => {
@@ -648,16 +701,10 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
   };
 
   const handleCreateCategory = async (nameFa: string) => {
-    const res = await fetch(`/api/venues/${venueId}/categories`, {
+    const created = await fetchApi(`/api/venues/${venueId}/categories`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nameFa }),
     });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || "خطا در ایجاد دسته");
-    }
-    const created = await res.json();
     setCategories((prev) => [
       ...prev,
       { ...created, itemCount: 0 },
@@ -666,18 +713,13 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
 
   const handleUpdateCategory = async (nameFa: string) => {
     if (!editingCategory) return;
-    const res = await fetch(
+    await fetchApi(
       `/api/venues/${venueId}/categories/${editingCategory.id}`,
       {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nameFa }),
       }
     );
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || "خطا در ویرایش دسته");
-    }
     setCategories((prev) =>
       prev.map((c) =>
         c.id === editingCategory.id ? { ...c, nameFa } : c
@@ -688,14 +730,10 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
 
   const handleDeleteCategory = async () => {
     if (!deletingCategory) return;
-    const res = await fetch(
+    await fetchApi(
       `/api/venues/${venueId}/categories/${deletingCategory.id}`,
       { method: "DELETE" }
     );
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || "خطا در حذف دسته");
-    }
     setCategories((prev) =>
       prev.filter((c) => c.id !== deletingCategory.id)
     );
@@ -729,16 +767,10 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     visibleOnPublicMenu: boolean;
     isSoldOut: boolean;
   }) => {
-    const res = await fetch(`/api/venues/${venueId}/items`, {
+    const created = await fetchApi(`/api/venues/${venueId}/items`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || "خطا در ایجاد آیتم");
-    }
-    const created = await res.json();
     const category = categories.find((c) => c.id === created.categoryId);
     setItems((prev) => [
       ...prev,
@@ -779,18 +811,13 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     isSoldOut: boolean;
   }) => {
     if (!editingItem) return;
-    const res = await fetch(
+    await fetchApi(
       `/api/venues/${venueId}/items/${editingItem.id}`,
       {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       }
     );
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || "خطا در ویرایش آیتم");
-    }
     const category = categories.find((c) => c.id === data.categoryId);
 
     if (data.categoryId !== editingItem.categoryId) {
@@ -827,14 +854,10 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
 
   const handleDeleteItem = async () => {
     if (!deletingItem) return;
-    const res = await fetch(
+    await fetchApi(
       `/api/venues/${venueId}/items/${deletingItem.id}`,
       { method: "DELETE" }
     );
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || "خطا در حذف آیتم");
-    }
     setItems((prev) => prev.filter((i) => i.id !== deletingItem.id));
     setCategories((prev) =>
       prev.map((c) =>
@@ -1017,15 +1040,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                 />
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <select
-                  value={stationFilter}
-                  onChange={(e) => setStationFilter(e.target.value)}
-                  className="w-full sm:w-auto rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-ink"
-                >
-                  <option value="all">همه ایستگاه‌ها</option>
-                  <option value="kitchen">آشپزخانه</option>
-                  <option value="bar">بار</option>
-                </select>
                 <Button
                   onClick={() => handleNewItem(selectedCategoryId ?? undefined)}
                   size="sm"
@@ -1089,6 +1103,13 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                   onClick={() => handleBulkVisibility(false)}
                 >
                   مخفی از منوی عمومی
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                >
+                  حذف آیتم‌های انتخاب شده
                 </Button>
                 <button
                   onClick={handleClearSelection}
@@ -1155,68 +1176,16 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                         />
                       )}
                     </div>
-                    <div>
-                      <div className="font-serif text-lg text-ink">
-                        {item.nameFa}
-                      </div>
-                      {item.nameEn && (
-                        <div className="mt-0.5 text-sm text-ink-muted">
-                          {item.nameEn}
-                        </div>
-                      )}
-                      {item.description && (
-                        <div className="mt-1 max-w-xs truncate text-xs leading-relaxed text-ink-muted">
-                          {item.description}
-                        </div>
-                      )}
-                      {item.calories && <Badge muted>{item.calories} kcal</Badge>}
-                    </div>
-                    <div className="text-sm text-ink">
-                      {item.priceFormatted}
-                      <span className="mr-1 text-xs text-ink-muted">تومان</span>
-                    </div>
-                    <div>
-                      <Badge muted>
-                        {item.station === "bar" ? "بار" : "آشپزخانه"}
-                      </Badge>
-                    </div>
-                    <div>
-                      <Toggle
-                        on={item.visibleOnPublicMenu}
-                        onChange={(v) => handleToggleVisibility(item.id, v)}
-                      />
-                    </div>
-                    <div>
-                      {item.isSoldOut ? (
-                        <Badge variant="soldOut">ناموجود</Badge>
-                      ) : (
-                        <button
-                          onClick={() => handleToggleSoldOut(item.id, true)}
-                          className="text-xs text-ink-muted hover:text-ink transition-colors"
-                        >
-                          موجود
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => {
-                          setEditingItem(item);
-                          setItemModalOpen(true);
-                        }}
-                        className="p-1 text-ink-muted hover:text-ink transition-colors"
-                        title="ویرایش"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-                      </button>
-                      <button
-                        onClick={() => setDeletingItem(item)}
-                        className="p-1 text-ink-muted hover:text-red-600 transition-colors"
-                        title="حذف"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                      </button>
-                    </div>
+                    <ItemRowContent
+                      item={item}
+                      onToggleVisibility={(v) => handleToggleVisibility(item.id, v)}
+                      onToggleSoldOut={(v) => handleToggleSoldOut(item.id, v)}
+                      onEdit={() => {
+                        setEditingItem(item);
+                        setItemModalOpen(true);
+                      }}
+                      onDelete={() => setDeletingItem(item)}
+                    />
                   </div>
                 ))
               )}

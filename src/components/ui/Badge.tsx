@@ -1,12 +1,10 @@
 interface BadgeProps {
   children: React.ReactNode;
-  muted?: boolean;
-  variant?: "default" | "soldOut" | "hidden";
+  variant?: "default" | "muted" | "soldOut" | "hidden";
 }
 
 export function Badge({
   children,
-  muted = false,
   variant = "default",
 }: BadgeProps) {
   const base =
@@ -14,15 +12,11 @@ export function Badge({
 
   if (variant === "soldOut") {
     return (
-      <span
-        className={`${base} border-ink text-ink`}
-      >
-        {children}
-      </span>
+      <span className={`${base} border-ink text-ink`}>{children}</span>
     );
   }
 
-  if (muted) {
+  if (variant === "muted") {
     return (
       <span className={`${base} border-line text-ink-muted`}>{children}</span>
     );

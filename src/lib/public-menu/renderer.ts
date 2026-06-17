@@ -29,6 +29,42 @@ export interface Snapshot {
   generatedAt: string;
 }
 
+export const FONT_FACE_DECLARATIONS = `    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo-Bold.woff2") format("woff2");
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Vazirmatn";
+      src: url("/fonts/Vazirmatn-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "EB Garamond";
+      src: url("/fonts/EBGaramond-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 400 800;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "EB Garamond";
+      src: url("/fonts/EBGaramond-Italic-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 400 800;
+      font-style: italic;
+      font-display: swap;
+    }`;
+
 function esc(s: string): string {
   return s
     .replace(/&/g, "&amp;")
@@ -38,7 +74,7 @@ function esc(s: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function formatPrice(price: number): string {
+export function formatPrice(price: number): string {
   return price.toLocaleString("fa-IR");
 }
 
@@ -112,41 +148,7 @@ export function renderPublicMenu(snapshot: Snapshot): string {
   <meta name="format-detection" content="telephone=no" />
   <title>${esc(venue.nameFa)} — منو</title>
   <style>
-    @font-face {
-      font-family: "Parastoo";
-      src: url("/fonts/Parastoo.woff2") format("woff2");
-      font-weight: normal;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Parastoo";
-      src: url("/fonts/Parastoo-Bold.woff2") format("woff2");
-      font-weight: bold;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Vazirmatn";
-      src: url("/fonts/Vazirmatn-VariableFont_wght.ttf") format("truetype-variations");
-      font-weight: 100 900;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "EB Garamond";
-      src: url("/fonts/EBGaramond-VariableFont_wght.ttf") format("truetype-variations");
-      font-weight: 400 800;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "EB Garamond";
-      src: url("/fonts/EBGaramond-Italic-VariableFont_wght.ttf") format("truetype-variations");
-      font-weight: 400 800;
-      font-style: italic;
-      font-display: swap;
-    }
+${FONT_FACE_DECLARATIONS}
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html {
       font-size: 16px;
@@ -536,41 +538,7 @@ export function renderUnavailablePage(venueName: string): string {
   <meta name="theme-color" content="#f5f0e6" />
   <title>${esc(venueName)}</title>
   <style>
-    @font-face {
-      font-family: "Parastoo";
-      src: url("/fonts/Parastoo.woff2") format("woff2");
-      font-weight: normal;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Parastoo";
-      src: url("/fonts/Parastoo-Bold.woff2") format("woff2");
-      font-weight: bold;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "Vazirmatn";
-      src: url("/fonts/Vazirmatn-VariableFont_wght.ttf") format("truetype-variations");
-      font-weight: 100 900;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "EB Garamond";
-      src: url("/fonts/EBGaramond-VariableFont_wght.ttf") format("truetype-variations");
-      font-weight: 400 800;
-      font-style: normal;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: "EB Garamond";
-      src: url("/fonts/EBGaramond-Italic-VariableFont_wght.ttf") format("truetype-variations");
-      font-weight: 400 800;
-      font-style: italic;
-      font-display: swap;
-    }
+${FONT_FACE_DECLARATIONS}
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {
