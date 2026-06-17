@@ -19,9 +19,10 @@ export function proxy(request: NextRequest) {
   }
 
   const hostname = host.split(":")[0];
-  const isApp = hostname.startsWith("app.");
-  const isMenu = hostname.startsWith("menu.");
-  const isRoot = !isApp && !isMenu;
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  const isApp = !isLocalhost && hostname.startsWith("app.");
+  const isMenu = !isLocalhost && hostname.startsWith("menu.");
+  const isRoot = !isApp && !isMenu && !isLocalhost;
 
   if (isMenu) {
     return NextResponse.next();
@@ -64,6 +65,17 @@ export function proxy(request: NextRequest) {
     if (pathname.startsWith("/m/")) {
       const menuUrl = new URL(pathname, `https://menu.${hostname}`);
       return NextResponse.redirect(menuUrl, 301);
+    }
+  }
+
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/")) {
+    if (!sessionCookie?.value) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
     }
   }
 
