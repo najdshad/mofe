@@ -3,6 +3,7 @@ import { hashPassword } from "@/lib/auth";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export async function PATCH(
   request: Request,
@@ -63,6 +64,15 @@ export async function PATCH(
       include: { user: true },
     });
 
+    await logAudit({
+      venueId,
+      actorUserId: user.id,
+      action: "member.update",
+      entityType: "member",
+      entityId: memberId,
+      metadata: { changes: Object.keys(updateData) },
+    });
+
     return NextResponse.json(member);
   } catch (e) {
     return errorResponse(e);
@@ -102,7 +112,21 @@ export async function DELETE(
       );
     }
 
+    const deletedMember = await prisma.venueMember.findUnique({
+      where: { id: memberId },
+      include: { user: true },
+    });
+
     await prisma.venueMember.delete({ where: { id: memberId } });
+
+    await logAudit({
+      venueId,
+      actorUserId: user.id,
+      action: "member.delete",
+      entityType: "member",
+      entityId: memberId,
+      metadata: { email: deletedMember?.user.email },
+    });
 
     return NextResponse.json({ success: true });
   } catch (e) {

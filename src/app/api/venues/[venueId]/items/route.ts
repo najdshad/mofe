@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManageItems, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(
   request: Request,
@@ -87,6 +88,15 @@ export async function POST(
         isSoldOut: body.isSoldOut ?? false,
         displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
       },
+    });
+
+    await logAudit({
+      venueId,
+      actorUserId: user.id,
+      action: "item.create",
+      entityType: "item",
+      entityId: item.id,
+      metadata: { nameFa: item.nameFa, categoryId: item.categoryId },
     });
 
     return NextResponse.json(item, { status: 201 });

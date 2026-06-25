@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManageItems } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(
   request: Request,
@@ -23,6 +24,14 @@ export async function POST(
         })
       )
     );
+
+    await logAudit({
+      venueId,
+      actorUserId: user.id,
+      action: "item.reorder",
+      entityType: "item",
+      metadata: { count: body.orders.length },
+    });
 
     return NextResponse.json({ success: true });
   } catch (e) {

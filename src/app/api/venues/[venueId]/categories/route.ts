@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManageCategories } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(
   _request: Request,
@@ -50,6 +51,15 @@ export async function POST(
         displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
         active: body.active ?? true,
       },
+    });
+
+    await logAudit({
+      venueId,
+      actorUserId: user.id,
+      action: "category.create",
+      entityType: "category",
+      entityId: category.id,
+      metadata: { nameFa: category.nameFa },
     });
 
     return NextResponse.json(category, { status: 201 });

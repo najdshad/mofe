@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManageCategories } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export async function PATCH(
   request: Request,
@@ -13,9 +14,19 @@ export async function PATCH(
     await canManageCategories(user.id, venueId);
 
     const body = await request.json();
+
     const category = await prisma.category.update({
       where: { id: categoryId, venueId },
       data: body,
+    });
+
+    await logAudit({
+      venueId,
+      actorUserId: user.id,
+      action: "category.update",
+      entityType: "category",
+      entityId: categoryId,
+      metadata: { changes: Object.keys(body) },
     });
 
     return NextResponse.json(category);
@@ -44,9 +55,22 @@ export async function DELETE(
       );
     }
 
+    const cat = await prisma.category.findUnique({
+      where: { id: categoryId, venueId },
+    });
+
     await prisma.category.update({
       where: { id: categoryId, venueId },
       data: { deletedAt: new Date() },
+    });
+
+    await logAudit({
+      venueId,
+      actorUserId: user.id,
+      action: "category.delete",
+      entityType: "category",
+      entityId: categoryId,
+      metadata: { nameFa: cat?.nameFa },
     });
 
     return NextResponse.json({ success: true });

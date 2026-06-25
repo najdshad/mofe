@@ -3,6 +3,7 @@ import { hashPassword } from "@/lib/auth";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(
   _request: Request,
@@ -109,6 +110,15 @@ export async function POST(
       role: newRole,
     },
     include: { user: true },
+  });
+
+  await logAudit({
+    venueId,
+    actorUserId: user.id,
+    action: "member.create",
+    entityType: "member",
+    entityId: member.id,
+    metadata: { email: targetUser.email, role: newRole },
   });
 
   return NextResponse.json(member, { status: 201 });

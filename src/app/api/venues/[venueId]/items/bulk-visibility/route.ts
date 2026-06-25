@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManageItems } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(
   request: Request,
@@ -26,6 +27,14 @@ export async function POST(
     const result = await prisma.menuItem.updateMany({
       where,
       data: { visibleOnPublicMenu: body.visible },
+    });
+
+    await logAudit({
+      venueId,
+      actorUserId: user.id,
+      action: "item.bulk-visibility",
+      entityType: "item",
+      metadata: { visible: body.visible, itemIds: body.itemIds, station: body.station, count: result.count },
     });
 
     return NextResponse.json({ updatedCount: result.count });

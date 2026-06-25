@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
+import { logAudit } from "@/lib/audit";
 
 export async function buildPublicSnapshot(venueId: string) {
   const venue = await prisma.venue.findUnique({ where: { id: venueId } });
@@ -77,6 +78,15 @@ export async function publishVenueMenu(venueId: string, userId: string) {
     },
   });
 
+  await logAudit({
+    venueId,
+    actorUserId: userId,
+    action: "publish",
+    entityType: "venue",
+    entityId: venueId,
+    metadata: { publicationId: publication.id },
+  });
+
   return { publication, snapshot };
 }
 
@@ -97,6 +107,14 @@ export async function unpublishVenueMenu(venueId: string, userId: string) {
       publicStatus: "unpublished",
       unpublishedAt: new Date(),
     },
+  });
+
+  await logAudit({
+    venueId,
+    actorUserId: userId,
+    action: "unpublish",
+    entityType: "venue",
+    entityId: venueId,
   });
 
   return { success: true };
