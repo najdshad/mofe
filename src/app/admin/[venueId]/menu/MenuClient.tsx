@@ -891,39 +891,10 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
   };
 
   const handleExportCSV = () => {
-    const headers = ["nameFa", "nameEn", "categoryNameFa", "priceToman", "station", "description", "calories", "visibleOnPublicMenu", "isSoldOut"];
-    const rows = items.map((item) => [
-      item.nameFa,
-      item.nameEn ?? "",
-      item.categoryNameFa,
-      String(item.priceToman),
-      item.station,
-      item.description ?? "",
-      item.calories != null ? String(item.calories) : "",
-      item.visibleOnPublicMenu ? "true" : "false",
-      item.isSoldOut ? "true" : "false",
-    ]);
-
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((row) =>
-        row.map((cell) => {
-          if (cell.includes(",") || cell.includes('"') || cell.includes("\n")) {
-            return `"${cell.replace(/"/g, '""')}"`;
-          }
-          return cell;
-        }).join(",")
-      ),
-    ].join("\n");
-
-    const BOM = "\uFEFF";
-    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = `/api/venues/${venueId}/items/export-csv`;
     a.download = `menu-items-${venueId}.csv`;
     a.click();
-    URL.revokeObjectURL(url);
   };
 
   const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
