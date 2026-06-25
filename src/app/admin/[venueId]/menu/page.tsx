@@ -51,6 +51,7 @@ export default async function MenuPage({
     description: i.description,
     calories: i.calories,
     displayOrder: i.displayOrder,
+    photoAssetId: i.photoAssetId,
   }));
 
   return (

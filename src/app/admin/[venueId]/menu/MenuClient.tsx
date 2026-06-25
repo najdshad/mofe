@@ -47,6 +47,7 @@ interface Item {
   description: string | null;
   calories: number | null;
   displayOrder: number;
+  photoAssetId: string | null;
 }
 
 interface MenuClientProps {
@@ -323,6 +324,7 @@ function ItemModal({
   categories,
   initial,
   targetCategoryId,
+  venueId,
 }: {
   open: boolean;
   onClose: () => void;
@@ -340,6 +342,7 @@ function ItemModal({
   categories: { id: string; nameFa: string }[];
   initial?: Item;
   targetCategoryId?: string;
+  venueId: string;
 }) {
   const [nameFa, setNameFa] = useState(initial?.nameFa ?? "");
   const [nameEn, setNameEn] = useState(initial?.nameEn ?? "");
@@ -354,8 +357,50 @@ function ItemModal({
     initial?.visibleOnPublicMenu ?? true
   );
   const [isSoldOut, setIsSoldOut] = useState(initial?.isSoldOut ?? false);
+  const [photoAssetId, setPhotoAssetId] = useState(initial?.photoAssetId ?? null);
+  const [photoLoading, setPhotoLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !initial) return;
+    setPhotoLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const res = await fetch(`/api/venues/${venueId}/items/${initial.id}/photo`, {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPhotoAssetId(data.photoUrl);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setPhotoLoading(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    if (!initial) return;
+    setPhotoLoading(true);
+    try {
+      const res = await fetch(`/api/venues/${venueId}/items/${initial.id}/photo`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setPhotoAssetId(null);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setPhotoLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!nameFa.trim()) {
@@ -493,6 +538,41 @@ function ItemModal({
             <span className="text-sm text-ink">ناموجود</span>
           </label>
         </div>
+        {initial && (
+          <div className="space-y-1.5">
+            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+              عکس
+            </label>
+            <div className="flex items-center gap-3">
+              {photoAssetId && (
+                <img
+                  src={photoAssetId}
+                  alt=""
+                  className="h-16 w-16 rounded-xl border border-line object-cover"
+                />
+              )}
+              <label className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs text-ink-muted hover:border-ink hover:text-ink transition-colors">
+                {photoLoading ? "..." : photoAssetId ? "تغییر عکس" : "افزودن عکس"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                  disabled={photoLoading}
+                />
+              </label>
+              {photoAssetId && (
+                <button
+                  onClick={handlePhotoDelete}
+                  disabled={photoLoading}
+                  className="text-xs text-ink-muted hover:text-red-600 transition-colors"
+                >
+                  حذف
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
     </Modal>
@@ -783,6 +863,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
         description: created.description,
         calories: created.calories,
         displayOrder: created.displayOrder,
+        photoAssetId: created.photoAssetId ?? null,
       },
     ]);
     setCategories((prev) =>
@@ -1200,6 +1281,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
         categories={categories.map((c) => ({ id: c.id, nameFa: c.nameFa }))}
         initial={editingItem ?? undefined}
         targetCategoryId={newItemCategoryId}
+        venueId={venueId}
       />
 
       <DeleteConfirmModal
