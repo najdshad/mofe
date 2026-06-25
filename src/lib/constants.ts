@@ -30,3 +30,13 @@ export const STATUS_LABELS: Record<string, string> = {
   published: "منتشر شده",
   unpublished: "منتشر نشده",
 };
+
+export const DAY_LABELS: Record<number, string> = {
+  0: "شنبه",
+  1: "یکشنبه",
+  2: "دوشنبه",
+  3: "سه‌شنبه",
+  4: "چهارشنبه",
+  5: "پنجشنبه",
+  6: "جمعه",
+};

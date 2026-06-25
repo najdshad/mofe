@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Toggle } from "@/components/ui/Toggle";
 import { Modal } from "@/components/ui/Modal";
-import { TIMEZONE_LABELS, ROLE_LABELS } from "@/lib/constants";
+import { TIMEZONE_LABELS, ROLE_LABELS, STATION_LABELS, DAY_LABELS } from "@/lib/constants";
 
 interface Member {
   id: string;
@@ -59,6 +60,68 @@ export function SettingsClient({
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [schedules, setSchedules] = useState<{ station: string; dayOfWeek: number; startTime: string; endTime: string; isActive: boolean }[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleStatus, setScheduleStatus] = useState("");
+
+  useEffect(() => {
+    fetch(`/api/venues/${venueId}/schedules`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setSchedules(data);
+      })
+      .catch(() => {});
+  }, [venueId]);
+
+  const handleScheduleToggle = (station: string, dayOfWeek: number) => {
+    setSchedules((prev) => {
+      const existing = prev.find((s) => s.station === station && s.dayOfWeek === dayOfWeek);
+      if (existing) {
+        return prev.map((s) =>
+          s.station === station && s.dayOfWeek === dayOfWeek
+            ? { ...s, isActive: !s.isActive }
+            : s
+        );
+      }
+      return [...prev, { station, dayOfWeek, startTime: "08:00", endTime: "23:00", isActive: true }];
+    });
+  };
+
+  const handleScheduleTime = (station: string, dayOfWeek: number, field: "startTime" | "endTime", value: string) => {
+    setSchedules((prev) => {
+      const existing = prev.find((s) => s.station === station && s.dayOfWeek === dayOfWeek);
+      if (existing) {
+        return prev.map((s) =>
+          s.station === station && s.dayOfWeek === dayOfWeek ? { ...s, [field]: value } : s
+        );
+      }
+      return [...prev, { station, dayOfWeek, startTime: field === "startTime" ? value : "08:00", endTime: field === "endTime" ? value : "23:00", isActive: true }];
+    });
+  };
+
+  const handleSaveSchedules = async () => {
+    setScheduleLoading(true);
+    setScheduleStatus("");
+    try {
+      const res = await fetch(`/api/venues/${venueId}/schedules`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schedules }),
+      });
+      if (res.ok) {
+        setScheduleStatus("ذخیره شد");
+        setTimeout(() => setScheduleStatus(""), 3000);
+      } else {
+        const data = await res.json();
+        setScheduleStatus(data.error || "خطا");
+      }
+    } catch {
+      setScheduleStatus("خطا در ذخیره");
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
 
   const canManage = currentUserRole === "owner" || currentUserRole === "manager";
   const isOwner = currentUserRole === "owner";
@@ -320,6 +383,51 @@ export function SettingsClient({
         {error && (
           <p className="mt-3 text-sm text-red-600">{error}</p>
         )}
+      </Panel>
+
+      <Panel title="زمان‌بندی ایستگاه‌ها" subtitle="تنظیم ساعات فعالیت آشپزخانه و بار">
+        <div className="space-y-4">
+          {["kitchen", "bar"].map((station) => (
+            <div key={station}>
+              <h4 className="mb-2 text-sm text-ink">{STATION_LABELS[station] || station}</h4>
+              <div className="space-y-1">
+                {[0, 1, 2, 3, 4, 5, 6].map((day) => {
+                  const s = schedules.find((sch) => sch.station === station && sch.dayOfWeek === day);
+                  const active = s?.isActive ?? false;
+                  return (
+                    <div key={day} className="flex items-center gap-2 rounded-xl border border-line px-3 py-2">
+                      <Toggle on={active} onChange={() => handleScheduleToggle(station, day)} />
+                      <span className="w-20 text-xs text-ink">{DAY_LABELS[day]}</span>
+                      {active && (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="time"
+                            value={s?.startTime ?? "08:00"}
+                            onChange={(e) => handleScheduleTime(station, day, "startTime", e.target.value)}
+                            className="w-20 rounded-lg border border-line bg-surface px-2 py-1 text-xs text-ink focus:border-ink focus:outline-none"
+                          />
+                          <span className="text-xs text-ink-muted">تا</span>
+                          <input
+                            type="time"
+                            value={s?.endTime ?? "23:00"}
+                            onChange={(e) => handleScheduleTime(station, day, "endTime", e.target.value)}
+                            className="w-20 rounded-lg border border-line bg-surface px-2 py-1 text-xs text-ink focus:border-ink focus:outline-none"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          <div className="flex items-center gap-3">
+            <Button size="sm" onClick={handleSaveSchedules} disabled={scheduleLoading}>
+              {scheduleLoading ? "..." : "ذخیره زمان‌بندی"}
+            </Button>
+            {scheduleStatus && <span className="text-xs text-ink-muted">{scheduleStatus}</span>}
+          </div>
+        </div>
       </Panel>
 
       <Panel title="دامنه">
