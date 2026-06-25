@@ -23,6 +23,7 @@ model User {
   uploadedAssets   Asset[]       @relation("UploadedAssets")
   authoredLogs     AuditLog[]    @relation("ActorLogs")
   createdPublications MenuPublication[] @relation("PublicationCreator")
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Venue {
@@ -48,6 +49,8 @@ model Venue {
   publications MenuPublication[]
   domains      Domain[]
   auditLogs    AuditLog[]
+  stationSchedules StationSchedule[]
+  
 }
 
 model VenueMember {
@@ -102,6 +105,8 @@ model MenuItem {
 
   venue    Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id])
+  variants MenuItemVariant[]
+  allergens MenuItemAllergen[]
 
   @@index([venueId, categoryId, displayOrder])
   @@index([venueId, visibleOnPublicMenu])
@@ -158,6 +163,50 @@ model Domain {
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 }
 
+model StationSchedule {
+  id         String   @id @default(uuid())
+  venueId    String
+  station    String
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId, station])
+  @@index([venueId, dayOfWeek])
+}
+
+model MenuItemVariant {
+  id          String   @id @default(uuid())
+  menuItemId  String
+  nameFa      String
+  nameEn      String?
+  priceModifier Int    @default(0)
+  displayOrder Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@index([menuItemId, displayOrder])
+}
+
+model MenuItemAllergen {
+  id           String   @id @default(uuid())
+  menuItemId   String
+  allergenCode String
+  createdAt    DateTime @default(now())
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([menuItemId, allergenCode])
+  @@index([menuItemId])
+}
+
 model AuditLog {
   id          String   @id @default(uuid())
   venueId     String?
@@ -170,6 +219,19 @@ model AuditLog {
 
   venue Venue? @relation(fields: [venueId], references: [id])
   actor User?  @relation("ActorLogs", fields: [actorUserId], references: [id])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Session {

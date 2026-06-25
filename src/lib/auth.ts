@@ -78,3 +78,38 @@ export async function verifyPassword(password: string, hash: string) {
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 12);
 }
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+export async function createPasswordResetToken(userId: string) {
+  const token = generateToken();
+  const tokenHash = hashToken(token);
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+
+  await prisma.passwordResetToken.create({
+    data: { userId, tokenHash, expiresAt },
+  });
+
+  return token;
+}
+
+export async function validatePasswordResetToken(token: string) {
+  const tokenHash = hashToken(token);
+  const record = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: { user: true },
+  });
+
+  if (!record || record.usedAt || record.expiresAt < new Date()) {
+    return null;
+  }
+
+  return record;
+}
+
+export async function consumePasswordResetToken(id: string) {
+  await prisma.passwordResetToken.update({
+    where: { id },
+    data: { usedAt: new Date() },
+  });
+}

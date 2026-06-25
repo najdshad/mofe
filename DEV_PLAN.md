@@ -174,12 +174,15 @@ REST endpoints. All mutations require authentication and venue authorization.
 
 ## 18. Testing
 
-**Framework:** Vitest v4, `singleFork` pool for sequential DB access.
+**Framework:** Vitest v4, default pool.
 
-**Test files:** 83 tests total
+**Test files:** 130 tests across 6 files
 - `src/__tests__/lib/public-menu/renderer.test.ts` — 48 tests (HTML structure, Persian formatting, escaping, edge cases)
+- `src/__tests__/api/integration.test.ts` — 46 tests (auth, categories/items CRUD, reorder, bulk visibility, publish workflow, permissions, CSV import, publication edge cases, public menu rendering)
+- `src/__tests__/lib/api-helpers.test.ts` — 12 tests (ApiError, errorResponse, requireAuth, getCurrentUser edge cases)
 - `src/__tests__/lib/auth.test.ts` — 8 tests (hashToken, generateToken, hashPassword, verifyPassword)
-- `src/__tests__/api/integration.test.ts` — 27 tests (categories/items CRUD, reorder, bulk visibility, publish workflow, permissions, CSV import)
+- `src/__tests__/lib/config.test.ts` — 8 tests (getPublicMenuUrl)
+- `src/__tests__/lib/rate-limit.test.ts` — 8 tests (rateLimit helper)
 
 **Infrastructure:**
 - `src/__tests__/global-setup.ts` — creates fresh `test.db` with `prisma db push` before all tests, cleans up after
@@ -248,8 +251,8 @@ REST endpoints. All mutations require authentication and venue authorization.
 
 ### ⏳ Milestone 9 — Domains and Plans (Not started)
 
-### ⏳ Milestone 10 — Hardening and Launch (Not started)
-- Completed: Vitest test suite with 83 tests
+### ⏳ Milestone 10 — Hardening and Launch (Partially started)
+- Completed: Vitest test suite with 130 tests, 6 test files
 
 ## 20. Current Build
 
@@ -314,17 +317,62 @@ npm run build → 28 routes
 - `NAVIGATION-GUIDE.md` — Project orientation guide
 - `AGENTS.md` — AI-assisted development instructions
 
-## 23. Next Steps
+## 23. Prioritized Roadmap
 
-- Photo upload pipeline (Milestone 5 — Sharp is already a dependency, item photo UI not built)
-- Photo management UI for items
-- Custom domain flows (Milestone 9 — Domain model exists, subdomain + CNAME flows not built)
-- CDN upload of static menu HTML
-- Audit log recording on mutations (AuditLog model exists, wiring not done)
-- Password reset flow
-- CSV export functionality
-- Analytics for QR menu views
-- Scheduled visibility by station
-- Menu item variants/sizes
-- Allergen badges
-- PostgreSQL migration path
+Ordered by value, dependencies, and effort. Tasks with existing models/infra come first.
+
+### Priority 1 — Password Reset Flow
+- `POST /api/auth/password-reset/request` and `POST /api/auth/password-reset/confirm` endpoints
+- Reset token generation, email delivery, expiry, confirmation
+- UI: request form + reset form + confirmation
+- No new models needed — self-contained user auth feature
+
+### Priority 2 — Audit Log Wiring
+- `AuditLog` model exists — wire recording into all mutation handlers (categories CUD, items CUD, publish/unpublish, member management)
+- Adds debugging and accountability with minimal schema work
+
+### Priority 3 — CSV Export
+- Mirrors existing CSV import pattern (smart header detection, batch ops, import reporting)
+- Endpoint + download UI
+- Schema, parser, and endpoint pattern all proven
+
+### Priority 4 — Photo Upload for Items (Milestone 5)
+- Sharp already installed, logo upload is a reference implementation
+- `POST|DELETE /api/venues/:venueId/items/:id/photo` endpoints
+- Item photo UI in admin panel
+- Requires Arvan Object Storage or local filesystem fallback
+
+### Priority 5 — Scheduled Visibility by Station
+- Operational value: e.g. "bar closed after 6pm", "kitchen opens at 8am"
+- Time-based visibility rules on stations
+- UI for configuring schedules
+
+### Priority 6 — Menu Item Variants / Sizes
+- Schema changes: variant model (name, price modifier)
+- UI: variant editor in item form
+- Renderer: display options on public menu
+
+### Priority 7 — Allergen Badges
+- Small schema addition + renderer update
+- Badges displayed on public menu items
+- Quick win, low effort
+
+### Priority 8 — Custom Domains (Milestone 9)
+- `Domain` model exists, subdomain + CNAME flows not built
+- `GET|POST /api/venues/:venueId/domain`, `POST .../verify`, `DELETE .../:id`
+- DNS verification, routing, SSL
+- High value for multi-venue pro plans but complex implementation
+
+### Priority 9 — CDN Upload of Static Menu HTML
+- Needs CDN infrastructure in place
+- Upload publication snapshots on publish
+- Serve from CDN instead of DB on public route
+
+### Priority 10 — Analytics for QR Menu Views
+- Tracking pixel or server-side view logging
+- Dashboard for view counts
+- Needs tracking infra; nice-to-have
+
+### Infrastructure — PostgreSQL Migration
+- Prerequisite for production launch
+- Requires adapter swap, connection pooling, migration workflow
