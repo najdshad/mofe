@@ -7,7 +7,14 @@ function createPrismaClient() {
   const adapter = new PrismaSqlite({
     url: process.env.DATABASE_URL ?? "file:./dev.db",
   });
-  return new PrismaClient({ adapter });
+  const client = new PrismaClient({ adapter });
+
+  client.$executeRawUnsafe("PRAGMA journal_mode=WAL").catch(() => {
+    // Non-fatal; WAL mode improves concurrent write performance
+  });
+  client.$executeRawUnsafe("PRAGMA busy_timeout=5000").catch(() => {});
+
+  return client;
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
