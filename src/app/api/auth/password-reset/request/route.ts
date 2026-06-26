@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPasswordResetToken } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { sendPasswordResetEmail } from "@/lib/mailer";
 
 export async function POST(request: Request) {
   try {
@@ -34,6 +35,10 @@ export async function POST(request: Request) {
 
     const token = await createPasswordResetToken(user.id);
     const resetUrl = `${new URL(request.url).origin}/password-reset/${token}`;
+
+    sendPasswordResetEmail(email, resetUrl).catch(() => {
+      // Email delivery is non-blocking; reset URL still works
+    });
 
     return NextResponse.json({ resetUrl, message: "لینک بازنشانی رمز عبور ایجاد شد" });
   } catch {
