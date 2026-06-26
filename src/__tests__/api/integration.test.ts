@@ -607,3 +607,108 @@ describe("Publication edge cases", () => {
     expect(result).toBeNull();
   });
 });
+
+describe("Cross-venue isolation", () => {
+  it("prevents venue A owner from managing venue B categories", async () => {
+    const venueB = await prisma.venue.create({
+      data: { nameFa: "کافه B", slug: "cafe-b-" + Date.now(), publicStatus: "draft" },
+    });
+    await expect(canManageCategories(data.user.id, venueB.id)).rejects.toThrow(
+      "Unauthorized: no access to this venue"
+    );
+  });
+
+  it("prevents venue A owner from managing venue B items", async () => {
+    const venueB = await prisma.venue.create({
+      data: { nameFa: "کافه B2", slug: "cafe-b2-" + Date.now(), publicStatus: "draft" },
+    });
+    await expect(canManageItems(data.user.id, venueB.id)).rejects.toThrow(
+      "Unauthorized: no access to this venue"
+    );
+  });
+
+  it("prevents venue A owner from publishing venue B", async () => {
+    const venueB = await prisma.venue.create({
+      data: { nameFa: "کافه B3", slug: "cafe-b3-" + Date.now(), publicStatus: "draft" },
+    });
+    await expect(canPublish(data.user.id, venueB.id)).rejects.toThrow(
+      "Unauthorized: no access to this venue"
+    );
+  });
+
+  it("requireVenueAccess throws for venue A user on venue B", async () => {
+    const venueB = await prisma.venue.create({
+      data: { nameFa: "کافه B4", slug: "cafe-b4-" + Date.now(), publicStatus: "draft" },
+    });
+    await expect(requireVenueAccess(data.user.id, venueB.id)).rejects.toThrow(
+      "Unauthorized: no access to this venue"
+    );
+  });
+
+  it("requireRole throws for venue A owner on venue B", async () => {
+    const venueB = await prisma.venue.create({
+      data: { nameFa: "کافه B5", slug: "cafe-b5-" + Date.now(), publicStatus: "draft" },
+    });
+    await expect(requireRole(data.user.id, venueB.id, ["owner"])).rejects.toThrow(
+      "Unauthorized: no access to this venue"
+    );
+  });
+
+  it("venue B owner cannot access venue A data", async () => {
+    const otherUser = await prisma.user.create({
+      data: { email: "owner-b-" + Date.now() + "@test.ir", name: "Owner B", passwordHash: "", status: "active" },
+    });
+    const venueB = await prisma.venue.create({
+      data: { nameFa: "کافه B6", slug: "cafe-b6-" + Date.now(), publicStatus: "draft" },
+    });
+    await prisma.venueMember.create({
+      data: { venueId: venueB.id, userId: otherUser.id, role: "owner" },
+    });
+
+    await expect(canManageItems(otherUser.id, data.venue.id)).rejects.toThrow(
+      "Unauthorized: no access to this venue"
+    );
+
+    expect(await canManageItems(otherUser.id, venueB.id)).toBe(true);
+  });
+
+  it("venue A data is invisible in venue B's publication snapshot", async () => {
+    await prisma.venue.update({
+      where: { id: data.venue.id },
+      data: { publicStatus: "published" },
+    });
+
+    const venueB = await prisma.venue.create({
+      data: { nameFa: "کافه B7", slug: "cafe-b7-" + Date.now(), publicStatus: "published" },
+    });
+
+    const snapshot = await buildPublicSnapshot(venueB.id);
+    expect(snapshot).not.toBeNull();
+    for (const cat of snapshot!.categories) {
+      for (const item of cat.items) {
+        expect(item.nameFa).not.toBe("چای نعناع");
+      }
+    }
+  });
+
+  it("venue A owner cannot create categories in venue B via direct DB", async () => {
+    const venueB = await prisma.venue.create({
+      data: { nameFa: "کافه B8", slug: "cafe-b8-" + Date.now(), publicStatus: "draft" },
+    });
+
+    await expect(
+      prisma.category.create({
+        data: { venueId: venueB.id, nameFa: "نفوذی", displayOrder: 1 },
+      })
+    ).resolves.toBeDefined();
+
+    const catsInB = await prisma.category.findMany({ where: { venueId: venueB.id } });
+    expect(catsInB).toHaveLength(1);
+    expect(catsInB[0].nameFa).toBe("نفوذی");
+
+    const catsInA = await prisma.category.findMany({
+      where: { venueId: data.venue.id, deletedAt: null, nameFa: "نفوذی" },
+    });
+    expect(catsInA).toHaveLength(0);
+  });
+});
