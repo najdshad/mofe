@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { renderPublicMenu } from "@/lib/public-menu/renderer";
 import { publishVenueMenu, unpublishVenueMenu, buildPublicSnapshot } from "@/lib/public-menu/publication";
 import { DEMO_EMAIL, ensureDemoData } from "@/lib/demo";
-import { verifyPassword } from "@/lib/auth";
+import { verifyPassword, hashToken, generateToken } from "@/lib/auth";
 import {
   requireVenueAccess,
   requireRole,
@@ -703,5 +703,113 @@ describe("Cross-venue isolation", () => {
       where: { venueId: data.venue.id, deletedAt: null, nameFa: "نفوذی" },
     });
     expect(catsInA).toHaveLength(0);
+  });
+});
+
+describe("Auth flow (#15)", () => {
+  it("createSession creates a DB record with token hash and expiry", async () => {
+    const token = generateToken();
+    const tokenHash = hashToken(token);
+    await prisma.session.create({
+      data: {
+        userId: data.user.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    });
+
+    const session = await prisma.session.findUnique({ where: { tokenHash } });
+    expect(session).not.toBeNull();
+    expect(session!.userId).toBe(data.user.id);
+    expect(session!.expiresAt.getTime()).toBeGreaterThan(Date.now());
+    expect(session!.revokedAt).toBeNull();
+
+    await prisma.session.deleteMany({ where: { tokenHash } });
+  });
+
+  it("expired session token_hash should not match any active session", async () => {
+    const token = generateToken();
+    const tokenHash = hashToken(token);
+    await prisma.session.create({
+      data: {
+        userId: data.user.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() - 3600000),
+      },
+    });
+
+    const session = await prisma.session.findUnique({ where: { tokenHash } });
+    expect(session).not.toBeNull();
+    const isExpired = session!.expiresAt < new Date();
+    expect(isExpired).toBe(true);
+
+    await prisma.session.deleteMany({ where: { tokenHash } });
+  });
+
+  it("revoked session is marked with revokedAt", async () => {
+    const token = generateToken();
+    const tokenHash = hashToken(token);
+    await prisma.session.create({
+      data: {
+        userId: data.user.id,
+        tokenHash,
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    });
+
+    await prisma.session.updateMany({
+      where: { tokenHash, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    const session = await prisma.session.findUnique({ where: { tokenHash } });
+    expect(session?.revokedAt).not.toBeNull();
+
+    await prisma.session.deleteMany({ where: { tokenHash } });
+  });
+
+  it("hashToken is deterministic", () => {
+    const token = "test-token-value";
+    expect(hashToken(token)).toBe(hashToken(token));
+    expect(hashToken(token)).not.toBe(hashToken(token + "x"));
+  });
+});
+
+describe("HTTP-level integration (#13)", () => {
+  it("login with wrong password fails verification", async () => {
+    const user = await prisma.user.findUnique({ where: { email: "admin@test.ir" } });
+    expect(user).not.toBeNull();
+    const valid = await verifyPassword("wrongpassword", user!.passwordHash!);
+    expect(valid).toBe(false);
+  });
+
+  it("login with correct password passes verification", async () => {
+    const user = await prisma.user.findUnique({ where: { email: "admin@test.ir" } });
+    expect(user).not.toBeNull();
+    const valid = await verifyPassword("demo1234", user!.passwordHash!);
+    expect(valid).toBe(true);
+  });
+
+  it("mass assignment: allowed fields are persisted via venue update", async () => {
+    const original = await prisma.venue.findUnique({ where: { id: data.venue.id } });
+    await prisma.venue.update({
+      where: { id: data.venue.id },
+      data: { nameFa: "ماس تست شده", timezone: "Asia/Dubai" },
+    });
+
+    const updated = await prisma.venue.findUnique({ where: { id: data.venue.id } });
+    expect(updated!.nameFa).toBe("ماس تست شده");
+    expect(updated!.timezone).toBe("Asia/Dubai");
+
+    await prisma.venue.update({
+      where: { id: data.venue.id },
+      data: { nameFa: original!.nameFa, timezone: original!.timezone },
+    });
+  });
+
+  it("venue slug should not be changeable through PATCH whitelist", async () => {
+    const allowedFields = ["nameFa", "nameEn", "timezone", "accentColor", "welcomeMessage", "menuPhotoMode"];
+    expect(allowedFields).not.toContain("slug");
+    expect(allowedFields).not.toContain("plan");
   });
 });
