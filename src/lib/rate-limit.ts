@@ -18,9 +18,10 @@ export async function rateLimit(key: string, maxAttempts = 5, windowMs = 60000) 
     return { allowed: false, remaining: 0 };
   }
 
-  await prisma.rateLimitEntry.update({
+  await prisma.rateLimitEntry.upsert({
     where: { key },
-    data: { count: { increment: 1 } },
+    update: { count: { increment: 1 } },
+    create: { key, count: 1, resetAt: new Date(now + windowMs) },
   });
 
   return { allowed: true, remaining: maxAttempts - existing.count - 1 };

@@ -1,19 +1,38 @@
 version: "3.8"
 
 services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: mofe
+      POSTGRES_PASSWORD: mofe
+      POSTGRES_DB: mofe
+    volumes:
+      - mofe-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mofe"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   app:
     build: .
     expose:
       - "3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:./data.db
+      - DATABASE_URL=postgresql://mofe:mofe@db:5432/mofe
       - ROOT_DOMAIN=mofe.ir
       - APP_DOMAIN=app.mofe.ir
       - MENU_DOMAIN=menu.mofe.ir
     volumes:
-      - mofe-data:/app/data
       - mofe-uploads:/app/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r => process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -35,5 +54,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  mofe-data:
+  mofe-db:
   mofe-uploads:

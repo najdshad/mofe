@@ -12,8 +12,8 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 (CSS-based config via `@theme`) |
 | ORM | Prisma v7 |
-| Database | SQLite (dev), PostgreSQL (future) |
-| DB Adapter | `prisma-adapter-sqlite` (query engine: `library`) |
+| Database | PostgreSQL |
+| DB Adapter | `@prisma/adapter-pg` (via `pg` connection pool) |
 | Auth | Session-based, HTTP-only cookie `mofe_session`, bcryptjs + SHA-256 |
 | Roles | `user` / `internal` (User), `owner` / `manager` / `staff` (VenueMember) |
 | DnD | @dnd-kit/core + @dnd-kit/sortable |
@@ -205,7 +205,7 @@ Full design system in [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md).
 
 ## Testing
 
-138 tests across 6 files with real SQLite test DB:
+138 tests across 6 files with real PostgreSQL test DB:
 
 ```
 src/__tests__/api/integration.test.ts           — 54 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
@@ -218,7 +218,7 @@ src/__tests__/lib/config.test.ts                —  8 tests (getPublicMenuUrl)
 src/__tests__/lib/rate-limit.test.ts            —  8 tests (rateLimit helper — DB-backed)
 ```
 
-Run: `npm test` (creates fresh `test.db`, runs tests, cleans up).
+Run: `npm test` (pushes schema to test database, runs tests).
 
 ## Documentation
 
@@ -291,7 +291,7 @@ mofe-menu/
 │   │   ├── fetch-api.ts        # fetchApi() — typed fetch wrapper with error handling
 │   │   ├── mailer.ts           # Email delivery via SMTP (nodemailer)
 │   │   ├── permissions.ts      # Role-based access (owner/manager/staff)
-│   │   ├── prisma.ts           # Prisma singleton (PrismaSqlite adapter, WAL mode)
+│   │   ├── prisma.ts           # Prisma singleton (PrismaPg adapter)
 │   │   ├── rate-limit.ts       # DB-backed rate limiter (RateLimitEntry model)
 │   │   └── storage.ts          # File storage abstraction (local/S3-compatible)
 │   └── proxy.ts                # Auth proxy (export: proxy, not middleware)
@@ -321,7 +321,7 @@ mofe-menu/
 - **Fonts:** All self-hosted at `/fonts/`, no Google Fonts or external CDN — 5 files; `@font-face` declarations live in a shared `FONT_FACE_DECLARATIONS` constant in `renderer.ts`
 - **Tailwind v4:** No config file — CSS-based via `@theme inline {}` in `globals.css`
 - **Query engine:** `library` mode (no binary dependencies)
-- **SQLite WAL mode:** Enabled at startup (`PRAGMA journal_mode=WAL`, `busy_timeout=5000`)
+- **Database adapter:** `@prisma/adapter-pg` wraps `pg` connection pool
 - **Rate limiting:** DB-backed via `RateLimitEntry` model — survives restarts
 - **Email:** Configurable SMTP via `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` env vars; logs to console when unconfigured
 - **Storage:** Local filesystem by default; set `S3_*` env vars to use S3-compatible object storage

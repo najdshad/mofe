@@ -2,7 +2,7 @@ import "dotenv/config";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PrismaSqlite } from "prisma-adapter-sqlite";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { renderPublicMenu } from "../src/lib/public-menu/renderer";
 import type { Snapshot } from "../src/lib/public-menu/renderer";
@@ -12,9 +12,9 @@ const PROJECT_DIR = resolve(__dirname, "..");
 const OUTPUT_DIR = resolve(process.env.OUTPUT_DIR ?? join(PROJECT_DIR, "downloads"));
 
 function createPrismaClient() {
-  const adapter = new PrismaSqlite({
-    url: process.env.DATABASE_URL ?? "file:./dev.db",
-  });
+  const adapter = new PrismaPg(
+    process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe"
+  );
   return new PrismaClient({ adapter });
 }
 

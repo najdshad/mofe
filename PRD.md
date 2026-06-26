@@ -67,7 +67,7 @@ Persian-first cafe menu management: admin panel + static QR menus.
 
 ### Data Model
 15 models: User, Venue, VenueMember, Category, MenuItem, Asset, MenuPublication, Domain, AuditLog, Session, PasswordResetToken, StationSchedule, MenuItemVariant, MenuItemAllergen, RateLimitEntry
-- SQLite (dev), Prisma ORM v7
+- PostgreSQL, Prisma ORM v7 via `@prisma/adapter-pg`
 - UUID primary keys, soft-delete, money as integer Toman
 - Generated client at `src/generated/prisma`
 
@@ -103,12 +103,12 @@ Persian-first cafe menu management: admin panel + static QR menus.
 
 ### Testing
 - Vitest v4, 138 tests: 54 integration (includes 8 cross-venue isolation), 48 renderer, 12 api-helpers, 8 auth, 8 config, 8 rate-limit
-- Real SQLite test DB (`test.db`), created fresh per run via `global-setup.ts`
+- Real PostgreSQL test DB, schema pushed fresh per run via `global-setup.ts`
 
 ## Future (Not Yet Built)
 
 - Custom domains (subdomain and CNAME flows)
 - CDN upload of static menu HTML
 - Analytics for QR menu views
-- PostgreSQL migration
+- ~~PostgreSQL migration~~ ✅ Completed
 - `POST /api/venues/[venueId]/publications/[id]/retry` endpoint

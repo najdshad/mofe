@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + Prisma v7 + SQLite (dev). Two surfaces: admin web app + static public QR menus. Paper-and-ink design language (#f5f0e6 / #111111).
+Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + Prisma v7 + PostgreSQL. Two surfaces: admin web app + static public QR menus. Paper-and-ink design language (#f5f0e6 / #111111).
 
 ## Development Commands
 
@@ -52,12 +52,11 @@ npm run db:studio    # Prisma Studio
 - **Route params:** All route handler `params` must be `Promise<{ param: string }>` and `await`ed
 - **App Router conventions:** Server components by default, `"use client"` only when needed (hooks, browser APIs, state)
 
-### Prisma v7 + SQLite
+### Prisma v7 + PostgreSQL
 - **Custom output path:** Client generated at `src/generated/prisma` — import from `@/generated/prisma/client`
-- **Adapter:** `prisma-adapter-sqlite` wraps `node:sqlite`
-- **Query engine:** `library` mode set in Prisma config (no binary dependencies)
+- **Adapter:** `@prisma/adapter-pg` wraps `pg` connection pool
 - **Singleton:** `src/lib/prisma.ts` uses global singleton for hot-reload safety
-- **Schema changes:** After editing `prisma/schema.prisma`, run `npx prisma db push` (no migration files in dev)
+- **Schema changes:** After editing `prisma/schema.prisma`, run `npx prisma db push`
 - **Seed:** `prisma/seed.ts` uses upsert for idempotency
 
 ### Auth
@@ -118,7 +117,7 @@ All use `forwardRef` where applicable. Variants:
 ### Testing
 - **Framework:** Vitest v4
 - **Config:** `vitest.config.ts` — `@/` path alias, `environment: "node"`, `globals: true`
-- **Global setup:** `src/__tests__/global-setup.ts` — creates `test.db` with `prisma db push --accept-data-loss` before all tests, cleans up after
+- **Global setup:** `src/__tests__/global-setup.ts` — pushes schema with `prisma db push --accept-data-loss` before all tests
 - **Per-file setup:** `src/__tests__/setup.ts` — sets `NODE_ENV=test`
 - **Helpers:** `cleanTestData()` truncates all tables, `seedTestData()` creates test user + venue + 3 categories + 3 items
 - **Integration tests:** Use dynamic `import()` for prisma to avoid hoisting issues
@@ -147,8 +146,8 @@ All use `forwardRef` where applicable. Variants:
 | Tests | `src/__tests__/` |
 | Font files | `public/fonts/` |
 | Prisma client | `src/generated/prisma/` |
-| DB file (dev) | `dev.db` (project root) |
-| DB file (test) | `test.db` (project root) |
+| Database (dev) | PostgreSQL via `DATABASE_URL` |
+| Database (test) | PostgreSQL via `TEST_DATABASE_URL` |
 
 ## Common Development Patterns
 
@@ -178,17 +177,17 @@ All use `forwardRef` where applicable. Variants:
 
 ### Modifying the database schema
 1. Edit `prisma/schema.prisma`
-2. Run `npx prisma db push` (dev) — this updates the SQLite schema
+2. Run `npx prisma db push` (dev) — this updates the PostgreSQL schema
 3. Update seed data in `prisma/seed.ts` if needed
 4. Run `npx prisma db seed`
 5. Update test helpers in `src/__tests__/helpers.ts`
-6. Run `npm test` (global-setup will recreate test.db)
+6. Run `npm test` (global-setup will recreate the test database)
 7. Build + typecheck
 
 ## Environment
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://mofe:mofe@localhost:5432/mofe"
 
 # Email (optional — logs to console when unset)
 SMTP_HOST=""
@@ -205,7 +204,7 @@ S3_ACCESS_KEY_ID=""
 S3_SECRET_ACCESS_KEY=""
 ```
 
-Core: `DATABASE_URL`. Test suite overrides with `file:./test.db` in global-setup.
+Core: `DATABASE_URL`. Test suite uses `TEST_DATABASE_URL` (or falls back to `postgresql://localhost:5432/mofe_test`) in global-setup.
 
 ## Demo Credentials
 

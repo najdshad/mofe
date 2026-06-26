@@ -1,12 +1,12 @@
 import "dotenv/config";
-import { PrismaSqlite } from "prisma-adapter-sqlite";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { DEMO_EMAIL, DEMO_PASSWORD, ensureDemoData } from "../src/lib/demo";
 import bcrypt from "bcryptjs";
 
-const adapter = new PrismaSqlite({
-  url: process.env.DATABASE_URL ?? "file:./dev.db",
-});
+const adapter = new PrismaPg(
+  process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe"
+);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {

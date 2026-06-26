@@ -26,8 +26,8 @@ The customer phone must not hit the API in v1. Public menus are generated and se
 
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
-- **Database:** SQLite (dev), PostgreSQL planned
-- **ORM:** Prisma v7 with `prisma-adapter-sqlite`
+- **Database:** PostgreSQL
+- **ORM:** Prisma v7 with `@prisma/adapter-pg`
 - **Auth:** Session-based with HTTP-only cookies, bcryptjs + SHA-256
 - **Drag and drop:** @dnd-kit/core + @dnd-kit/sortable
 - **QR generation:** client-side `qrcode` library
@@ -212,7 +212,7 @@ REST endpoints. All mutations require authentication and venue authorization.
 - `src/__tests__/lib/rate-limit.test.ts` — 8 tests (rateLimit helper — DB-backed)
 
 **Infrastructure:**
-- `src/__tests__/global-setup.ts` — creates fresh `test.db` with `prisma db push` before all tests, cleans up after
+- `src/__tests__/global-setup.ts` — pushes schema to PostgreSQL test DB with `prisma db push` before all tests
 - `src/__tests__/helpers.ts` — `cleanTestData()` and `seedTestData()` for integration tests
 - Run with `npm test` (vitest run) or `npm run test:watch`
 
@@ -221,7 +221,7 @@ REST endpoints. All mutations require authentication and venue authorization.
 ### ✅ Milestone 1 — Foundation
 - Next.js 16 with App Router, TypeScript, Tailwind CSS v4
 - Design tokens (CSS variables for paper/ink/line/surface)
-- Prisma ORM with SQLite
+- Prisma ORM with PostgreSQL
 - Complete database schema with all 9 models
 - Base UI components: Button, Input, Toggle, Badge, Panel, Modal
 
@@ -306,7 +306,7 @@ REST endpoints. All mutations require authentication and venue authorization.
 ### ✅ Milestone 13 — Hardening and Launch
 - Vitest test suite: 138 tests across 6 test files
 - DB-backed rate limiting (survives restarts, cross-instance)
-- SQLite WAL mode + busy timeout for concurrent write performance
+- PostgreSQL for reliable concurrent access
 - Cross-venue isolation tests (8 specific assertions)
 - CSV formula injection sanitization
 - Production boot guard for default admin password
@@ -370,9 +370,9 @@ npm run build → 40 routes
 ## 21. Key Decisions
 
 - **Next.js 16 App Router** over Remix
-- **Prisma v7** over Drizzle — explicit `prisma-adapter-sqlite`
+- **Prisma v7** over Drizzle — driver adapter pattern with `@prisma/adapter-pg`
 - **Query engine type:** `library` (avoids binary dependencies in serverless)
-- **SQLite** for initial dev, migrate to PostgreSQL later
+- **PostgreSQL** for production-grade concurrent access
 - **Session-based auth** with HTTP-only cookie (`mofe_session`)
 - **Generated Prisma client** at `src/generated/prisma` (custom output path)
 - **proxy.ts export name** is `proxy` (not `middleware`) per Next.js 16.2.9 convention
@@ -382,7 +382,7 @@ npm run build → 40 routes
 - **Bulk selection:** toggle mode (انتخاب چندتایی / پایان انتخاب) instead of persistent checkboxes
 - **DnD:** two separate DndContexts (categories sidebar, items within category)
 - **Filtered items sorted** by displayOrder after filter for DnD visual consistency
-- **Test DB:** real SQLite `test.db`, global-setup creates fresh DB per run
+- **Test DB:** real PostgreSQL test database, global-setup pushes schema per run
 - **Rate limiting:** DB-backed via `RateLimitEntry` model — survives restarts, works across instances
 - **CSV import:** homegrown CSV parser with smart header detection, category auto-creation, import reporting; sanitizes formula injection (`=`, `+`, `-`, `@`, `\t`)
 - **Email:** SMTP via nodemailer (configurable); logs to console when unconfigured
@@ -465,6 +465,6 @@ Ordered by value, dependencies, and effort. Tasks with existing models/infra com
 - Dashboard for view counts
 - Needs tracking infra; nice-to-have
 
-### Infrastructure — PostgreSQL Migration
+### ✅ Infrastructure — PostgreSQL Migration
 - Prerequisite for production launch
-- Requires adapter swap, connection pooling, migration workflow
+- Adapter swapped to `@prisma/adapter-pg`, migration complete

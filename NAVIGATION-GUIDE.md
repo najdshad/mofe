@@ -93,7 +93,7 @@ mofe-menu/
 │   │   ├── demo.ts           # Demo data helpers (ensureDemoData)
 │   │   ├── fetch-api.ts      # fetchApi() — typed fetch wrapper with error handling
 │   │   ├── permissions.ts    # Role-based access (owner/manager/staff)
-│   │   ├── prisma.ts         # Prisma singleton (PrismaSqlite adapter)
+│   │   ├── prisma.ts         # Prisma singleton (PrismaPg adapter)
 │   │   ├── public-menu/
 │   │   │   ├── publication.ts   # buildPublicSnapshot, publishVenueMenu, unpublishVenueMenu
 │   │   │   └── renderer.ts      # renderPublicMenu (~10KB static HTML), renderUnavailablePage
@@ -128,7 +128,7 @@ User Browser → Next.js App Router → Server Components (data fetching)
                                      ↓
                                   API Routes (REST)
                                      ↓
-                                  Prisma ORM → SQLite/PostgreSQL
+                                   Prisma ORM → PostgreSQL
 ```
 
 ### Internal Tool Flow
@@ -209,7 +209,7 @@ Enforced via `requireRole(userId, venueId, allowedRoles)` or `canManageCategorie
 
 ### Database
 
-- SQLite (dev) via `prisma-adapter-sqlite` with `library` query engine (no binary deps)
+- PostgreSQL via `@prisma/adapter-pg` with `pg` connection pool
 - Generated client at `src/generated/prisma` (custom output)
 - UUID primary keys, soft-delete on `Category` and `MenuItem` (`deletedAt`)
 - Money stored as integer Toman
@@ -217,7 +217,7 @@ Enforced via `requireRole(userId, venueId, allowedRoles)` or `canManageCategorie
 ### Testing
 
 - Vitest v4 with `singleFork` pool
-- `global-setup.ts` creates fresh `test.db` via `prisma db push`
+- `global-setup.ts` pushes schema to PostgreSQL test DB via `prisma db push`
 - `helpers.ts` provides `cleanTestData()` + `seedTestData()`
 - Run: `npm test` (vitest run), `npm run test:watch`
 
@@ -295,7 +295,7 @@ See `.env.example`:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | `file:./data.db` | SQLite DB path |
+| `DATABASE_URL` | `postgresql://mofe:mofe@localhost:5432/mofe` | PostgreSQL connection |
 | `NODE_ENV` | `development` | Environment |
 | `ROOT_DOMAIN` | `mofe.ir` | Root domain (production) |
 | `APP_DOMAIN` | `app.mofe.ir` | Admin app subdomain |
@@ -313,7 +313,7 @@ docker compose up -d
 
 - App runs as standalone Next.js on port 3000
 - nginx reverse-proxies 3 virtual hosts: `mofe.ir` (landing), `app.mofe.ir` (admin), `menu.mofe.ir` (public menus)
-- Persistent volumes: `mofe-data` (SQLite DB), `mofe-uploads` (logo images)
+- Persistent volumes: `mofe-db` (PostgreSQL data), `mofe-uploads` (logo images)
 
 ---
 
@@ -321,4 +321,4 @@ docker compose up -d
 
 - **Custom domains**: Domain model exists in schema; subdomain + CNAME flows not yet built
 - **CDN upload**: Static menu HTML could be uploaded to CDN instead of rendered from DB
-- **PostgreSQL**: Schema is SQLite-compatible; swap `prisma-adapter-sqlite` for `@prisma/adapter-pg
+- **PostgreSQL**: Migrated — uses `@prisma/adapter-pg` via `pg` connection pool

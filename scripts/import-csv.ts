@@ -1,10 +1,10 @@
 import "dotenv/config";
-import { PrismaSqlite } from "prisma-adapter-sqlite";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-const adapter = new PrismaSqlite({ url: process.env.DATABASE_URL ?? "file:./dev.db" });
+const adapter = new PrismaPg(process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe");
 const prisma = new PrismaClient({ adapter });
 
 const CSV_PATH = path.resolve(import.meta.dirname, "..", "sample-csv.csv");

@@ -1,35 +1,21 @@
-import { existsSync, unlinkSync } from "fs";
-import { join } from "path";
 import { execSync } from "child_process";
+import { join } from "path";
 
-const TEST_DB_PATH = join(__dirname, "..", "..", "test.db");
+const TEST_DB_URL =
+  process.env.TEST_DATABASE_URL ?? "postgresql://mofe:mofe@localhost:5432/mofe_test";
 
 export function setup() {
   const env = process.env as Record<string, string | undefined>;
-  env.DATABASE_URL = `file:${TEST_DB_PATH}`;
+  env.DATABASE_URL = TEST_DB_URL;
   env.NODE_ENV = "test";
 
-  if (existsSync(TEST_DB_PATH)) {
-    unlinkSync(TEST_DB_PATH);
-  }
-  const journal = TEST_DB_PATH + "-journal";
-  if (existsSync(journal)) {
-    unlinkSync(journal);
-  }
-
   execSync("npx prisma db push --accept-data-loss", {
-    env: { ...process.env, DATABASE_URL: `file:${TEST_DB_PATH}` },
+    env: { ...process.env, DATABASE_URL: TEST_DB_URL },
     stdio: "pipe",
     cwd: join(__dirname, "..", ".."),
   });
 }
 
 export function teardown() {
-  if (existsSync(TEST_DB_PATH)) {
-    unlinkSync(TEST_DB_PATH);
-  }
-  const journal = TEST_DB_PATH + "-journal";
-  if (existsSync(journal)) {
-    unlinkSync(journal);
-  }
+  // Tables are dropped between test runs via cleanTestData()
 }
