@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export async function cleanTestData() {
+  await prisma.rateLimitEntry.deleteMany();
   await prisma.menuPublication.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.category.deleteMany();

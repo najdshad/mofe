@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = rateLimit(`password-reset:${ip}`);
+    const rl = await rateLimit(`password-reset:${ip}`);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "تلاش‌های زیاد. لطفاً بعداً تلاش کنید." },

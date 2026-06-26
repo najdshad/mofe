@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     }
 
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = rateLimit(`login:${ip}`);
+    const rl = await rateLimit(`login:${ip}`);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "تلاش‌های زیاد. لطفاً بعداً تلاش کنید." },

@@ -1,35 +1,27 @@
-const rateMap = new Map<string, { count: number; resetAt: number }>();
+import { prisma } from "./prisma";
 
-const CLEANUP_INTERVAL_MS = 60_000;
-
-let lastCleanup = Date.now();
-
-function cleanupStale() {
+export async function rateLimit(key: string, maxAttempts = 5, windowMs = 60000) {
   const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
-  lastCleanup = now;
-  for (const [key, entry] of rateMap) {
-    if (now > entry.resetAt) {
-      rateMap.delete(key);
-    }
-  }
-}
 
-export function rateLimit(key: string, maxAttempts = 5, windowMs = 60000) {
-  cleanupStale();
+  const existing = await prisma.rateLimitEntry.findUnique({ where: { key } });
 
-  const now = Date.now();
-  const entry = rateMap.get(key);
-
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(key, { count: 1, resetAt: now + windowMs });
+  if (!existing || now > existing.resetAt.getTime()) {
+    await prisma.rateLimitEntry.upsert({
+      where: { key },
+      update: { count: 1, resetAt: new Date(now + windowMs) },
+      create: { key, count: 1, resetAt: new Date(now + windowMs) },
+    });
     return { allowed: true, remaining: maxAttempts - 1 };
   }
 
-  entry.count++;
-  if (entry.count > maxAttempts) {
+  if (existing.count >= maxAttempts) {
     return { allowed: false, remaining: 0 };
   }
 
-  return { allowed: true, remaining: maxAttempts - entry.count };
+  await prisma.rateLimitEntry.update({
+    where: { key },
+    data: { count: { increment: 1 } },
+  });
+
+  return { allowed: true, remaining: maxAttempts - existing.count - 1 };
 }

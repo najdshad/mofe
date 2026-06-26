@@ -236,6 +236,14 @@ model PasswordResetToken {
   @@index([userId])
 }
 
+model RateLimitEntry {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  count     Int      @default(1)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+}
+
 model Session {
   id        String    @id @default(uuid())
   userId    String
