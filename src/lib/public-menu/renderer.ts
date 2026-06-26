@@ -1,3 +1,9 @@
+export interface SnapshotItemVariant {
+  nameFa: string;
+  nameEn: string | null;
+  priceModifier: number;
+}
+
 export interface SnapshotCategoryItem {
   id: string;
   nameFa: string;
@@ -7,6 +13,7 @@ export interface SnapshotCategoryItem {
   station: string;
   calories: number | null;
   soldOut: boolean;
+  variants: SnapshotItemVariant[];
 }
 
 export interface SnapshotCategory {
@@ -122,6 +129,14 @@ export function renderPublicMenu(snapshot: Snapshot): string {
                 <h3 class="item-name">${esc(item.nameFa)}</h3>
                 ${item.nameEn ? `<p class="item-name-en">${esc(item.nameEn)}</p>` : ""}
                 ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
+                ${item.variants && item.variants.length > 0 ? `
+                <div class="item-variants">
+                  ${item.variants.map((v) => `
+                    <span class="variant-pill">
+                      ${esc(v.nameFa)}${v.nameEn ? ` (${esc(v.nameEn)})` : ""}
+                      ${v.priceModifier !== 0 ? `<span class="variant-price">${v.priceModifier > 0 ? "+" : ""}${formatPrice(v.priceModifier)}</span>` : ""}
+                    </span>`).join("")}
+                </div>` : ""}
                 <div class="item-meta">
                   ${item.soldOut ? '<span class="badge badge-status">ناموجود</span>' : ""}
                   ${item.calories ? `<span class="badge badge-emphasis">${item.calories} kcal</span>` : ""}
@@ -339,6 +354,28 @@ ${FONT_FACE_DECLARATIONS}
       color: #59544b;
       margin-top: 6px;
       line-height: 1.7;
+    }
+    .item-variants {
+      margin-top: 8px;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .variant-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 12px;
+      color: #59544b;
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .variant-price {
+      font-family: "EB Garamond", "Georgia", serif;
+      font-size: 12px;
+      color: #111111;
     }
     .item-meta {
       margin-top: 8px;

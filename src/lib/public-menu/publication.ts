@@ -15,6 +15,9 @@ export async function buildPublicSnapshot(venueId: string) {
       menuItems: {
         where: { deletedAt: null, visibleOnPublicMenu: true },
         orderBy: { displayOrder: "asc" },
+        include: {
+          variants: { orderBy: { displayOrder: "asc" } },
+        },
       },
     },
   });
@@ -47,6 +50,11 @@ export async function buildPublicSnapshot(venueId: string) {
           station: item.station,
           calories: item.calories,
           soldOut: item.isSoldOut,
+          variants: item.variants.map((v) => ({
+            nameFa: v.nameFa,
+            nameEn: v.nameEn,
+            priceModifier: v.priceModifier,
+          })),
         })),
       })),
     generatedAt: new Date().toISOString(),

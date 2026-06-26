@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -359,8 +359,28 @@ function ItemModal({
   const [isSoldOut, setIsSoldOut] = useState(initial?.isSoldOut ?? false);
   const [photoAssetId, setPhotoAssetId] = useState(initial?.photoAssetId ?? null);
   const [photoLoading, setPhotoLoading] = useState(false);
+  const [variants, setVariants] = useState<{ nameFa: string; nameEn: string; priceModifier: number }[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (open && initial) {
+      fetch(`/api/venues/${venueId}/items/${initial.id}/variants`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setVariants(data.map((v: { nameFa: string; nameEn: string | null; priceModifier: number }) => ({
+              nameFa: v.nameFa,
+              nameEn: v.nameEn ?? "",
+              priceModifier: v.priceModifier,
+            })));
+          } else {
+            setVariants([]);
+          }
+        })
+        .catch(() => setVariants([]));
+    }
+  }, [open, initial, venueId]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -425,6 +445,19 @@ function ItemModal({
         visibleOnPublicMenu,
         isSoldOut,
       });
+      if (initial && variants && variants.length > 0) {
+        await fetch(`/api/venues/${venueId}/items/${initial.id}/variants`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            variants: variants.map((v) => ({
+              nameFa: v.nameFa,
+              nameEn: v.nameEn || null,
+              priceModifier: v.priceModifier,
+            })),
+          }),
+        });
+      }
       onClose();
     } catch (e) {
       console.error("Item save error:", e);
@@ -570,6 +603,65 @@ function ItemModal({
                   حذف
                 </button>
               )}
+            </div>
+          </div>
+        )}
+        {initial && (
+          <div className="space-y-1.5">
+            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+              تنوع‌ها / سایزها
+            </label>
+            <div className="space-y-2">
+              {(variants ?? []).map((v, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    value={v.nameFa}
+                    onChange={(e) => {
+                      const current = variants ?? [];
+                      const next = [...current];
+                      next[i] = { ...next[i], nameFa: e.target.value };
+                      setVariants(next);
+                    }}
+                    placeholder="نام"
+                    className="flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
+                  />
+                  <input
+                    value={v.nameEn}
+                    onChange={(e) => {
+                      const current = variants ?? [];
+                      const next = [...current];
+                      next[i] = { ...next[i], nameEn: e.target.value };
+                      setVariants(next);
+                    }}
+                    placeholder="نام انگلیسی"
+                    className="w-24 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
+                  />
+                  <input
+                    type="number"
+                    value={v.priceModifier}
+                    onChange={(e) => {
+                      const current = variants ?? [];
+                      const next = [...current];
+                      next[i] = { ...next[i], priceModifier: Number(e.target.value) };
+                      setVariants(next);
+                    }}
+                    placeholder="تغییر قیمت"
+                    className="w-20 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
+                  />
+                  <button
+                    onClick={() => setVariants((prev) => (prev ?? []).filter((_, j) => j !== i))}
+                    className="text-xs text-ink-muted hover:text-red-600 transition-colors"
+                  >
+                    حذف
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() => setVariants((prev) => [...(prev ?? []), { nameFa: "", nameEn: "", priceModifier: 0 }])}
+                className="text-xs text-ink-muted hover:text-ink transition-colors"
+              >
+                + افزودن تنوع
+              </button>
             </div>
           </div>
         )}
