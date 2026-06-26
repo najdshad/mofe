@@ -44,7 +44,15 @@ mofe-menu/
 │   │   │   │   └── settings/      # Venue settings + member management (Server + SettingsClient)
 │   │   │   └── venues/
 │   │   │       └── new/           # (empty, reserved for venue creation)
+│   │   ├── internal/              # Internal mofé team tool
+│   │   │   ├── layout.tsx         # Role guard (role === "internal")
+│   │   │   ├── page.tsx           # Dashboard
+│   │   │   ├── users/             # User management
+│   │   │   └── venues/            # Venue management
 │   │   ├── api/
+│   │   │   ├── internal/          # Internal API endpoints
+│   │   │   │   ├── users/         # GET|POST — list/create users
+│   │   │   │   └── venues/        # GET|POST — list/create venues
 │   │   │   ├── auth/              # login, logout
 │   │   │   ├── me/                # current user
 │   │   │   └── venues/
@@ -123,6 +131,18 @@ User Browser → Next.js App Router → Server Components (data fetching)
                                   Prisma ORM → SQLite/PostgreSQL
 ```
 
+### Internal Tool Flow
+
+```
+Cafe owner contacts mofé → Mofé team logs in via /login
+                               ↓
+                          /internal/users → creates user account
+                               ↓
+                          /internal/venues → creates venue + assigns owner
+                               ↓
+                          Cafe owner logs in, manages their venue
+```
+
 ### Public Menu Flow
 
 ```
@@ -162,7 +182,14 @@ Every admin page follows this pattern:
 - Route handler auth: `requireAuth()` from `@/lib/api-helpers` — all API routes use this pattern
 - Error handling: wrap handlers in try/catch with `errorResponse(e)` for consistent JSON errors
 
-### Permissions
+### Internal Role
+
+- `User.role === "internal"` — mofé team members (NOT venue members)
+- `requireInternalAuth()` in API routes
+- `/internal` layout checks `role === "internal"` and redirects otherwise
+- Seed user: `admin@mofe.ir` / `admin1234`
+
+### Venue Permissions
 
 3 roles: `owner > manager > staff`
 - `owner` — full access
@@ -208,6 +235,17 @@ Enforced via `requireRole(userId, venueId, allowedRoles)` or `canManageCategorie
 ---
 
 ## Common Development Tasks
+
+### Adding an internal page
+1. Create directory under `src/app/internal/`
+2. Create `page.tsx` (server component, fetches data, checks `user.role === "internal"`)
+3. Create `*Client.tsx` (client component, receives props) if interactivity is needed
+4. Nav links are in `src/app/internal/layout.tsx`
+
+### Adding an internal API endpoint
+1. Create route file in `src/app/api/internal/`
+2. Use `requireInternalAuth()` from `@/lib/api-helpers` for auth
+3. Wrap in try/catch with `errorResponse(e)`
 
 ### Adding a new admin page
 1. Create directory under `src/app/admin/[venueId]/`
@@ -281,8 +319,6 @@ docker compose up -d
 
 ## Future Architecture Considerations
 
-- **Photo upload pipeline**: Sharp is already a dependency; Milestone 5 adds item photo support
 - **Custom domains**: Domain model exists in schema; subdomain + CNAME flows not yet built
 - **CDN upload**: Static menu HTML could be uploaded to CDN instead of rendered from DB
-- **PostgreSQL**: Schema is SQLite-compatible; swap `prisma-adapter-sqlite` for `@prisma/adapter-pg`
-- **Audit logging**: AuditLog model exists; recording logic not yet wired in
+- **PostgreSQL**: Schema is SQLite-compatible; swap `prisma-adapter-sqlite` for `@prisma/adapter-pg

@@ -20,6 +20,24 @@ npm run db:studio    # Prisma Studio
 ```
 - for internet access, use proxy at 172.25.144.1:10808
 
+### Internal Auth
+- `requireInternalAuth()` from `@/lib/api-helpers` — checks `user.role === "internal"` in internal API routes
+- Internal pages use `user.role !== "internal"` check in server component layout
+- Internal users are mofé team members; they are NOT venue members
+
+### Internal Tool (`/internal`)
+- Routes: `/internal` (dashboard), `/internal/users` (create/list users), `/internal/venues` (create/list venues)
+- API: `GET|POST /api/internal/users`, `GET|POST /api/internal/venues`
+- Auth: every handler calls `requireInternalAuth()`; page layout checks `role === "internal"`
+- Seed: `admin@mofe.ir` / `admin1234`
+
+### Menu Photo Display Toggle
+- `menuPhotoMode` boolean on Venue model (default: `false`)
+- Toggle in venue settings page: "نمایش عکس آیتم‌ها در منوی عمومی"
+- When enabled: snapshot captures `photoUrl` per item; renderer uses photo card layout
+- When disabled: current text-only theme unchanged
+- Requires re-publish after toggling
+
 ## Must-Do After Every Change
 
 1. `npm run build` — verify compilation succeeds
@@ -47,7 +65,7 @@ npm run db:studio    # Prisma Studio
 - **Token:** 32-byte random hex, SHA-256 hashed before DB storage
 - **Session TTL:** 7 days
 - **Password:** bcrypt with 12 rounds
-- **Auth helpers exported:** `hashToken`, `generateToken`, `hashPassword`, `verifyPassword`, `createSession`, `getCurrentUser`, `destroySession`
+- **Auth helpers exported:** `hashToken`, `generateToken`, `hashPassword`, `verifyPassword`, `createSession`, `getCurrentUser`, `destroySession`, `createPasswordResetToken`, `validatePasswordResetToken`, `consumePasswordResetToken`
 - **Route auth helper:** `requireAuth()` from `@/lib/api-helpers` — used in every API route handler (throws `ApiError` on failure)
 - **Error formatting:** `errorResponse(e)` from `@/lib/api-helpers` — wrap all route handlers in try/catch
 
@@ -80,7 +98,7 @@ npm run db:studio    # Prisma Studio
 
 ### Public Menu Renderer (`src/lib/public-menu/renderer.ts`)
 - Pure functions: `renderPublicMenu(snapshot)` and `renderUnavailablePage(venueName)`
-- Snapshot shape: `{ venue: { id, nameFa, nameEn, welcomeMessage, accentColor, slug, publicUrl }, categories: [{ id, nameFa, items: [{ id, nameFa, nameEn, description, priceToman, station, calories, soldOut }] }], generatedAt }`
+- Snapshot shape: `{ venue: { id, nameFa, nameEn, welcomeMessage, accentColor, slug, publicUrl }, categories: [{ id, nameFa, items: [{ id, nameFa, nameEn, description, priceToman, station, calories, soldOut, variants: [{ nameFa, nameEn, priceModifier }], allergenCodes: string[] }] }], generatedAt }`
 - All user content HTML-escaped via `esc()` function
 - Prices formatted with `toLocaleString("fa-IR")`
 - Font @font-face repeated inline in rendered HTML
@@ -113,9 +131,12 @@ All use `forwardRef` where applicable. Variants:
 | Seed data | `prisma/seed.ts` |
 | DB singleton | `src/lib/prisma.ts` |
 | Auth functions | `src/lib/auth.ts` |
+| Audit helper | `src/lib/audit.ts` |
+| Allergen constants | `src/lib/allergens.ts` |
 | Route auth helpers | `src/lib/api-helpers.ts` |
 | Permissions | `src/lib/permissions.ts` |
 | HTML renderer | `src/lib/public-menu/renderer.ts` |
+| Publication helpers | `src/lib/public-menu/publication.ts` |
 | Auth proxy | `src/proxy.ts` |
 | Design tokens + fonts | `src/app/globals.css` |
 | UI components | `src/components/ui/` |
@@ -174,4 +195,8 @@ Single env var. Test suite overrides with `file:./test.db` in global-setup.
 Email:    admin@noghteh
 Password: demo1234
 Role:     Owner of "کافه نقطه"
+
+Email:    admin@mofe.ir
+Password: admin1234
+Role:     Internal (mofé team)
 ```

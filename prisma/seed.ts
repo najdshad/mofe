@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaSqlite } from "prisma-adapter-sqlite";
 import { PrismaClient } from "../src/generated/prisma/client.js";
 import { DEMO_EMAIL, DEMO_PASSWORD, ensureDemoData } from "../src/lib/demo";
+import bcrypt from "bcryptjs";
 
 const adapter = new PrismaSqlite({
   url: process.env.DATABASE_URL ?? "file:./dev.db",
@@ -194,10 +195,26 @@ async function main() {
     });
   }
 
+  const internalPasswordHash = await bcrypt.hash("admin1234", 12);
+  await prisma.user.upsert({
+    where: { email: "admin@mofe.ir" },
+    update: {},
+    create: {
+      name: "مدیر سیستم",
+      email: "admin@mofe.ir",
+      passwordHash: internalPasswordHash,
+      role: "internal",
+      emailVerifiedAt: new Date(),
+      status: "active",
+    },
+  });
+
   console.log("Seed completed successfully");
   console.log(`  Venue: ${venue.nameFa} (${venue.slug})`);
   console.log(`  Admin email: ${DEMO_EMAIL}`);
   console.log(`  Password: ${DEMO_PASSWORD}`);
+  console.log(`  Internal email: admin@mofe.ir`);
+  console.log(`  Internal password: admin1234`);
 }
 
 main()

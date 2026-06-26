@@ -21,12 +21,15 @@ function makeSnapshot(overrides: SnapshotOverrides = {}): Snapshot {
       accentColor: null,
       logoUrl: null,
       slug: "noghteh",
+      menuPhotoMode: false,
       ...overrides.venue,
     },
     categories: overrides.categories ?? [],
     generatedAt: overrides.generatedAt ?? "2025-01-01T00:00:00.000Z",
   };
 }
+
+
 
 function extract(html: string, selector: string): string[] {
   const regex = new RegExp(`<${selector}(?:[^>]*)>([\\s\\S]*?)<\\/${selector}>`, "gi");

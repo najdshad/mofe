@@ -47,7 +47,13 @@ The customer phone must not hit the API in v1. Public menus are generated and se
 
 ## 4. User Roles and Permissions
 
-### 4.1 Roles
+### 4.0 Internal Role
+
+- **Internal** — mofé team member with `role === "internal"` on User model (NOT a VenueMember)
+- Has access to `/internal` tool for creating user accounts and venues
+- Authenticated via same session cookie; authorization checked via `requireInternalAuth()`
+
+### 4.1 Venue Roles
 
 - **Owner** — full venue access, manage settings
 - **Manager** — categories, items, appearance, publish/unpublish
@@ -73,7 +79,7 @@ The customer phone must not hit the API in v1. Public menus are generated and se
 
 ## 5. Database Schema
 
-9 models: User, Venue, VenueMember, Category, MenuItem, Asset, MenuPublication, Domain, AuditLog, Session.
+14 models: User, Venue, VenueMember, Category, MenuItem, Asset, MenuPublication, Domain, AuditLog, Session, PasswordResetToken, StationSchedule, MenuItemVariant, MenuItemAllergen.
 
 - UUID primary keys, soft-delete on categories and items
 - Money stored as integer Toman
@@ -96,10 +102,19 @@ REST endpoints. All mutations require authentication and venue authorization.
 | POST | `/api/auth/login` | ✅ |
 | POST | `/api/auth/logout` | ✅ |
 | GET | `/api/me` | ✅ |
-| POST | `/api/auth/password-reset/request` | ❌ Future |
-| POST | `/api/auth/password-reset/confirm` | ❌ Future |
+| POST | `/api/auth/password-reset/request` | ✅ Request reset (rate-limited, returns link) |
+| POST | `/api/auth/password-reset/confirm` | ✅ Confirm reset (new password, revokes sessions) |
 
-### 17.2 Venues
+### 17.2 Internal (mofé team)
+
+| Method | Endpoint | Status |
+| --- | --- | --- |
+| GET | `/api/internal/users` | ✅ List all users |
+| POST | `/api/internal/users` | ✅ Create user account |
+| GET | `/api/internal/venues` | ✅ List all venues |
+| POST | `/api/internal/venues` | ✅ Create venue with owner |
+
+### 17.3 Venues
 
 | Method | Endpoint | Status |
 | --- | --- | --- |
@@ -107,7 +122,7 @@ REST endpoints. All mutations require authentication and venue authorization.
 | GET | `/api/venues/:venueId` | ✅ Get venue |
 | PATCH | `/api/venues/:venueId` | ✅ Update venue |
 
-### 17.3 Categories
+### 17.4 Categories
 
 | Method | Endpoint | Status |
 | --- | --- | --- |
@@ -117,7 +132,7 @@ REST endpoints. All mutations require authentication and venue authorization.
 | DELETE | `/api/venues/:venueId/categories/:id` | ✅ Soft-delete (blocked if items exist) |
 | POST | `/api/venues/:venueId/categories/reorder` | ✅ Batch reorder |
 
-### 17.4 Items
+### 17.5 Items
 
 | Method | Endpoint | Status |
 | --- | --- | --- |
@@ -128,10 +143,15 @@ REST endpoints. All mutations require authentication and venue authorization.
 | DELETE | `/api/venues/:venueId/items/:id` | ✅ Soft-delete |
 | POST | `/api/venues/:venueId/items/bulk-visibility` | ✅ Bulk update |
 | POST | `/api/venues/:venueId/items/reorder` | ✅ Batch reorder |
-| POST | `/api/venues/:venueId/items/:id/photo` | ❌ Future |
-| DELETE | `/api/venues/:venueId/items/:id/photo` | ❌ Future |
+| POST | `/api/venues/:venueId/items/:id/photo` | ✅ Upload item photo (sharp resize + WebP) |
+| DELETE | `/api/venues/:venueId/items/:id/photo` | ✅ Delete item photo |
+| GET | `/api/venues/:venueId/items/export-csv` | ✅ Export items as CSV |
+| GET | `/api/venues/:venueId/items/:id/variants` | ✅ List item variants |
+| POST | `/api/venues/:venueId/items/:id/variants` | ✅ Bulk-replace item variants |
+| GET | `/api/venues/:venueId/items/:id/allergens` | ✅ List item allergen codes |
+| POST | `/api/venues/:venueId/items/:id/allergens` | ✅ Bulk-replace item allergens |
 
-### 17.5 Members
+### 17.6 Members
 
 | Method | Endpoint | Status |
 | --- | --- | --- |
@@ -140,20 +160,20 @@ REST endpoints. All mutations require authentication and venue authorization.
 | PATCH | `/api/venues/:venueId/members/:memberId` | ✅ Update member role/name/password |
 | DELETE | `/api/venues/:venueId/members/:memberId` | ✅ Remove member |
 
-### 17.6 Assets
+### 17.7 Assets
 
 | Method | Endpoint | Status |
 | --- | --- | --- |
 | POST | `/api/venues/:venueId/logo` | ✅ Upload venue logo (sharp resize + WebP) |
 | DELETE | `/api/venues/:venueId/logo` | ✅ Delete venue logo |
 
-### 17.7 CSV Import
+### 17.8 CSV Import
 
 | Method | Endpoint | Status |
 | --- | --- | --- |
 | POST | `/api/venues/:venueId/items/import-csv` | ✅ Import items from CSV (smart header detection, batch creation) |
 
-### 17.8 Publishing and QR
+### 17.9 Publishing and QR
 
 | Method | Endpoint | Status |
 | --- | --- | --- |
@@ -163,7 +183,14 @@ REST endpoints. All mutations require authentication and venue authorization.
 | GET | `/api/venues/:venueId/publications` | ✅ List last 20 |
 | POST | `/api/venues/:venueId/publications/:id/retry` | ❌ Future |
 
-### 17.6 Domains
+### 17.10 Schedules
+
+| Method | Endpoint | Status |
+| --- | --- | --- |
+| GET | `/api/venues/:venueId/schedules` | ✅ List station schedules |
+| POST | `/api/venues/:venueId/schedules` | ✅ Bulk-replace station schedules |
+
+### 17.11 Domains
 
 | Method | Endpoint | Status |
 | --- | --- | --- |
@@ -225,8 +252,9 @@ REST endpoints. All mutations require authentication and venue authorization.
 - Bulk visibility endpoint (by IDs or station)
 - Input validation on POST routes
 
-### ⏳ Milestone 5 — Media Uploads (Not started)
-- Photo upload endpoint and UI (requires Arvan Object Storage or local fallback)
+### ✅ Milestone 5 — Media Uploads
+- Photo upload endpoint and UI for items (sharp resize 500px + WebP ≤50KB)
+- Same pattern as logo upload, stores to local filesystem
 
 ### ✅ Milestone 6 — QR Menu Editor
 - Appearance settings form (name, welcome message, accent color)
@@ -249,15 +277,39 @@ REST endpoints. All mutations require authentication and venue authorization.
 - PDF download: print-ready page, triggers browser print dialog
 - Warning banner when menu is unpublished
 
-### ⏳ Milestone 9 — Domains and Plans (Not started)
+### ✅ Milestone 9 — Feature Completeness
+- Password reset flow (request + confirm endpoints, UI)
+- Audit log wiring across all mutation handlers
+- CSV export endpoint
+- Item photo upload + UI
+- Station schedule management (schema + settings UI)
+- Menu item variants/sizes (schema + UI + public menu renderer)
+- Allergen badges (schema + UI + public menu renderer)
 
-### ⏳ Milestone 10 — Hardening and Launch (Partially started)
+### ✅ Milestone 10 — Internal Admin Tool
+- Internal user role (`User.role`: `"user"` / `"internal"`)
+- Internal auth check: `requireInternalAuth()` in API routes
+- `/internal` layout with role guard
+- User management page: list all users, create accounts (name, email, password)
+- Venue management page: list all venues, create venues with owner assignment
+- Seed: `admin@mofe.ir` / `admin1234`
+
+### ✅ Milestone 11 — Menu Photo Display
+- `menuPhotoMode` boolean on Venue model (default `false`)
+- Toggle in settings page: "نمایش عکس آیتم‌ها در منوی عمومی"
+- Snapshot captures `photoUrl` per item when enabled
+- Public menu renderer: photo card layout (vertical card with top image)
+- Non-photo mode: current text-only theme unchanged
+
+### ⏳ Milestone 12 — Domains and Plans (Not started)
+
+### ⏳ Milestone 13 — Hardening and Launch (Partially started)
 - Completed: Vitest test suite with 130 tests, 6 test files
 
 ## 20. Current Build
 
 ```
-npm run build → 28 routes
+npm run build → 40 routes
 ├ ○ /                                    (static)
 ├ ○ /_not-found
 ├ ƒ /admin/[venueId]/menu
@@ -266,6 +318,10 @@ npm run build → 28 routes
 ├ ƒ /admin/[venueId]/settings
 ├ ƒ /api/auth/login
 ├ ƒ /api/auth/logout
+├ ƒ /api/auth/password-reset/confirm
+├ ƒ /api/auth/password-reset/request
+├ ƒ /api/internal/users
+├ ƒ /api/internal/venues
 ├ ƒ /api/me
 ├ ƒ /api/venues
 ├ ƒ /api/venues/[venueId]
@@ -274,19 +330,29 @@ npm run build → 28 routes
 ├ ƒ /api/venues/[venueId]/categories/reorder
 ├ ƒ /api/venues/[venueId]/items
 ├ ƒ /api/venues/[venueId]/items/[itemId]
+├ ƒ /api/venues/[venueId]/items/[itemId]/allergens
+├ ƒ /api/venues/[venueId]/items/[itemId]/photo
+├ ƒ /api/venues/[venueId]/items/[itemId]/variants
+├ ƒ /api/venues/[venueId]/items/bulk-delete
 ├ ƒ /api/venues/[venueId]/items/bulk-visibility
-├ ƒ /api/venues/[venueId]/items/reorder
+├ ƒ /api/venues/[venueId]/items/export-csv
 ├ ƒ /api/venues/[venueId]/items/import-csv
+├ ƒ /api/venues/[venueId]/items/reorder
+├ ƒ /api/venues/[venueId]/logo
 ├ ƒ /api/venues/[venueId]/members
 ├ ƒ /api/venues/[venueId]/members/[memberId]
-├ ƒ /api/venues/[venueId]/logo
 ├ ƒ /api/venues/[venueId]/public-preview
 ├ ƒ /api/venues/[venueId]/publications
 ├ ƒ /api/venues/[venueId]/publish
+├ ƒ /api/venues/[venueId]/schedules
 ├ ƒ /api/venues/[venueId]/unpublish
-├ ƒ /admin/venues/new
+├ ƒ /internal
+├ ƒ /internal/users
+├ ƒ /internal/venues
 ├ ○ /login                               (static)
 ├ ƒ /m/[slug]
+├ ○ /password-reset                      (static)
+├ ƒ /password-reset/[token]
 └ ƒ /venues
 ƒ Proxy (Middleware)
 ```
@@ -321,54 +387,68 @@ npm run build → 28 routes
 
 Ordered by value, dependencies, and effort. Tasks with existing models/infra come first.
 
-### Priority 1 — Password Reset Flow
+### ✅ Priority 1 — Password Reset Flow
 - `POST /api/auth/password-reset/request` and `POST /api/auth/password-reset/confirm` endpoints
-- Reset token generation, email delivery, expiry, confirmation
+- Reset token generation, expiry, confirmation
 - UI: request form + reset form + confirmation
-- No new models needed — self-contained user auth feature
+- Invalidates all existing sessions on password change
 
-### Priority 2 — Audit Log Wiring
-- `AuditLog` model exists — wire recording into all mutation handlers (categories CUD, items CUD, publish/unpublish, member management)
-- Adds debugging and accountability with minimal schema work
+### ✅ Priority 2 — Audit Log Wiring
+- `AuditLog` model wired into all mutation handlers (categories CUD, items CUD, publish/unpublish, member management)
+- Records actor, action, entity type/id, and metadata
 
-### Priority 3 — CSV Export
-- Mirrors existing CSV import pattern (smart header detection, batch ops, import reporting)
-- Endpoint + download UI
-- Schema, parser, and endpoint pattern all proven
+### ✅ Priority 3 — CSV Export
+- `GET /api/venues/:venueId/items/export-csv` endpoint
+- UTF-8 BOM CSV with proper escaping
+- Client button updated to use server endpoint
 
-### Priority 4 — Photo Upload for Items (Milestone 5)
-- Sharp already installed, logo upload is a reference implementation
+### ✅ Priority 4 — Photo Upload for Items (Milestone 5)
 - `POST|DELETE /api/venues/:venueId/items/:id/photo` endpoints
-- Item photo UI in admin panel
-- Requires Arvan Object Storage or local filesystem fallback
+- Sharp-based resize (500px) + WebP compression (≤50KB)
+- Photo preview, upload, and delete in item edit modal
 
-### Priority 5 — Scheduled Visibility by Station
-- Operational value: e.g. "bar closed after 6pm", "kitchen opens at 8am"
-- Time-based visibility rules on stations
-- UI for configuring schedules
+### ✅ Priority 5 — Scheduled Visibility by Station
+- `StationSchedule` model with day-of-week + time ranges
+- `GET|POST /api/venues/:venueId/schedules` (bulk replace)
+- Schedule editor UI in settings page (per-day toggles with time pickers)
 
-### Priority 6 — Menu Item Variants / Sizes
-- Schema changes: variant model (name, price modifier)
-- UI: variant editor in item form
-- Renderer: display options on public menu
+### ✅ Priority 6 — Menu Item Variants / Sizes
+- `MenuItemVariant` model (nameFa, nameEn, priceModifier, displayOrder)
+- `GET|POST /api/venues/:venueId/items/:id/variants` (bulk replace)
+- Variant editor in item modal (add/remove/edit name + price modifier)
+- Public menu renderer: variant pills with price display
 
-### Priority 7 — Allergen Badges
-- Small schema addition + renderer update
-- Badges displayed on public menu items
-- Quick win, low effort
+### ✅ Priority 7 — Allergen Badges
+- `MenuItemAllergen` model with allergen codes
+- `src/lib/allergens.ts` with 14 allergen codes and Persian labels
+- `GET|POST /api/venues/:venueId/items/:id/allergens` (bulk replace)
+- Toggle-chip UI in item modal
+- Public menu renderer: allergen badges with Persian labels
 
-### Priority 8 — Custom Domains (Milestone 9)
+### ✅ Priority 8 — Internal Admin Tool
+- User role (`"internal"`) for mofé team
+- `/internal` page group with role guard
+- Create/list users and venues via internal API + UI
+- Seed: `admin@mofe.ir` / `admin1234`
+
+### ✅ Priority 9 — Menu Photo Display Toggle
+- `menuPhotoMode` field on Venue (default `false`)
+- Toggle in venue settings
+- New photo card theme in public menu renderer
+- Snapshot captures `photoUrl` when enabled
+
+### Priority 10 — Custom Domains
 - `Domain` model exists, subdomain + CNAME flows not built
 - `GET|POST /api/venues/:venueId/domain`, `POST .../verify`, `DELETE .../:id`
 - DNS verification, routing, SSL
 - High value for multi-venue pro plans but complex implementation
 
-### Priority 9 — CDN Upload of Static Menu HTML
+### Priority 11 — CDN Upload of Static Menu HTML
 - Needs CDN infrastructure in place
 - Upload publication snapshots on publish
 - Serve from CDN instead of DB on public route
 
-### Priority 10 — Analytics for QR Menu Views
+### Priority 12 — Analytics for QR Menu Views
 - Tracking pixel or server-side view logging
 - Dashboard for view counts
 - Needs tracking infra; nice-to-have

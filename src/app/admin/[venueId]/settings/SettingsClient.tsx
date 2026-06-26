@@ -24,6 +24,7 @@ interface SettingsClientProps {
   slug: string;
   timezone: string;
   plan: string;
+  menuPhotoMode: boolean;
   members: Member[];
   currentUserRole: string;
   currentUserId: string;
@@ -37,6 +38,7 @@ export function SettingsClient({
   slug,
   timezone: initialTimezone,
   plan,
+  menuPhotoMode: initialMenuPhotoMode,
   members: initialMembers,
   currentUserRole,
   currentUserId,
@@ -47,6 +49,7 @@ export function SettingsClient({
   const [nameEn, setNameEn] = useState(initialNameEn ?? "");
   const [timezone, setTimezone] = useState(initialTimezone);
   const [venueStatus, setVenueStatus] = useState("");
+  const [menuPhotoMode, setMenuPhotoMode] = useState(initialMenuPhotoMode);
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [addName, setAddName] = useState("");
   const [addUsername, setAddUsername] = useState("");
@@ -136,6 +139,7 @@ export function SettingsClient({
         nameFa,
         nameEn: nameEn || null,
         timezone,
+        menuPhotoMode,
       }),
     });
 
@@ -300,6 +304,16 @@ export function SettingsClient({
                 </option>
               ))}
             </select>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-line px-4 py-3">
+            <Toggle
+              on={menuPhotoMode}
+              onChange={(v) => setMenuPhotoMode(v)}
+            />
+            <div>
+              <div className="text-sm text-ink">نمایش عکس آیتم‌ها در منوی عمومی</div>
+              <div className="text-xs text-ink-muted">با فعال‌سازی، عکس آیتم‌ها در منوی منتشر شده نمایش داده می‌شود</div>
+            </div>
           </div>
           <Button onClick={handleSaveVenue}>ذخیره تغییرات</Button>
           {venueStatus && (

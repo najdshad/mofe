@@ -351,6 +351,7 @@ describe("Public Menu Rendering", () => {
           accentColor: venue.accentColor,
           logoUrl: null,
           slug: venue.slug,
+          menuPhotoMode: false,
         },
       categories: categories
         .filter((cat) => cat.menuItems.length > 0)

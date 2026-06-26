@@ -15,8 +15,9 @@ export interface SnapshotCategoryItem {
   station: string;
   calories: number | null;
   soldOut: boolean;
-  variants: SnapshotItemVariant[];
-  allergenCodes: string[];
+  variants?: SnapshotItemVariant[];
+  allergenCodes?: string[];
+  photoUrl?: string | null;
 }
 
 export interface SnapshotCategory {
@@ -34,6 +35,7 @@ export interface Snapshot {
     accentColor: string | null;
     logoUrl: string | null;
     slug: string;
+    menuPhotoMode?: boolean;
   };
   categories: SnapshotCategory[];
   generatedAt: string;
@@ -88,11 +90,82 @@ export function formatPrice(price: number): string {
   return price.toLocaleString("fa-IR");
 }
 
+function renderItemCard(item: SnapshotCategoryItem, showPhotos: boolean): string {
+  const variants = item.variants ?? [];
+  const allergenCodes = item.allergenCodes ?? [];
+  const photoUrl = item.photoUrl ?? null;
+  if (showPhotos && photoUrl) {
+    return `
+          <article class="item-card${item.soldOut ? " sold-out" : ""}">
+            <div class="item-photo-wrap">
+              <img class="item-photo" src="${esc(photoUrl)}" alt="" loading="lazy" />
+            </div>
+            <div class="item-body">
+              <div class="item-price-wrap">
+                <div class="item-price">${formatPrice(item.priceToman)}</div>
+                <div class="item-price-unit">تومان</div>
+              </div>
+              <h3 class="item-name">${esc(item.nameFa)}</h3>
+              ${item.nameEn ? `<p class="item-name-en">${esc(item.nameEn)}</p>` : ""}
+              ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
+              ${allergenCodes.length > 0 ? `
+              <div class="allergen-badges">
+                ${allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || code}</span>`).join("")}
+              </div>` : ""}
+              ${variants.length > 0 ? `
+              <div class="item-variants">
+                ${variants.map((v) => `
+                  <span class="variant-pill">
+                    ${esc(v.nameFa)}${v.nameEn ? ` (${esc(v.nameEn)})` : ""}
+                    ${v.priceModifier !== 0 ? `<span class="variant-price">${v.priceModifier > 0 ? "+" : ""}${formatPrice(v.priceModifier)}</span>` : ""}
+                  </span>`).join("")}
+              </div>` : ""}
+              <div class="item-meta">
+                ${item.soldOut ? '<span class="badge badge-status">ناموجود</span>' : ""}
+                ${item.calories ? `<span class="badge badge-emphasis">${item.calories} kcal</span>` : ""}
+              </div>
+            </div>
+          </article>`;
+  }
+
+  return `
+          <article class="item-card${item.soldOut ? " sold-out" : ""}">
+            <div class="item-header">
+              <div class="item-price-wrap">
+                <div class="item-price">${formatPrice(item.priceToman)}</div>
+                <div class="item-price-unit">تومان</div>
+              </div>
+              <div class="item-info">
+                <h3 class="item-name">${esc(item.nameFa)}</h3>
+                ${item.nameEn ? `<p class="item-name-en">${esc(item.nameEn)}</p>` : ""}
+                ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
+                ${allergenCodes.length > 0 ? `
+                <div class="allergen-badges">
+                  ${allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || code}</span>`).join("")}
+                </div>` : ""}
+                ${variants.length > 0 ? `
+                <div class="item-variants">
+                  ${variants.map((v) => `
+                    <span class="variant-pill">
+                      ${esc(v.nameFa)}${v.nameEn ? ` (${esc(v.nameEn)})` : ""}
+                      ${v.priceModifier !== 0 ? `<span class="variant-price">${v.priceModifier > 0 ? "+" : ""}${formatPrice(v.priceModifier)}</span>` : ""}
+                    </span>`).join("")}
+                </div>` : ""}
+                <div class="item-meta">
+                  ${item.soldOut ? '<span class="badge badge-status">ناموجود</span>' : ""}
+                  ${item.calories ? `<span class="badge badge-emphasis">${item.calories} kcal</span>` : ""}
+                </div>
+              </div>
+            </div>
+          </article>`;
+}
+
 export function renderPublicMenu(snapshot: Snapshot): string {
   const { venue, categories } = snapshot;
   const accent = venue.accentColor && venue.accentColor !== "#111111" ? venue.accentColor : null;
   const categoriesWithItems = categories.filter((cat) => cat.items.length > 0);
   const accentValue = accent ? esc(accent) : "#111111";
+  const showPhotos = !!venue.menuPhotoMode;
 
   const categoryNav =
     categoriesWithItems.length > 0
@@ -119,40 +192,7 @@ export function renderPublicMenu(snapshot: Snapshot): string {
         <div class="category-head">
           <h2 class="cat-title">${esc(cat.nameFa)}</h2>
         </div>
-        ${cat.items
-          .map(
-            (item) => `
-          <article class="item-card${item.soldOut ? " sold-out" : ""}">
-            <div class="item-header">
-              <div class="item-price-wrap">
-                <div class="item-price">${formatPrice(item.priceToman)}</div>
-                <div class="item-price-unit">تومان</div>
-              </div>
-              <div class="item-info">
-                <h3 class="item-name">${esc(item.nameFa)}</h3>
-                ${item.nameEn ? `<p class="item-name-en">${esc(item.nameEn)}</p>` : ""}
-                ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
-                ${item.allergenCodes && item.allergenCodes.length > 0 ? `
-                <div class="allergen-badges">
-                  ${item.allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || code}</span>`).join("")}
-                </div>` : ""}
-                ${item.variants && item.variants.length > 0 ? `
-                <div class="item-variants">
-                  ${item.variants.map((v) => `
-                    <span class="variant-pill">
-                      ${esc(v.nameFa)}${v.nameEn ? ` (${esc(v.nameEn)})` : ""}
-                      ${v.priceModifier !== 0 ? `<span class="variant-price">${v.priceModifier > 0 ? "+" : ""}${formatPrice(v.priceModifier)}</span>` : ""}
-                    </span>`).join("")}
-                </div>` : ""}
-                <div class="item-meta">
-                  ${item.soldOut ? '<span class="badge badge-status">ناموجود</span>' : ""}
-                  ${item.calories ? `<span class="badge badge-emphasis">${item.calories} kcal</span>` : ""}
-                </div>
-              </div>
-            </div>
-          </article>`
-          )
-          .join("\n")}
+        ${cat.items.map((item) => renderItemCard(item, showPhotos)).join("\n")}
       </section>`
     )
     .join("\n");
@@ -485,6 +525,36 @@ ${FONT_FACE_DECLARATIONS}
       }
       .menu-frame {
         padding: 16px 16px 20px;
+      }
+    }
+    .item-photo-wrap {
+      margin: -12px -14px 10px;
+      border-radius: 18px 18px 0 0;
+      overflow: hidden;
+      max-height: 200px;
+      background: rgba(17, 17, 17, 0.04);
+    }
+    .item-photo {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .item-body {
+      direction: rtl;
+    }
+    .item-body .item-name {
+      margin-top: 6px;
+    }
+    .item-body .item-meta {
+      justify-content: flex-start;
+    }
+    .item-body .item-price-wrap {
+      text-align: right;
+    }
+    @media (min-width: 421px) {
+      .item-photo {
+        height: 240px;
       }
     }
     @media print {

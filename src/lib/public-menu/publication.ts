@@ -36,6 +36,7 @@ export async function buildPublicSnapshot(venueId: string) {
       slug: venue.slug,
       publicUrl,
       publicStatus: venue.publicStatus,
+      menuPhotoMode: venue.menuPhotoMode,
     },
     categories: categories
       .filter((cat) => cat.menuItems.length > 0)
@@ -57,6 +58,7 @@ export async function buildPublicSnapshot(venueId: string) {
             priceModifier: v.priceModifier,
           })),
           allergenCodes: item.allergens.map((a) => a.allergenCode),
+          photoUrl: venue.menuPhotoMode ? item.photoAssetId : null,
         })),
       })),
     generatedAt: new Date().toISOString(),

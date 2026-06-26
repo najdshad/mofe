@@ -32,6 +32,7 @@ export default async function SettingsPage({
       slug={venue.slug}
       timezone={venue.timezone}
       plan={venue.plan}
+      menuPhotoMode={venue.menuPhotoMode}
       members={members.map((m) => ({
         id: m.id,
         userId: m.userId,
