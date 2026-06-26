@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { GripIcon, EditIcon, DeleteIcon } from "@/components/ui/Icons";
 import { fetchApi } from "@/lib/fetch-api";
+import { ALLERGEN_LABELS } from "@/lib/allergens";
 
 interface Category {
   id: string;
@@ -360,6 +361,7 @@ function ItemModal({
   const [photoAssetId, setPhotoAssetId] = useState(initial?.photoAssetId ?? null);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [variants, setVariants] = useState<{ nameFa: string; nameEn: string; priceModifier: number }[] | null>(null);
+  const [allergenCodes, setAllergenCodes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -379,6 +381,12 @@ function ItemModal({
           }
         })
         .catch(() => setVariants([]));
+      fetch(`/api/venues/${venueId}/items/${initial.id}/allergens`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) setAllergenCodes(data);
+        })
+        .catch(() => setAllergenCodes([]));
     }
   }, [open, initial, venueId]);
 
@@ -456,6 +464,13 @@ function ItemModal({
               priceModifier: v.priceModifier,
             })),
           }),
+        });
+      }
+      if (initial) {
+        await fetch(`/api/venues/${venueId}/items/${initial.id}/allergens`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ allergenCodes }),
         });
       }
       onClose();
@@ -662,6 +677,39 @@ function ItemModal({
               >
                 + افزودن تنوع
               </button>
+            </div>
+          </div>
+        )}
+        {initial && (
+          <div className="space-y-1.5">
+            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+              آلرژن‌ها
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(ALLERGEN_LABELS).map(([code, label]) => (
+                <label
+                  key={code}
+                  className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                    allergenCodes.includes(code)
+                      ? "border-ink bg-ink text-paper"
+                      : "border-line text-ink-muted hover:border-ink hover:text-ink"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={allergenCodes.includes(code)}
+                    onChange={() => {
+                      setAllergenCodes((prev) =>
+                        prev.includes(code)
+                          ? prev.filter((c) => c !== code)
+                          : [...prev, code]
+                      );
+                    }}
+                    className="sr-only"
+                  />
+                  {label}
+                </label>
+              ))}
             </div>
           </div>
         )}

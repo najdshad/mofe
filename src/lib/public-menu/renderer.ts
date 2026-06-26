@@ -1,3 +1,5 @@
+import { ALLERGEN_LABELS } from "@/lib/allergens";
+
 export interface SnapshotItemVariant {
   nameFa: string;
   nameEn: string | null;
@@ -14,6 +16,7 @@ export interface SnapshotCategoryItem {
   calories: number | null;
   soldOut: boolean;
   variants: SnapshotItemVariant[];
+  allergenCodes: string[];
 }
 
 export interface SnapshotCategory {
@@ -129,6 +132,10 @@ export function renderPublicMenu(snapshot: Snapshot): string {
                 <h3 class="item-name">${esc(item.nameFa)}</h3>
                 ${item.nameEn ? `<p class="item-name-en">${esc(item.nameEn)}</p>` : ""}
                 ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
+                ${item.allergenCodes && item.allergenCodes.length > 0 ? `
+                <div class="allergen-badges">
+                  ${item.allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || code}</span>`).join("")}
+                </div>` : ""}
                 ${item.variants && item.variants.length > 0 ? `
                 <div class="item-variants">
                   ${item.variants.map((v) => `
@@ -354,6 +361,18 @@ ${FONT_FACE_DECLARATIONS}
       color: #59544b;
       margin-top: 6px;
       line-height: 1.7;
+    }
+    .allergen-badges {
+      margin-top: 6px;
+      display: flex;
+      gap: 3px;
+      flex-wrap: wrap;
+    }
+    .badge-allergen {
+      border-color: rgba(17, 17, 17, 0.2);
+      color: #6e685d;
+      font-size: 10px;
+      padding: 1px 6px;
     }
     .item-variants {
       margin-top: 8px;
