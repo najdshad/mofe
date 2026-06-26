@@ -10,7 +10,7 @@ Persian-first cafe menu management: admin panel + static QR menus.
 - Password reset flow (request + confirm endpoints, UI, invalidates all sessions)
 - Multi-venue support with membership and 3 roles: owner, manager, staff
 - Role-based access enforcement on all API routes
-- Rate-limited login (5 attempts/minute, in-memory)
+- Rate-limited login and password reset (5 attempts/minute, DB-backed via RateLimitEntry model)
 - Venue picker page, admin layout with header + navigation
 
 ### Internal Admin Tool
@@ -48,6 +48,7 @@ Persian-first cafe menu management: admin panel + static QR menus.
 - No client JS or API calls — pure static HTML response (~10KB)
 
 ### API Endpoints
+- `GET /api/health`
 - `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me`
 - `POST /api/auth/password-reset/request`, `POST /api/auth/password-reset/confirm`
 - `GET /api/venues`, `GET|PATCH /api/venues/[venueId]`
@@ -65,7 +66,7 @@ Persian-first cafe menu management: admin panel + static QR menus.
 - `GET|POST /api/internal/users`, `GET|POST /api/internal/venues`
 
 ### Data Model
-14 models: User, Venue, VenueMember, Category, MenuItem, Asset, MenuPublication, Domain, AuditLog, Session, PasswordResetToken, StationSchedule, MenuItemVariant, MenuItemAllergen
+15 models: User, Venue, VenueMember, Category, MenuItem, Asset, MenuPublication, Domain, AuditLog, Session, PasswordResetToken, StationSchedule, MenuItemVariant, MenuItemAllergen, RateLimitEntry
 - SQLite (dev), Prisma ORM v7
 - UUID primary keys, soft-delete, money as integer Toman
 - Generated client at `src/generated/prisma`
@@ -101,7 +102,7 @@ Persian-first cafe menu management: admin panel + static QR menus.
 - Tailwind CSS v4 with custom theme tokens
 
 ### Testing
-- Vitest v4, 130 tests: 48 renderer, 46 integration, 12 api-helpers, 8 auth, 8 config, 8 rate-limit
+- Vitest v4, 138 tests: 54 integration (includes 8 cross-venue isolation), 48 renderer, 12 api-helpers, 8 auth, 8 config, 8 rate-limit
 - Real SQLite test DB (`test.db`), created fresh per run via `global-setup.ts`
 
 ## Future (Not Yet Built)

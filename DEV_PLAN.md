@@ -79,7 +79,7 @@ The customer phone must not hit the API in v1. Public menus are generated and se
 
 ## 5. Database Schema
 
-14 models: User, Venue, VenueMember, Category, MenuItem, Asset, MenuPublication, Domain, AuditLog, Session, PasswordResetToken, StationSchedule, MenuItemVariant, MenuItemAllergen.
+15 models: User, Venue, VenueMember, Category, MenuItem, Asset, MenuPublication, Domain, AuditLog, Session, PasswordResetToken, StationSchedule, MenuItemVariant, MenuItemAllergen, RateLimitEntry.
 
 - UUID primary keys, soft-delete on categories and items
 - Money stored as integer Toman
@@ -203,13 +203,13 @@ REST endpoints. All mutations require authentication and venue authorization.
 
 **Framework:** Vitest v4, default pool.
 
-**Test files:** 130 tests across 6 files
+**Test files:** 138 tests across 6 files
+- `src/__tests__/api/integration.test.ts` — 54 tests (auth, categories/items CRUD, reorder, bulk visibility, publish workflow, permissions, CSV import, publication edge cases, public menu rendering, cross-venue isolation)
 - `src/__tests__/lib/public-menu/renderer.test.ts` — 48 tests (HTML structure, Persian formatting, escaping, edge cases)
-- `src/__tests__/api/integration.test.ts` — 46 tests (auth, categories/items CRUD, reorder, bulk visibility, publish workflow, permissions, CSV import, publication edge cases, public menu rendering)
 - `src/__tests__/lib/api-helpers.test.ts` — 12 tests (ApiError, errorResponse, requireAuth, getCurrentUser edge cases)
 - `src/__tests__/lib/auth.test.ts` — 8 tests (hashToken, generateToken, hashPassword, verifyPassword)
 - `src/__tests__/lib/config.test.ts` — 8 tests (getPublicMenuUrl)
-- `src/__tests__/lib/rate-limit.test.ts` — 8 tests (rateLimit helper)
+- `src/__tests__/lib/rate-limit.test.ts` — 8 tests (rateLimit helper — DB-backed)
 
 **Infrastructure:**
 - `src/__tests__/global-setup.ts` — creates fresh `test.db` with `prisma db push` before all tests, cleans up after
@@ -303,8 +303,18 @@ REST endpoints. All mutations require authentication and venue authorization.
 
 ### ⏳ Milestone 12 — Domains and Plans (Not started)
 
-### ⏳ Milestone 13 — Hardening and Launch (Partially started)
-- Completed: Vitest test suite with 130 tests, 6 test files
+### ✅ Milestone 13 — Hardening and Launch
+- Vitest test suite: 138 tests across 6 test files
+- DB-backed rate limiting (survives restarts, cross-instance)
+- SQLite WAL mode + busy timeout for concurrent write performance
+- Cross-venue isolation tests (8 specific assertions)
+- CSV formula injection sanitization
+- Production boot guard for default admin password
+- Email delivery infrastructure (SMTP via nodemailer)
+- S3-compatible storage abstraction (local fallback)
+- nginx TLS/HTTPS configuration with HTTP→HTTPS redirect
+- Docker HEALTHCHECK for app container
+- Health check endpoint (`GET /api/health`)
 
 ## 20. Current Build
 
@@ -373,8 +383,10 @@ npm run build → 40 routes
 - **DnD:** two separate DndContexts (categories sidebar, items within category)
 - **Filtered items sorted** by displayOrder after filter for DnD visual consistency
 - **Test DB:** real SQLite `test.db`, global-setup creates fresh DB per run
-- **Rate limiting:** in-memory `rateMap` on login (5 attempts/minute)
-- **CSV import:** homegrown CSV parser with smart header detection, category auto-creation, import reporting
+- **Rate limiting:** DB-backed via `RateLimitEntry` model — survives restarts, works across instances
+- **CSV import:** homegrown CSV parser with smart header detection, category auto-creation, import reporting; sanitizes formula injection (`=`, `+`, `-`, `@`, `\t`)
+- **Email:** SMTP via nodemailer (configurable); logs to console when unconfigured
+- **Storage:** Local filesystem default, S3-compatible when `S3_*` env vars are set
 - **Logo upload:** sharp-based resize (500px) + WebP compression (≤50KB)
 - **Member login scheme:** `username@venue.slug` email pattern
 

@@ -21,7 +21,9 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | CSV | papaparse |
 | Icons | lucide-react |
 | Image Processing | sharp |
-| Testing | Vitest v4 (130 tests) |
+| Email | nodemailer (SMTP) |
+| Storage | Local filesystem / S3-compatible (configurable) |
+| Testing | Vitest v4 (138 tests) |
 | Runtime | Node 22 |
 
 ## Quick Start
@@ -55,7 +57,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint (Next.js core-web-vitals + TypeScript rules) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Run 130 tests (vitest run) |
+| `npm test` | Run 138 tests (vitest run) |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run db:studio` | Prisma Studio |
 | `npm run db:seed` | Seed demo data (upsert) |
@@ -82,7 +84,9 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 | `/internal/users` | Dynamic | Internal user management: list users, create accounts |
 | `/internal/venues` | Dynamic | Internal venue management: list venues, create venues with owner |
 
-### API Endpoints (28 routes)
+### API Endpoints (29 routes)
+
+**Health:** `GET /api/health`
 
 **Internal (mofé team only):** `GET|POST /api/internal/users`, `GET|POST /api/internal/venues`
 
@@ -146,9 +150,9 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 ### Auth & Permissions
 - 3 roles: owner, manager, staff
 - Role-based enforcement on all API routes via `requireRole()` / `canManage*()` helpers
-- Multi-venue support with membership verification
-- In-memory rate limiting on login (5 attempts/minute) with periodic stale-entry cleanup
-- Session-based auth: SHA-256 token hash, 7-day TTL, HTTP-only cookie, revocable
+- Multi-venue support with membership verification (tested cross-venue isolation)
+- DB-backed rate limiting on login and password reset (5 attempts/minute window)
+- Session-based auth: SHA-256 token hash, 7-day TTL, HTTP-only cookie (`sameSite: lax`), revocable
 
 ### Venue Management
 - Settings: name (Fa/En), timezone, public status
@@ -166,6 +170,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 - Self-service password reset flow: request + confirm endpoints
 - Rate-limited token generation with 1-hour expiry
 - Invalidates all existing sessions on password change
+- Email delivery via configurable SMTP (nodemailer); logs to console when unconfigured
 
 ### CSV Import
 - Smart column header detection (supports multiple naming conventions)
@@ -200,15 +205,17 @@ Full design system in [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md).
 
 ## Testing
 
-130 tests across 6 files with real SQLite test DB:
+138 tests across 6 files with real SQLite test DB:
 
 ```
+src/__tests__/api/integration.test.ts           — 54 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
+│                                                    permissions, CSV import, publication edge cases,
+│                                                    cross-venue isolation)
 src/__tests__/lib/public-menu/renderer.test.ts  — 48 tests (HTML structure, Persian formatting, escaping, edge cases)
-src/__tests__/api/integration.test.ts           — 46 tests (auth, CRUD, reorder, bulk visibility, publish workflow, permissions, CSV import, publication edge cases)
 src/__tests__/lib/api-helpers.test.ts           — 12 tests (ApiError, errorResponse, requireAuth)
 src/__tests__/lib/auth.test.ts                  —  8 tests (hashToken, generateToken, hashPassword, verifyPassword)
 src/__tests__/lib/config.test.ts                —  8 tests (getPublicMenuUrl)
-src/__tests__/lib/rate-limit.test.ts            —  8 tests (rateLimit helper)
+src/__tests__/lib/rate-limit.test.ts            —  8 tests (rateLimit helper — DB-backed)
 ```
 
 Run: `npm test` (creates fresh `test.db`, runs tests, cleans up).
@@ -228,10 +235,11 @@ Run: `npm test` (creates fresh `test.db`, runs tests, cleans up).
 ```
 mofe-menu/
 ├── prisma/                     # Schema, migrations, seed
-│   ├── schema.prisma           # 14 models (User, Venue, VenueMember, Category,
+│   ├── schema.prisma           # 15 models (User, Venue, VenueMember, Category,
 │   │                           #   MenuItem, Asset, MenuPublication, Domain, AuditLog,
 │   │                           #   Session, PasswordResetToken, StationSchedule,
-│   │                           #   MenuItemVariant, MenuItemAllergen)
+│   │                           #   MenuItemVariant, MenuItemAllergen,
+│   │                           #   RateLimitEntry)
 │   └── seed.ts                 # Demo data seeder
 ├── public/
 │   ├── fonts/                  # Self-hosted fonts (5 files)
@@ -249,7 +257,8 @@ mofe-menu/
 │   │   ├── admin/
 │   │   │   ├── [venueId]/      # Admin pages (4 sections)
 │   │   │   └── venues/new/     # (reserved)
-│   │   ├── api/                # REST API routes (31 endpoints)
+│   │   ├── api/                # REST API routes (32 endpoints)  
+│   │   │   ├── health/         # Health check endpoint
 │   │   │   ├── internal/       # Internal mofé team endpoints
 │   │   ├── login/              # Login page
 │   │   ├── password-reset/     # Password reset flow (request + confirm pages)
@@ -280,9 +289,11 @@ mofe-menu/
 │   │   ├── constants.ts        # TIMEZONE_LABELS, ROLE_LABELS, STATION_LABELS, STATUS_LABELS, DAY_LABELS
 │   │   ├── demo.ts             # Demo data helpers
 │   │   ├── fetch-api.ts        # fetchApi() — typed fetch wrapper with error handling
+│   │   ├── mailer.ts           # Email delivery via SMTP (nodemailer)
 │   │   ├── permissions.ts      # Role-based access (owner/manager/staff)
-│   │   ├── prisma.ts           # Prisma singleton (PrismaSqlite adapter)
-│   │   └── rate-limit.ts       # In-memory rate limiter with periodic cleanup
+│   │   ├── prisma.ts           # Prisma singleton (PrismaSqlite adapter, WAL mode)
+│   │   ├── rate-limit.ts       # DB-backed rate limiter (RateLimitEntry model)
+│   │   └── storage.ts          # File storage abstraction (local/S3-compatible)
 │   └── proxy.ts                # Auth proxy (export: proxy, not middleware)
 ├── AGENTS.md                   # AI development instructions
 ├── DESIGN-LANGUAGE.md           # Design system
@@ -310,5 +321,11 @@ mofe-menu/
 - **Fonts:** All self-hosted at `/fonts/`, no Google Fonts or external CDN — 5 files; `@font-face` declarations live in a shared `FONT_FACE_DECLARATIONS` constant in `renderer.ts`
 - **Tailwind v4:** No config file — CSS-based via `@theme inline {}` in `globals.css`
 - **Query engine:** `library` mode (no binary dependencies)
+- **SQLite WAL mode:** Enabled at startup (`PRAGMA journal_mode=WAL`, `busy_timeout=5000`)
+- **Rate limiting:** DB-backed via `RateLimitEntry` model — survives restarts
+- **Email:** Configurable SMTP via `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` env vars; logs to console when unconfigured
+- **Storage:** Local filesystem by default; set `S3_*` env vars to use S3-compatible object storage
+- **CSV import:** Formula injection sanitized — cells starting with `=`, `+`, `-`, `@`, `\t` are prefixed with `'`
+- **Boot guard:** Production startup warns if `admin@mofe.ir` still uses default password
 - **Design tokens:** CSS vars `--paper`, `--ink`, `--ink-strong`, `--ink-muted`, `--line`, `--surface`
 - **Radii:** Panel 28px, Card 24px, Control 16px (CSS vars)

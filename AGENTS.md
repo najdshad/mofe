@@ -9,7 +9,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (130 tests)
+npm test             # Vitest run (138 tests)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -42,7 +42,7 @@ npm run db:studio    # Prisma Studio
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 130 tests pass
+3. `npm test` — all 138 tests pass
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas
@@ -68,6 +68,7 @@ npm run db:studio    # Prisma Studio
 - **Auth helpers exported:** `hashToken`, `generateToken`, `hashPassword`, `verifyPassword`, `createSession`, `getCurrentUser`, `destroySession`, `createPasswordResetToken`, `validatePasswordResetToken`, `consumePasswordResetToken`
 - **Route auth helper:** `requireAuth()` from `@/lib/api-helpers` — used in every API route handler (throws `ApiError` on failure)
 - **Error formatting:** `errorResponse(e)` from `@/lib/api-helpers` — wrap all route handlers in try/catch
+- **Rate limiting:** DB-backed via `RateLimitEntry` model — `await rateLimit(key, maxAttempts=5, windowMs=60000)`
 
 ### Permissions
 - 3 roles: `owner`, `manager`, `staff`
@@ -138,6 +139,9 @@ All use `forwardRef` where applicable. Variants:
 | HTML renderer | `src/lib/public-menu/renderer.ts` |
 | Publication helpers | `src/lib/public-menu/publication.ts` |
 | Auth proxy | `src/proxy.ts` |
+| Rate limiter | `src/lib/rate-limit.ts` |
+| Mailer | `src/lib/mailer.ts` |
+| Storage | `src/lib/storage.ts` |
 | Design tokens + fonts | `src/app/globals.css` |
 | UI components | `src/components/ui/` |
 | Tests | `src/__tests__/` |
@@ -185,9 +189,23 @@ All use `forwardRef` where applicable. Variants:
 
 ```env
 DATABASE_URL="file:./dev.db"
+
+# Email (optional — logs to console when unset)
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_FROM="noreply@mofe.ir"
+
+# S3-compatible storage (optional — uses local filesystem when unset)
+S3_BUCKET=""
+S3_REGION=""
+S3_ENDPOINT=""
+S3_ACCESS_KEY_ID=""
+S3_SECRET_ACCESS_KEY=""
 ```
 
-Single env var. Test suite overrides with `file:./test.db` in global-setup.
+Core: `DATABASE_URL`. Test suite overrides with `file:./test.db` in global-setup.
 
 ## Demo Credentials
 
