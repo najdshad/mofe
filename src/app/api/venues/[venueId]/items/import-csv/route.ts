@@ -4,6 +4,15 @@ import { canManageItems } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import Papa from "papaparse";
 
+const FORMULA_INJECTION_RE = /^[=+\-@\t]/;
+
+function sanitizeCsvField(value: string): string {
+  if (FORMULA_INJECTION_RE.test(value)) {
+    return "'" + value;
+  }
+  return value;
+}
+
 function findHeaderIndex(headers: string[], ...names: string[]): number {
   for (const name of names) {
     const idx = headers.findIndex(
@@ -99,7 +108,7 @@ export async function POST(
     const cat = await prisma.category.create({
       data: {
         venueId,
-        nameFa: uniqueCategoryNames[i],
+        nameFa: sanitizeCsvField(uniqueCategoryNames[i]),
         displayOrder: i,
       },
     });
@@ -113,7 +122,7 @@ export async function POST(
     const row = dataRows[i];
     const rowNum = i + 2;
 
-    const nameFa = row[idxNameFa]?.trim();
+    const nameFa = sanitizeCsvField(row[idxNameFa]?.trim() ?? "");
     if (!nameFa) {
       results.push({ row: rowNum, status: "skipped", nameFa: "", message: "نام فارسی خالی است" });
       continue;
@@ -145,8 +154,8 @@ export async function POST(
       continue;
     }
 
-    const nameEn = idxNameEn !== -1 ? row[idxNameEn]?.trim() || null : null;
-    const description = idxDescription !== -1 ? row[idxDescription]?.trim() || null : null;
+    const nameEn = idxNameEn !== -1 ? sanitizeCsvField(row[idxNameEn]?.trim() ?? "") || null : null;
+    const description = idxDescription !== -1 ? sanitizeCsvField(row[idxDescription]?.trim() ?? "") || null : null;
     const caloriesRaw = idxCalories !== -1 ? row[idxCalories]?.trim() : null;
     const calories = caloriesRaw ? parseInt(caloriesRaw, 10) || null : null;
     const visibleRaw = idxVisible !== -1 ? row[idxVisible]?.trim().toLowerCase() : null;
