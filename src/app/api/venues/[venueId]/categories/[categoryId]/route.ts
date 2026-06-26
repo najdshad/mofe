@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManageCategories } from "@/lib/permissions";
+import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -11,7 +11,7 @@ export async function PATCH(
   try {
     const user = await requireAuth();
     const { venueId, categoryId } = await params;
-    await canManageCategories(user.id, venueId);
+    await canManage(user.id, venueId);
 
     const body = await request.json();
 
@@ -42,7 +42,7 @@ export async function DELETE(
   try {
     const user = await requireAuth();
     const { venueId, categoryId } = await params;
-    await canManageCategories(user.id, venueId);
+    await canManage(user.id, venueId);
 
     const itemCount = await prisma.menuItem.count({
       where: { categoryId, deletedAt: null },

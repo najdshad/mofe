@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManageItems } from "@/lib/permissions";
+import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
+import { VALID_STATIONS } from "@/lib/constants";
 import Papa from "papaparse";
 
 const FORMULA_INJECTION_RE = /^[=+\-@\t]/;
@@ -31,8 +33,8 @@ export async function POST(
     const user = await requireAuth();
 
     const { venueId } = await params;
-    const canManage = await canManageItems(user.id, venueId);
-    if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const hasAccess = await canManage(user.id, venueId);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await request.json();
   const csvText = body.csv as string;
@@ -79,18 +81,6 @@ export async function POST(
     return NextResponse.json({ error: "ستون priceToman (قیمت) در CSV یافت نشد" }, { status: 400 });
   }
 
-  const now = new Date();
-
-  await prisma.menuItem.updateMany({
-    where: { venueId, deletedAt: null },
-    data: { deletedAt: now },
-  });
-
-  await prisma.category.updateMany({
-    where: { venueId, deletedAt: null },
-    data: { deletedAt: now },
-  });
-
   const uniqueCategoryNames: string[] = [];
   const seenCategories = new Set<string>();
   for (const row of dataRows) {
@@ -103,91 +93,114 @@ export async function POST(
     }
   }
 
-  const categoryMap = new Map<string, string>();
-  for (let i = 0; i < uniqueCategoryNames.length; i++) {
-    const cat = await prisma.category.create({
-      data: {
-        venueId,
-        nameFa: sanitizeCsvField(uniqueCategoryNames[i]),
-        displayOrder: i,
-      },
-    });
-    categoryMap.set(uniqueCategoryNames[i].toLowerCase(), cat.id);
-  }
-
-  const categoryOrderCounters = new Map<string, number>();
   const results: { row: number; status: string; nameFa: string; message?: string }[] = [];
 
-  for (let i = 0; i < dataRows.length; i++) {
-    const row = dataRows[i];
-    const rowNum = i + 2;
+  await prisma.$transaction(async (tx) => {
+    const now = new Date();
 
-    const nameFa = sanitizeCsvField(row[idxNameFa]?.trim() ?? "");
-    if (!nameFa) {
-      results.push({ row: rowNum, status: "skipped", nameFa: "", message: "نام فارسی خالی است" });
-      continue;
-    }
+    await tx.menuItem.updateMany({
+      where: { venueId, deletedAt: null },
+      data: { deletedAt: now },
+    });
 
-    const categoryNameFa = row[idxCategory]?.trim();
-    if (!categoryNameFa) {
-      results.push({ row: rowNum, status: "skipped", nameFa, message: "نام دسته خالی است" });
-      continue;
-    }
+    await tx.category.updateMany({
+      where: { venueId, deletedAt: null },
+      data: { deletedAt: now },
+    });
 
-    const categoryId = categoryMap.get(categoryNameFa.toLowerCase());
-    if (!categoryId) {
-      results.push({ row: rowNum, status: "skipped", nameFa, message: `دسته "${categoryNameFa}" یافت نشد` });
-      continue;
-    }
-
-    const priceRaw = row[idxPrice]?.trim().replace(/[,\s]/g, "");
-    let priceToman = parseInt(priceRaw, 10);
-    if (isNaN(priceToman)) priceToman = 0;
-    if (priceToman < 0) {
-      results.push({ row: rowNum, status: "skipped", nameFa, message: "قیمت نامعتبر است" });
-      continue;
-    }
-
-    const station = row[idxStation]?.trim().toLowerCase();
-    if (station && !["kitchen", "bar"].includes(station)) {
-      results.push({ row: rowNum, status: "skipped", nameFa, message: `ایستگاه "${station}" نامعتبر است (kitchen یا bar)` });
-      continue;
-    }
-
-    const nameEn = idxNameEn !== -1 ? sanitizeCsvField(row[idxNameEn]?.trim() ?? "") || null : null;
-    const description = idxDescription !== -1 ? sanitizeCsvField(row[idxDescription]?.trim() ?? "") || null : null;
-    const caloriesRaw = idxCalories !== -1 ? row[idxCalories]?.trim() : null;
-    const calories = caloriesRaw ? parseInt(caloriesRaw, 10) || null : null;
-    const visibleRaw = idxVisible !== -1 ? row[idxVisible]?.trim().toLowerCase() : null;
-    const visibleOnPublicMenu = visibleRaw === "false" || visibleRaw === "0" || visibleRaw === "no" || visibleRaw === "خیر" ? false : true;
-    const soldOutRaw = idxSoldOut !== -1 ? row[idxSoldOut]?.trim().toLowerCase() : null;
-    const isSoldOut = soldOutRaw === "true" || soldOutRaw === "1" || soldOutRaw === "yes" || soldOutRaw === "بله";
-
-    const order = categoryOrderCounters.get(categoryId) ?? 0;
-    categoryOrderCounters.set(categoryId, order + 1);
-
-    try {
-      await prisma.menuItem.create({
+    const categoryMap = new Map<string, string>();
+    for (let i = 0; i < uniqueCategoryNames.length; i++) {
+      const cat = await tx.category.create({
         data: {
           venueId,
-          categoryId,
-          nameFa,
-          nameEn,
-          description,
-          priceToman,
-          station: station || "kitchen",
-          calories,
-          visibleOnPublicMenu,
-          isSoldOut,
-          displayOrder: order,
+          nameFa: sanitizeCsvField(uniqueCategoryNames[i]),
+          displayOrder: i,
         },
       });
-      results.push({ row: rowNum, status: "created", nameFa });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "خطای ناشناخته";
-      results.push({ row: rowNum, status: "error", nameFa, message });
+      categoryMap.set(uniqueCategoryNames[i].toLowerCase(), cat.id);
     }
-  }
+
+    const categoryOrderCounters = new Map<string, number>();
+
+    for (let i = 0; i < dataRows.length; i++) {
+      const row = dataRows[i];
+      const rowNum = i + 2;
+
+      const nameFa = sanitizeCsvField(row[idxNameFa]?.trim() ?? "");
+      if (!nameFa) {
+        results.push({ row: rowNum, status: "skipped", nameFa: "", message: "نام فارسی خالی است" });
+        continue;
+      }
+
+      const categoryNameFa = row[idxCategory]?.trim();
+      if (!categoryNameFa) {
+        results.push({ row: rowNum, status: "skipped", nameFa, message: "نام دسته خالی است" });
+        continue;
+      }
+
+      const categoryId = categoryMap.get(categoryNameFa.toLowerCase());
+      if (!categoryId) {
+        results.push({ row: rowNum, status: "skipped", nameFa, message: `دسته "${categoryNameFa}" یافت نشد` });
+        continue;
+      }
+
+      const priceRaw = row[idxPrice]?.trim().replace(/[,\s]/g, "");
+      let priceToman = parseInt(priceRaw, 10);
+      if (isNaN(priceToman)) priceToman = 0;
+      if (priceToman < 0) {
+        results.push({ row: rowNum, status: "skipped", nameFa, message: "قیمت نامعتبر است" });
+        continue;
+      }
+
+      const station = row[idxStation]?.trim().toLowerCase();
+      if (station && !VALID_STATIONS.includes(station as typeof VALID_STATIONS[number])) {
+        results.push({ row: rowNum, status: "skipped", nameFa, message: `ایستگاه "${station}" نامعتبر است (kitchen یا bar)` });
+        continue;
+      }
+
+      const nameEn = idxNameEn !== -1 ? sanitizeCsvField(row[idxNameEn]?.trim() ?? "") || null : null;
+      const description = idxDescription !== -1 ? sanitizeCsvField(row[idxDescription]?.trim() ?? "") || null : null;
+      const caloriesRaw = idxCalories !== -1 ? row[idxCalories]?.trim() : null;
+      const calories = caloriesRaw ? parseInt(caloriesRaw, 10) || null : null;
+      const visibleRaw = idxVisible !== -1 ? row[idxVisible]?.trim().toLowerCase() : null;
+      const visibleOnPublicMenu = visibleRaw === "false" || visibleRaw === "0" || visibleRaw === "no" || visibleRaw === "خیر" ? false : true;
+      const soldOutRaw = idxSoldOut !== -1 ? row[idxSoldOut]?.trim().toLowerCase() : null;
+      const isSoldOut = soldOutRaw === "true" || soldOutRaw === "1" || soldOutRaw === "yes" || soldOutRaw === "بله";
+
+      const order = categoryOrderCounters.get(categoryId) ?? 0;
+      categoryOrderCounters.set(categoryId, order + 1);
+
+      try {
+        await tx.menuItem.create({
+          data: {
+            venueId,
+            categoryId,
+            nameFa,
+            nameEn,
+            description,
+            priceToman,
+            station: station || "kitchen",
+            calories,
+            visibleOnPublicMenu,
+            isSoldOut,
+            displayOrder: order,
+          },
+        });
+        results.push({ row: rowNum, status: "created", nameFa });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "خطای ناشناخته";
+        results.push({ row: rowNum, status: "error", nameFa, message });
+      }
+    }
+  });
+
+  await logAudit({
+    venueId,
+    actorUserId: user.id,
+    action: "import_csv",
+    entityType: "menu",
+    metadata: { total: results.length },
+  });
 
   const created = results.filter((r) => r.status === "created").length;
   const skipped = results.filter((r) => r.status === "skipped").length;

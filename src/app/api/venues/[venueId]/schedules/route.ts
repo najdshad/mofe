@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { VALID_STATIONS } from "@/lib/constants";
 import { logAudit } from "@/lib/audit";
 
 export async function GET(
@@ -39,7 +40,7 @@ export async function POST(
     }
 
     for (const s of body.schedules) {
-      if (!["kitchen", "bar"].includes(s.station)) {
+      if (!VALID_STATIONS.includes(s.station as typeof VALID_STATIONS[number])) {
         return NextResponse.json(
           { error: `Invalid station: ${s.station}` },
           { status: 400 }

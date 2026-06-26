@@ -1,14 +1,17 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
+import { Pool } from "pg";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 const DEFAULT_INTERNAL_PASSWORD = "admin1234";
 
 function createPrismaClient() {
-  const adapter = new PrismaPg(
-    process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe"
-  );
+  const pool = new Pool({
+    connectionString:
+      process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe",
+  });
+  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 

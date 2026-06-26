@@ -1,28 +1,28 @@
 import { prisma } from "./prisma";
 
 export async function rateLimit(key: string, maxAttempts = 5, windowMs = 60000) {
-  const now = Date.now();
+  return await prisma.$transaction(async (tx) => {
+    const now = Date.now();
+    const existing = await tx.rateLimitEntry.findUnique({ where: { key } });
 
-  const existing = await prisma.rateLimitEntry.findUnique({ where: { key } });
+    if (!existing || now > existing.resetAt.getTime()) {
+      await tx.rateLimitEntry.upsert({
+        where: { key },
+        update: { count: 1, resetAt: new Date(now + windowMs) },
+        create: { key, count: 1, resetAt: new Date(now + windowMs) },
+      });
+      return { allowed: true, remaining: maxAttempts - 1 };
+    }
 
-  if (!existing || now > existing.resetAt.getTime()) {
-    await prisma.rateLimitEntry.upsert({
+    if (existing.count >= maxAttempts) {
+      return { allowed: false, remaining: 0 };
+    }
+
+    await tx.rateLimitEntry.update({
       where: { key },
-      update: { count: 1, resetAt: new Date(now + windowMs) },
-      create: { key, count: 1, resetAt: new Date(now + windowMs) },
+      data: { count: { increment: 1 } },
     });
-    return { allowed: true, remaining: maxAttempts - 1 };
-  }
 
-  if (existing.count >= maxAttempts) {
-    return { allowed: false, remaining: 0 };
-  }
-
-  await prisma.rateLimitEntry.upsert({
-    where: { key },
-    update: { count: { increment: 1 } },
-    create: { key, count: 1, resetAt: new Date(now + windowMs) },
+    return { allowed: true, remaining: maxAttempts - existing.count - 1 };
   });
-
-  return { allowed: true, remaining: maxAttempts - existing.count - 1 };
 }

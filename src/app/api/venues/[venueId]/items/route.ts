@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManageItems, requireVenueAccess } from "@/lib/permissions";
+import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import type { Prisma } from "@/generated/prisma/client";
+import { VALID_STATIONS } from "@/lib/constants";
 
 export async function GET(
   request: Request,
@@ -20,7 +22,7 @@ export async function GET(
     const soldOut = searchParams.get("soldOut");
     const search = searchParams.get("search");
 
-    const where: Record<string, unknown> = { venueId, deletedAt: null };
+    const where: Prisma.MenuItemWhereInput = { venueId, deletedAt: null };
     if (categoryId) where.categoryId = categoryId;
     if (station) where.station = station;
     if (visible !== null) where.visibleOnPublicMenu = visible === "true";
@@ -51,8 +53,8 @@ export async function POST(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    const canManage = await canManageItems(user.id, venueId);
-    if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const hasAccess = await canManage(user.id, venueId);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await request.json();
 
@@ -65,7 +67,7 @@ export async function POST(
     if (body.priceToman == null || isNaN(Number(body.priceToman)) || Number(body.priceToman) < 0) {
       return NextResponse.json({ error: "قیمت معتبر وارد کنید" }, { status: 400 });
     }
-    if (!body.station || !["kitchen", "bar"].includes(body.station)) {
+    if (!body.station || !VALID_STATIONS.includes(body.station)) {
       return NextResponse.json({ error: "ایستگاه معتبر وارد کنید" }, { status: 400 });
     }
 

@@ -221,6 +221,10 @@ model AuditLog {
 
   venue Venue? @relation(fields: [venueId], references: [id])
   actor User?  @relation("ActorLogs", fields: [actorUserId], references: [id])
+
+  @@index([venueId])
+  @@index([actorUserId])
+  @@index([createdAt])
 }
 
 model PasswordResetToken {
@@ -253,4 +257,6 @@ model Session {
   revokedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }

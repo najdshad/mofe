@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManageItems } from "@/lib/permissions";
+import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(
@@ -10,8 +10,8 @@ export async function POST(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    const canManage = await canManageItems(user.id, venueId);
-    if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const hasAccess = await canManage(user.id, venueId);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body: { itemIds: string[] } = await request.json();
 

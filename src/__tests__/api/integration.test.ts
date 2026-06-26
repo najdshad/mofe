@@ -8,9 +8,7 @@ import { verifyPassword } from "@/lib/auth";
 import {
   requireVenueAccess,
   requireRole,
-  canManageCategories,
-  canManageItems,
-  canPublish,
+  canManage,
   getAccessibleVenues,
 } from "@/lib/permissions";
 
@@ -488,37 +486,32 @@ describe("Permission functions", () => {
     );
   });
 
-  it("canManageCategories returns true for owner", async () => {
-    expect(await canManageCategories(data.user.id, data.venue.id)).toBe(true);
+  it("canManage returns true for owner", async () => {
+    expect(await canManage(data.user.id, data.venue.id)).toBe(true);
   });
 
-  it("canManageCategories returns true for manager", async () => {
+  it("canManage returns true for manager", async () => {
     const managerUser = await prisma.user.create({
       data: { email: "manager2@test.ir", name: "Manager2", passwordHash: "", status: "active" },
     });
     await prisma.venueMember.create({
       data: { venueId: data.venue.id, userId: managerUser.id, role: "manager" },
     });
-    expect(await canManageCategories(managerUser.id, data.venue.id)).toBe(true);
+    expect(await canManage(managerUser.id, data.venue.id)).toBe(true);
   });
 
-  it("canManageCategories returns false for staff", async () => {
+  it("canManage returns false for staff", async () => {
     const staffUser = await prisma.user.create({
       data: { email: "staff3@test.ir", name: "Staff3", passwordHash: "", status: "active" },
     });
     await prisma.venueMember.create({
       data: { venueId: data.venue.id, userId: staffUser.id, role: "staff" },
     });
-    expect(await canManageCategories(staffUser.id, data.venue.id)).toBe(false);
+    expect(await canManage(staffUser.id, data.venue.id)).toBe(false);
   });
 
-  it("canManageItems and canPublish match canManageCategories", async () => {
-    expect(await canManageItems(data.user.id, data.venue.id)).toBe(
-      await canManageCategories(data.user.id, data.venue.id)
-    );
-    expect(await canPublish(data.user.id, data.venue.id)).toBe(
-      await canManageCategories(data.user.id, data.venue.id)
-    );
+  it("canManage returns true for owner", async () => {
+    expect(await canManage(data.user.id, data.venue.id)).toBe(true);
   });
 
   it("getAccessibleVenues returns all venues for a user", async () => {
@@ -613,7 +606,7 @@ describe("Cross-venue isolation", () => {
     const venueB = await prisma.venue.create({
       data: { nameFa: "کافه B", slug: "cafe-b-" + Date.now(), publicStatus: "draft" },
     });
-    await expect(canManageCategories(data.user.id, venueB.id)).rejects.toThrow(
+    await expect(canManage(data.user.id, venueB.id)).rejects.toThrow(
       "Unauthorized: no access to this venue"
     );
   });
@@ -622,7 +615,7 @@ describe("Cross-venue isolation", () => {
     const venueB = await prisma.venue.create({
       data: { nameFa: "کافه B2", slug: "cafe-b2-" + Date.now(), publicStatus: "draft" },
     });
-    await expect(canManageItems(data.user.id, venueB.id)).rejects.toThrow(
+    await expect(canManage(data.user.id, venueB.id)).rejects.toThrow(
       "Unauthorized: no access to this venue"
     );
   });
@@ -631,7 +624,7 @@ describe("Cross-venue isolation", () => {
     const venueB = await prisma.venue.create({
       data: { nameFa: "کافه B3", slug: "cafe-b3-" + Date.now(), publicStatus: "draft" },
     });
-    await expect(canPublish(data.user.id, venueB.id)).rejects.toThrow(
+    await expect(canManage(data.user.id, venueB.id)).rejects.toThrow(
       "Unauthorized: no access to this venue"
     );
   });
@@ -665,11 +658,11 @@ describe("Cross-venue isolation", () => {
       data: { venueId: venueB.id, userId: otherUser.id, role: "owner" },
     });
 
-    await expect(canManageItems(otherUser.id, data.venue.id)).rejects.toThrow(
+    await expect(canManage(otherUser.id, data.venue.id)).rejects.toThrow(
       "Unauthorized: no access to this venue"
     );
 
-    expect(await canManageItems(otherUser.id, venueB.id)).toBe(true);
+    expect(await canManage(otherUser.id, venueB.id)).toBe(true);
   });
 
   it("venue A data is invisible in venue B's publication snapshot", async () => {

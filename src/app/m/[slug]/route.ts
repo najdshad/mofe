@@ -35,7 +35,13 @@ export async function GET(
     });
   }
 
-  const snapshot = JSON.parse(publication.snapshot);
+  let snapshot;
+  try {
+    snapshot = JSON.parse(publication.snapshot);
+  } catch {
+    const html = renderUnavailablePage(venue.nameFa);
+    return new Response(html, { status: 500, headers: { "Content-Type": "text/html; charset=utf-8" } });
+  }
   const html = renderPublicMenu(snapshot);
 
   return new Response(html, {

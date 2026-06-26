@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -79,6 +80,7 @@ export function QRMenuClient({
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const { statusMessage, showStatus } = useStatusMessage();
+  const router = useRouter();
 
   const handleSaveAppearance = async () => {
     const res = await fetch(`/api/venues/${venueId}`, {
@@ -94,6 +96,7 @@ export function QRMenuClient({
 
     if (res.ok) {
       showStatus("تغییرات ذخیره شد");
+      router.refresh();
     }
   };
 
@@ -114,6 +117,7 @@ export function QRMenuClient({
       const data = await res.json();
       setLogoUrl(data.logoUrl);
       showStatus("لوگو با موفقیت آپلود شد");
+      router.refresh();
     } else {
       const data = await res.json();
       showStatus(data.error || "خطا در آپلود لوگو");
@@ -129,6 +133,7 @@ export function QRMenuClient({
     if (res.ok) {
       setLogoUrl("");
       showStatus("لوگو حذف شد");
+      router.refresh();
     } else {
       showStatus("خطا در حذف لوگو");
     }
@@ -143,6 +148,7 @@ export function QRMenuClient({
     if (res.ok) {
       setShowPublishModal(false);
       showStatus("منو با موفقیت منتشر شد");
+      router.refresh();
     } else {
       showStatus("خطا در انتشار منو");
     }
@@ -158,6 +164,7 @@ export function QRMenuClient({
     if (res.ok) {
       setShowUnpublishModal(false);
       showStatus("منو از دسترس خارج شد");
+      router.refresh();
     } else {
       showStatus("خطا در لغو انتشار");
     }

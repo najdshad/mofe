@@ -20,6 +20,9 @@ export const ROLE_LABELS: Record<string, string> = {
   staff: "کارمند",
 };
 
+export const VALID_STATIONS = ["kitchen", "bar"] as const;
+export type Station = (typeof VALID_STATIONS)[number];
+
 export const STATION_LABELS: Record<string, string> = {
   kitchen: "آشپزخانه",
   bar: "بار",

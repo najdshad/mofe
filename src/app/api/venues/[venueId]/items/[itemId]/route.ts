@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManageItems, requireVenueAccess } from "@/lib/permissions";
+import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -35,8 +35,8 @@ export async function PATCH(
   try {
     const user = await requireAuth();
     const { venueId, itemId } = await params;
-    const canManage = await canManageItems(user.id, venueId);
-    if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const hasAccess = await canManage(user.id, venueId);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await request.json();
     const item = await prisma.menuItem.update({
@@ -66,8 +66,8 @@ export async function DELETE(
   try {
     const user = await requireAuth();
     const { venueId, itemId } = await params;
-    const canManage = await canManageItems(user.id, venueId);
-    if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const hasAccess = await canManage(user.id, venueId);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId, venueId },

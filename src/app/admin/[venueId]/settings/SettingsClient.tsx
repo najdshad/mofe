@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toggle } from "@/components/ui/Toggle";
 import { Modal } from "@/components/ui/Modal";
-import { TIMEZONE_LABELS, ROLE_LABELS, STATION_LABELS, DAY_LABELS } from "@/lib/constants";
+import { TIMEZONE_LABELS, ROLE_LABELS, STATION_LABELS, DAY_LABELS, VALID_STATIONS } from "@/lib/constants";
 
 interface Member {
   id: string;
@@ -401,7 +401,7 @@ export function SettingsClient({
 
       <Panel title="زمان‌بندی ایستگاه‌ها" subtitle="تنظیم ساعات فعالیت آشپزخانه و بار">
         <div className="space-y-4">
-          {["kitchen", "bar"].map((station) => (
+          {VALID_STATIONS.map((station) => (
             <div key={station}>
               <h4 className="mb-2 text-sm text-ink">{STATION_LABELS[station] || station}</h4>
               <div className="space-y-1">

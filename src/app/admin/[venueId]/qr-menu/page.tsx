@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
-import { requireVenueAccess, canPublish } from "@/lib/permissions";
+import { requireVenueAccess, canManage } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
@@ -19,7 +19,7 @@ export default async function QRMenuPage({
   const venue = await prisma.venue.findUnique({ where: { id: venueId } });
   if (!venue) redirect("/venues");
 
-  const canUserPublish = await canPublish(user.id, venueId);
+  const canUserPublish = await canManage(user.id, venueId);
 
   const lastPublication = await prisma.menuPublication.findFirst({
     where: { venueId, status: "published" },

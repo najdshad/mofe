@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManageItems } from "@/lib/permissions";
+import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import type { Prisma } from "@/generated/prisma/client";
 
 export async function POST(
   request: Request,
@@ -11,8 +12,8 @@ export async function POST(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    const canManage = await canManageItems(user.id, venueId);
-    if (!canManage) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const hasAccess = await canManage(user.id, venueId);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body: {
       visible: boolean;
@@ -20,7 +21,7 @@ export async function POST(
       itemIds?: string[];
     } = await request.json();
 
-    const where: Record<string, unknown> = { venueId, deletedAt: null };
+    const where: Prisma.MenuItemWhereInput = { venueId, deletedAt: null };
     if (body.station) where.station = body.station;
     if (body.itemIds) where.id = { in: body.itemIds };
 

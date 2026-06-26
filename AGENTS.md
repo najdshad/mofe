@@ -19,6 +19,7 @@ npm run db:reset     # Full reset + migrate + seed
 npm run db:studio    # Prisma Studio
 ```
 - for internet access, use proxy at 172.25.144.1:10808
+- after each successful implementation, commit to git
 
 ### Internal Auth
 - `requireInternalAuth()` from `@/lib/api-helpers` — checks `user.role === "internal"` in internal API routes
@@ -71,7 +72,7 @@ npm run db:studio    # Prisma Studio
 
 ### Permissions
 - 3 roles: `owner`, `manager`, `staff`
-- Helper functions: `requireVenueAccess`, `requireRole`, `canManageCategories`, `canManageItems`, `canPublish`
+- Helper functions: `requireVenueAccess`, `requireRole`, `canManage`
 - Every API route verifies auth (`requireAuth`) + venue membership (`requireVenueAccess`/`requireRole`)
 
 ### Fonts (self-hosted — NO external CDN)

@@ -18,8 +18,8 @@ const securityHeaders = [
     value: "DENY",
   },
   {
-    key: "X-XSS-Protection",
-    value: "1; mode=block",
+    key: "Content-Security-Policy",
+    value: "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self'",
   },
   {
     key: "Referrer-Policy",

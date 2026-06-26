@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManageItems } from "@/lib/permissions";
+import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -11,7 +11,7 @@ export async function POST(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    await canManageItems(user.id, venueId);
+    await canManage(user.id, venueId);
 
     const body: { orders: { id: string; displayOrder: number }[] } =
       await request.json();

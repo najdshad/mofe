@@ -10,8 +10,8 @@ export class FetchError extends Error {
 
 export async function fetchApi(url: string, options?: RequestInit) {
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: { "Content-Type": "application/json", ...options?.headers },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
