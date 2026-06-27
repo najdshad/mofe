@@ -7,6 +7,26 @@ function matchesDashboard(pathname: string): boolean {
   return DASHBOARD_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  return response;
+}
+
+function authGuard(pathname: string, sessionCookie: { value: string } | undefined, nextUrl: URL): NextResponse | null {
+  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/")) {
+    return null;
+  }
+  if (sessionCookie?.value) {
+    return null;
+  }
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const loginUrl = new URL("/login", nextUrl.origin);
+  loginUrl.searchParams.set("redirect", pathname);
+  return NextResponse.redirect(loginUrl);
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
@@ -20,68 +40,39 @@ export function proxy(request: NextRequest) {
 
   const hostname = host.split(":")[0];
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
-  const isApp = !isLocalhost && hostname.startsWith("app.");
-  const isMenu = !isLocalhost && hostname.startsWith("menu.");
-  const isRoot = !isApp && !isMenu && !isLocalhost;
 
-  if (isMenu) {
-    return NextResponse.next();
+  if (isLocalhost) {
+    return authGuard(pathname, sessionCookie, request.nextUrl) ?? addSecurityHeaders(NextResponse.next());
   }
 
-  if (isApp) {
-    if (pathname === "/") {
-      if (sessionCookie?.value) {
-        return NextResponse.redirect(new URL("/venues", request.url));
-      }
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    if (pathname.startsWith("/admin") || pathname.startsWith("/api/")) {
-      if (!sessionCookie?.value) {
-        if (pathname.startsWith("/api/")) {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-        const loginUrl = new URL("/login", request.url);
-        loginUrl.searchParams.set("redirect", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-    }
-
+  if (hostname.startsWith("menu.")) {
     const response = NextResponse.next();
-    response.headers.set("X-Content-Type-Options", "nosniff");
+    response.headers.set("X-Robots-Tag", "noindex");
     return response;
   }
 
-  if (isRoot) {
+  if (hostname.startsWith("app.")) {
     if (pathname === "/") {
-      return NextResponse.next();
+      return NextResponse.redirect(
+        new URL(sessionCookie?.value ? "/venues" : "/login", request.nextUrl.origin),
+      );
     }
-
-    if (matchesDashboard(pathname)) {
-      const appUrl = new URL(pathname, `https://app.${hostname}`);
-      return NextResponse.redirect(appUrl, 301);
-    }
-
-    if (pathname.startsWith("/m/")) {
-      const menuUrl = new URL(pathname, `https://menu.${hostname}`);
-      return NextResponse.redirect(menuUrl, 301);
-    }
+    return authGuard(pathname, sessionCookie, request.nextUrl) ?? addSecurityHeaders(NextResponse.next());
   }
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/")) {
-    if (!sessionCookie?.value) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  if (pathname === "/") {
+    return NextResponse.next();
   }
 
-  const response = NextResponse.next();
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  return response;
+  if (matchesDashboard(pathname)) {
+    return NextResponse.redirect(new URL(pathname, `https://app.${hostname}`), 301);
+  }
+
+  if (pathname.startsWith("/m/")) {
+    return NextResponse.redirect(new URL(pathname, `https://menu.${hostname}`), 301);
+  }
+
+  return addSecurityHeaders(NextResponse.next());
 }
 
 export const config = {

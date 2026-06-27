@@ -23,7 +23,7 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | Image Processing | sharp |
 | Email | nodemailer (SMTP) |
 | Storage | Local filesystem / S3-compatible (configurable) |
-| Testing | Vitest v4 (138 tests) |
+| Testing | Vitest v4 (155 tests) |
 | Runtime | Node 22 |
 
 ## Quick Start
@@ -57,7 +57,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint (Next.js core-web-vitals + TypeScript rules) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Run 138 tests (vitest run) |
+| `npm test` | Run 155 tests (vitest run) |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run db:studio` | Prisma Studio |
 | `npm run db:seed` | Seed demo data (upsert) |
@@ -205,13 +205,14 @@ Full design system in [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md).
 
 ## Testing
 
-138 tests across 6 files with real PostgreSQL test DB:
+155 tests across 7 files with real PostgreSQL test DB:
 
 ```
-src/__tests__/api/integration.test.ts           — 54 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
+src/__tests__/api/integration.test.ts           — 62 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
 │                                                    permissions, CSV import, publication edge cases,
 │                                                    cross-venue isolation)
 src/__tests__/lib/public-menu/renderer.test.ts  — 48 tests (HTML structure, Persian formatting, escaping, edge cases)
+src/__tests__/proxy/proxy.test.ts               —  9 tests (subdomain routing, auth guards, localhost bypass)
 src/__tests__/lib/api-helpers.test.ts           — 12 tests (ApiError, errorResponse, requireAuth)
 src/__tests__/lib/auth.test.ts                  —  8 tests (hashToken, generateToken, hashPassword, verifyPassword)
 src/__tests__/lib/config.test.ts                —  8 tests (getPublicMenuUrl)
@@ -289,6 +290,7 @@ mofe-menu/
 │   │   ├── constants.ts        # TIMEZONE_LABELS, ROLE_LABELS, STATION_LABELS, STATUS_LABELS, DAY_LABELS
 │   │   ├── demo.ts             # Demo data helpers
 │   │   ├── fetch-api.ts        # fetchApi() — typed fetch wrapper with error handling
+│   │   ├── format.ts           # formatPrice() — Persian numeral formatting
 │   │   ├── mailer.ts           # Email delivery via SMTP (nodemailer)
 │   │   ├── permissions.ts      # Role-based access (owner/manager/staff)
 │   │   ├── prisma.ts           # Prisma singleton (PrismaPg adapter)

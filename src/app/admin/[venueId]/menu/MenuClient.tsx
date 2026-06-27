@@ -231,13 +231,13 @@ function SortableItemRow({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`grid grid-cols-[${COL_TEMPLATE}] items-center gap-3 px-4 py-4 ${
-        index !== total - 1 ? "border-b border-line/50" : ""
-      }`}
-    >
+        <div
+          ref={setNodeRef}
+          style={{ ...style, gridTemplateColumns: COL_TEMPLATE }}
+          className={`grid items-center gap-3 px-4 py-4 ${
+            index !== total - 1 ? "border-b border-line/50" : ""
+          }`}
+        >
       <div className="flex items-center gap-1">
         <button
           {...attributes}
@@ -369,7 +369,7 @@ function ItemModal({
     if (open && initial) {
       fetch(`/api/venues/${venueId}/items/${initial.id}/variants`)
         .then((r) => r.json())
-        .then((data) => {
+          .then((data) => {
           if (Array.isArray(data)) {
             setVariants(data.map((v: { nameFa: string; nameEn: string | null; priceModifier: number }) => ({
               nameFa: v.nameFa,
@@ -380,13 +380,13 @@ function ItemModal({
             setVariants([]);
           }
         })
-        .catch(() => setVariants([]));
+        .catch((e) => { console.error("Failed to load variants:", e); setVariants([]); });
       fetch(`/api/venues/${venueId}/items/${initial.id}/allergens`)
         .then((r) => r.json())
         .then((data) => {
           if (Array.isArray(data)) setAllergenCodes(data);
         })
-        .catch(() => setAllergenCodes([]));
+        .catch((e) => { console.error("Failed to load allergens:", e); setAllergenCodes([]); });
     }
   }, [open, initial, venueId]);
 
@@ -405,8 +405,8 @@ function ItemModal({
         const data = await res.json();
         setPhotoAssetId(data.photoUrl);
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Photo upload failed:", e);
     } finally {
       setPhotoLoading(false);
       if (e.target) e.target.value = "";
@@ -423,8 +423,8 @@ function ItemModal({
       if (res.ok) {
         setPhotoAssetId(null);
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error("Photo delete failed:", e);
     } finally {
       setPhotoLoading(false);
     }
@@ -1347,7 +1347,8 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                 filteredItems.map((item, idx) => (
                   <div
                     key={item.id}
-                    className={`grid grid-cols-[${COL_TEMPLATE}] items-center gap-3 px-4 py-4 ${
+                    style={{ gridTemplateColumns: COL_TEMPLATE }}
+                    className={`grid items-center gap-3 px-4 py-4 ${
                       idx !== filteredItems.length - 1
                         ? "border-b border-line/50"
                         : ""

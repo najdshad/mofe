@@ -207,6 +207,7 @@ model MenuItemAllergen {
 
   @@unique([menuItemId, allergenCode])
   @@index([menuItemId])
+  @@index([allergenCode])
 }
 
 model AuditLog {

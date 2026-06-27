@@ -1,4 +1,5 @@
 import { ALLERGEN_LABELS } from "@/lib/allergens";
+import { formatPrice } from "@/lib/format";
 
 export interface SnapshotItemVariant {
   nameFa: string;
@@ -86,9 +87,7 @@ function esc(s: string): string {
     .replace(/'/g, "&#039;");
 }
 
-export function formatPrice(price: number): string {
-  return price.toLocaleString("fa-IR");
-}
+export { formatPrice } from "@/lib/format";
 
 function renderItemCard(item: SnapshotCategoryItem, showPhotos: boolean): string {
   const variants = item.variants ?? [];

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { QRCodeExport } from "@/components/ui/QRCodeExport";
 import { useStatusMessage } from "@/hooks/useStatusMessage";
-import { formatPrice } from "@/lib/public-menu/renderer";
+import { formatPrice } from "@/lib/format";
 
 interface PreviewCategory {
   id: string;

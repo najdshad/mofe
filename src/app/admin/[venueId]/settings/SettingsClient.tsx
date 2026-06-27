@@ -60,7 +60,7 @@ export function SettingsClient({
       .then((data) => {
         if (Array.isArray(data)) setSchedules(data);
       })
-      .catch(() => {});
+      .catch((e) => console.error("Failed to load schedules:", e));
   }, [venueId]);
 
   const handleScheduleToggle = (station: string, dayOfWeek: number) => {

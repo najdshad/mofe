@@ -29,8 +29,9 @@ mofe-menu/
 │   └── download-menus.ts  # CLI tool to export published menus as HTML files
 ├── src/
 │   ├── __tests__/
-│   │   ├── api/            # Integration tests (27 tests)
-│   │   ├── lib/            # Unit tests — auth (8) + renderer (48)
+│   │   ├── api/            # Integration tests (62 tests)
+│   │   ├── lib/            # Unit tests — auth (8) + renderer (48) + rate-limit (8)
+│   │   ├── proxy/          # Proxy routing tests (9 tests)
 │   │   ├── global-setup.ts # Creates test DB before all tests, cleans up after
 │   │   ├── setup.ts        # Per-file setup (NODE_ENV=test)
 │   │   └── helpers.ts      # cleanTestData() + seedTestData()
@@ -97,8 +98,9 @@ mofe-menu/
 │   │   ├── public-menu/
 │   │   │   ├── publication.ts   # buildPublicSnapshot, publishVenueMenu, unpublishVenueMenu
 │   │   │   └── renderer.ts      # renderPublicMenu (~10KB static HTML), renderUnavailablePage
-│   │   │                        #   Exports: FONT_FACE_DECLARATIONS, formatPrice
-│   │   └── rate-limit.ts    # In-memory rate limiter with periodic stale-entry cleanup
+│   │   │                        #   formatPrice re-exported from @/lib/format
+│   │   ├── rate-limit.ts    # DB-backed rate limiter (RateLimitEntry model), survives restarts
+│   │   └── format.ts        # formatPrice() — Persian numeral formatting
 │   └── proxy.ts             # Next.js 16 auth proxy (export name: proxy, not middleware)
 ├── AGENTS.md               # AI-assisted development instructions
 │
@@ -269,7 +271,7 @@ npx prisma migrate dev --name describe_change
 
 ### Running tests
 ```bash
-npm test                # Run all 130 tests
+npm test                # Run all 155 tests
 npm run test:watch      # Watch mode
 ```
 

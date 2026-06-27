@@ -1,13 +1,9 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { prisma } from "@/lib/prisma";
 
-async function cleanRateLimit() {
-  await prisma.rateLimitEntry.deleteMany();
-}
-
 describe("rateLimit", () => {
-  beforeAll(async () => {
-    await cleanRateLimit();
+  beforeEach(async () => {
+    await prisma.rateLimitEntry.deleteMany();
   });
 
   it("allows the first request for a key", async () => {

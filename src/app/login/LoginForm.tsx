@@ -55,11 +55,11 @@ export function LoginForm() {
     >
       <div className="space-y-4">
         <Input
-          label="نام کاربری"
+          label="ایمیل"
           type="text"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="username@venue"
+          placeholder="example@email.com"
           required
           autoComplete="username"
         />

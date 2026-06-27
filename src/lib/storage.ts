@@ -33,7 +33,7 @@ const localBackend: StorageBackend = {
       await access(filePath);
       await unlink(filePath);
     } catch {
-      // File does not exist
+      // File does not exist; nothing to delete
     }
   },
   getUrl(key: string) {

@@ -102,7 +102,7 @@ Persian-first cafe menu management: admin panel + static QR menus.
 - Tailwind CSS v4 with custom theme tokens
 
 ### Testing
-- Vitest v4, 138 tests: 54 integration (includes 8 cross-venue isolation), 48 renderer, 12 api-helpers, 8 auth, 8 config, 8 rate-limit
+- Vitest v4, 155 tests: 62 integration (includes 8 cross-venue isolation), 48 renderer, 12 api-helpers, 9 proxy, 8 auth, 8 config, 8 rate-limit
 - Real PostgreSQL test DB, schema pushed fresh per run via `global-setup.ts`
 
 ## Future (Not Yet Built)

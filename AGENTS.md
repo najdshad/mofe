@@ -9,7 +9,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (138 tests)
+npm test             # Vitest run (155 tests)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -43,13 +43,14 @@ npm run db:studio    # Prisma Studio
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 138 tests pass
+3. `npm test` — all 155 tests pass
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas
 
 ### Next.js 16
 - **Proxy export:** `src/proxy.ts` must export `proxy` (NOT `middleware`). Matcher in proxy config: `["/((?!_next/static|_next/image|favicon.ico).*)"]`
+- **Proxy auth:** Uses `authGuard()` helper — checks `/admin` and `/api/` paths for session cookie, redirects to `/login` for HTML requests, returns 401 for API requests
 - **Route params:** All route handler `params` must be `Promise<{ param: string }>` and `await`ed
 - **App Router conventions:** Server components by default, `"use client"` only when needed (hooks, browser APIs, state)
 
@@ -134,6 +135,7 @@ All use `forwardRef` where applicable. Variants:
 | Auth functions | `src/lib/auth.ts` |
 | Audit helper | `src/lib/audit.ts` |
 | Allergen constants | `src/lib/allergens.ts` |
+| Price/number formatting | `src/lib/format.ts` |
 | Route auth helpers | `src/lib/api-helpers.ts` |
 | Permissions | `src/lib/permissions.ts` |
 | HTML renderer | `src/lib/public-menu/renderer.ts` |
