@@ -8,8 +8,7 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 
 | Layer | Technology |
 | --- | --- |
-| Framework | Next.js 16.2.9 (App Router) |
-| Language | TypeScript |
+| Framework (Web) | Next.js 16.2.9 (App Router) + TypeScript |
 | Styling | Tailwind CSS v4 (CSS-based config via `@theme`) |
 | ORM | Prisma v7 |
 | Database | PostgreSQL |
@@ -25,6 +24,13 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | Storage | Local filesystem / S3-compatible (configurable) |
 | Testing | Vitest v4 (155 tests) |
 | Runtime | Node 22 |
+| **Ordering Service** | |
+| Framework | Go 1.23 (chi v5) |
+| Real-time | WebSocket (gorilla/websocket) |
+| DB Driver | pgx v5 |
+| Migrations | golang-migrate |
+| Port | 8080 |
+| Caching | Redis 7 (optional, Phase 2) |
 
 ## Quick Start
 
@@ -63,6 +69,17 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 | `npm run db:seed` | Seed demo data (upsert) |
 | `npm run db:reset` | `prisma migrate reset --force` — full reset |
 | `npm run download:menus` | Export all published menus as static HTML files |
+
+### Go Ordering Service
+
+```bash
+cd ordering-service
+go build ./cmd/server       # Build binary
+go test ./...               # Run tests
+go vet ./...                # Static analysis
+```
+
+Managed via `docker compose` alongside the Next.js app (port 8080).
 
 ## Routes
 
@@ -105,6 +122,35 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 **Assets:** `POST|DELETE /api/venues/[id]/logo`
 
 **Schedules:** `GET|POST /api/venues/[id]/schedules`
+
+### Go Ordering Service (port 8080)
+
+**Endpoints:**
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/orders` | Create order |
+| `GET` | `/api/orders` | List orders (venue-scoped) |
+| `GET` | `/api/orders/:id` | Get order with items |
+| `POST` | `/api/orders/:id/items` | Add item to order |
+| `PATCH` | `/api/orders/:id/items/:itemId` | Update item quantity/notes |
+| `DELETE` | `/api/orders/:id/items/:itemId` | Cancel item |
+| `POST` | `/api/orders/:id/send` | Send order to kitchen |
+| `GET` | `/api/admin/orders` | Admin list all orders (OWNER/MANAGER) |
+| `GET` | `/ws` | WebSocket (venue-scoped real-time updates) |
+
+**WebSocket Events:**
+
+| Event | Direction | Payload |
+| --- | --- | --- |
+| `order_created` | Server → Client | `{ orderId, venueId }` |
+| `item_added` | Server → Client | `{ orderId, itemId }` |
+| `item_status_changed` | Server → Client | `{ orderId, itemId, status, timestamp }` |
+| `order_status_changed` | Server → Client | `{ orderId, status, readyAt }` |
+| `item_cancelled` | Server → Client | `{ orderId, itemId }` |
+
+Auth: `mofe_session` cookie (shared with Next.js). Multi-venue users must send `X-Venue-ID` header.
 
 ## Features
 
@@ -297,13 +343,26 @@ mofe-menu/
 │   │   ├── rate-limit.ts       # DB-backed rate limiter (RateLimitEntry model)
 │   │   └── storage.ts          # File storage abstraction (local/S3-compatible)
 │   └── proxy.ts                # Auth proxy (export: proxy, not middleware)
+├── ordering-service/            # Go ordering service
+│   ├── cmd/server/main.go      # Entry point
+│   ├── internal/
+│   │   ├── config/             # env-based config
+│   │   ├── database/           # pgx pool setup
+│   │   ├── models/             # domain types
+│   │   ├── middleware/         # auth, cors, logging, recovery
+│   │   └── handlers/          # REST + WebSocket handlers
+│   ├── migrations/             # SQL migrations
+│   ├── scripts/                # Seed test data
+│   ├── go.mod / go.sum
+│   └── Dockerfile              # Multi-stage (golang:1.23-alpine → scratch)
 ├── AGENTS.md                   # AI development instructions
 ├── DESIGN-LANGUAGE.md           # Design system
 ├── DEV_PLAN.md                 # Development plan
+├── GO_SERVER_DEV_PLAN.md       # Go ordering service dev plan
 ├── NAVIGATION-GUIDE.md          # Project navigation guide
 ├── PRD.md                      # Product requirements
 ├── sample-csv.csv              # CSV import template (66 items)
-├── docker-compose.yml          # App + nginx services
+├── docker-compose.yml          # App + nginx + ordering-service + redis
 ├── Dockerfile                  # Multi-stage build
 ├── nginx.conf                  # 3 virtual hosts
 ├── eslint.config.mjs           # ESLint (Next.js config)
@@ -313,6 +372,15 @@ mofe-menu/
 ├── tsconfig.json               # Path alias @/ -> src/
 └── vitest.config.ts            # Vitest config
 ```
+
+## Ordering Service (Go)
+
+- **Auth:** Reuses the existing `mofe_session` cookie — SHA-256 hashed, matched against `"Session"` table. No separate auth system.
+- **Venue isolation:** Service infers `venueId` from the session. Multi-venue users must send `X-Venue-ID` header.
+- **Prices:** All price columns use `INT` (toman) to match Prisma's `MenuItem.priceToman`. No decimal types.
+- **Migration:** Run `001_add_orders_tables.up.sql` against the same PostgreSQL DB. Tables reference Prisma's `"Venue"` and `"User"` with quoted camelCase identifiers.
+- **WebSocket:** Venue-scoped hub broadcasts real-time order/item status changes. Ping/pong heartbeat every 30s.
+- **Configuration:** `DATABASE_URL`, `PORT` (default 8080), `SESSION_COOKIE_NAME` (default `mofe_session`).
 
 ## Important Notes
 

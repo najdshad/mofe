@@ -125,6 +125,67 @@ All use `forwardRef` where applicable. Variants:
 - **Integration tests:** Use dynamic `import()` for prisma to avoid hoisting issues
 - Run: `npm test` (non-interactive) or `npm run test:watch` (watch mode)
 
+## Go Ordering Service (`ordering-service/`)
+
+### Development Commands
+
+```bash
+cd ordering-service
+go build ./cmd/server   # Build binary
+go test ./...           # Run tests
+go vet ./...            # Static analysis
+go mod tidy             # Sync dependencies
+```
+
+### Architecture
+
+- **Port:** 8080 (chi v5 router)
+- **Auth:** Reuses `mofe_session` cookie from Next.js. Middleware queries `"Session"` + `"VenueMember"` tables.
+- **Multi-venue:** If user belongs to >1 venue, requires `X-Venue-ID` header. Single-venue users auto-infer.
+- **Venue isolation:** Every handler checks `session.VenueID` against the order's `venue_id`.
+- **WebSocket:** Hub per venue, broadcasts on order/item status changes. Ping/pong heartbeat every 30s.
+- **Migrations:** Raw SQL in `migrations/`. Tables reference Prisma's camelCase tables with quoted identifiers.
+- **Error format:** `{ "error": string, "code": string }` — compatible with Next.js `errorResponse()` format.
+
+### Key File Locations
+
+| What | Path |
+| --- | --- |
+| Entry point | `ordering-service/cmd/server/main.go` |
+| Config | `ordering-service/internal/config/config.go` |
+| DB pool | `ordering-service/internal/database/postgres.go` |
+| Auth middleware | `ordering-service/internal/middleware/auth.go` |
+| Order handlers | `ordering-service/internal/handlers/orders.go` |
+| WebSocket hub | `ordering-service/internal/handlers/ws.go` |
+| Domain types | `ordering-service/internal/models/` |
+| Migration (up) | `ordering-service/migrations/001_add_orders_tables.up.sql` |
+| Dockerfile | `ordering-service/Dockerfile` |
+
+### Prisma Compatibility
+
+- All quoted camelCase identifiers: `"Session"`, `"VenueMember"`, `"MenuItem"`, etc.
+- Column names: `"tokenHash"`, `"userId"`, `"venueId"`, `"expiresAt"`, `"nameFa"`, `"priceToman"`.
+- `station` lives on `MenuItem`, NOT on `Category`.
+- `MenuItem.priceToman` and `MenuItemVariant.priceModifier` are both **Int** (integer tomans).
+- See `prisma/schema.prisma` for authoritative field list.
+
+### Common Development Patterns
+
+#### Adding a new REST endpoint
+1. Add handler method in `ordering-service/internal/handlers/orders.go`
+2. Register route in `ordering-service/cmd/server/main.go`
+3. Add tests in `ordering-service/internal/handlers/orders_test.go`
+4. Build + vet
+
+#### Adding a new middleware
+1. Create file in `ordering-service/internal/middleware/`
+2. Add to router chain in `cmd/server/main.go`
+
+#### Modifying the database schema
+1. Edit `prisma/schema.prisma` for Prisma models
+2. Add/edit migration in `ordering-service/migrations/`
+3. Build + vet
+
 ### Key File Locations
 
 | What | Path |

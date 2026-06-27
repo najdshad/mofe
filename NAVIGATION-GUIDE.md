@@ -102,12 +102,25 @@ mofe-menu/
 │   │   ├── rate-limit.ts    # DB-backed rate limiter (RateLimitEntry model), survives restarts
 │   │   └── format.ts        # formatPrice() — Persian numeral formatting
 │   └── proxy.ts             # Next.js 16 auth proxy (export name: proxy, not middleware)
+├── ordering-service/        # Go ordering service (port 8080)
+│   ├── cmd/server/         # Entry point
+│   ├── internal/
+│   │   ├── config/         # Env-based config
+│   │   ├── database/       # pgx connection pool
+│   │   ├── models/         # Domain types (Order, Session, etc.)
+│   │   ├── middleware/     # Auth, CORS, logging, recovery
+│   │   └── handlers/       # REST endpoints + WebSocket hub
+│   ├── migrations/         # SQL migrations (quoted camelCase for Prisma compat)
+│   ├── scripts/            # Seed test data
+│   ├── go.mod / go.sum
+│   └── Dockerfile          # Multi-stage (golang:1.23-alpine → scratch)
 ├── AGENTS.md               # AI-assisted development instructions
 │
 ├── DEV_PLAN.md             # Development plan, milestones, API table
+├── GO_SERVER_DEV_PLAN.md   # Go ordering service development plan
 ├── PRD.md                  # Product requirements
 ├── sample-csv.csv          # CSV import template (66 sample items)
-├── docker-compose.yml      # App + nginx services
+├── docker-compose.yml      # App + ordering-service + redis + nginx services
 ├── Dockerfile              # Multi-stage standalone build
 ├── nginx.conf              # 3 virtual hosts (root, app.*, menu.*)
 ├── next.config.ts           # Security headers, standalone output
@@ -131,6 +144,18 @@ User Browser → Next.js App Router → Server Components (data fetching)
                                   API Routes (REST)
                                      ↓
                                    Prisma ORM → PostgreSQL
+```
+
+### Ordering Service Flow (Go, port 8080)
+
+```
+Flutter App / Admin UI → REST API /api/orders (auth via mofe_session cookie)
+                             ↓
+                     chi router → auth middleware (Session + VenueMember)
+                             ↓
+                     OrderHandler → PostgreSQL (orders + order_items tables)
+                             ↓
+                     WebSocket hub → real-time broadcast to venue clients
 ```
 
 ### Internal Tool Flow
@@ -314,8 +339,11 @@ docker compose up -d
 ```
 
 - App runs as standalone Next.js on port 3000
+- Ordering service runs on port 8080 (Go, chi v5)
 - nginx reverse-proxies 3 virtual hosts: `mofe.ir` (landing), `app.mofe.ir` (admin), `menu.mofe.ir` (public menus)
+- WebSocket endpoint `/ws` upgraded via nginx with 24h proxy timeout
 - Persistent volumes: `mofe-db` (PostgreSQL data), `mofe-uploads` (logo images)
+- Optional Redis 7 for WebSocket state scaling
 
 ---
 

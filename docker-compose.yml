@@ -41,6 +41,25 @@ services:
       retries: 3
       start_period: 15s
 
+  ordering-service:
+    build: ./ordering-service
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://mofe:mofe@db:5432/mofe
+      PORT: 8080
+      SESSION_COOKIE_NAME: mofe_session
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
   nginx:
     image: nginx:alpine
     ports:
@@ -51,6 +70,12 @@ services:
     depends_on:
       app:
         condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
 volumes:
