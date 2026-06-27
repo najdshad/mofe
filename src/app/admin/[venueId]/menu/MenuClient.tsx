@@ -244,6 +244,7 @@ function SortableItemRow({
           {...listeners}
           className="cursor-grab touch-none p-0.5 text-ink-muted/40 hover:text-ink-muted transition-colors"
           title="جابجایی"
+          suppressHydrationWarning
         >
           <GripIcon size={14} />
         </button>
