@@ -105,10 +105,20 @@ dev_dependencies:
 
 ### **config/constants.dart**
 ```dart
+// Architecture: Dual-service setup
+// - Next.js app serves: auth, menu items, categories (admin Web UI + API)
+// - Go ordering service serves: order CRUD, WebSocket
+// In production, a reverse proxy (nginx) routes /api/orders/* and /ws to Go service.
+// In development, the Go service runs on a separate port (default 8080).
 class AppConstants {
-  // API Configuration
+  // Next.js API (auth, menu management)
   static const String baseUrl = String.fromEnvironment(
     'API_URL',
+    defaultValue: 'https://yourdomain.com',
+  );
+  // Go ordering service (orders, WebSocket)
+  static const String orderServiceUrl = String.fromEnvironment(
+    'ORDER_SERVICE_URL',
     defaultValue: 'https://yourdomain.com',
   );
   static const String wsUrl = String.fromEnvironment(
@@ -116,8 +126,11 @@ class AppConstants {
     defaultValue: 'wss://yourdomain.com/ws',
   );
   
-  // Session
+  // Auth
   static const String sessionCookieName = 'mofe_session';
+  
+  // Venue context (set after login / venue selection)
+  static String currentVenueId = '';
   
   // Offline Queue
   static const int maxOfflineOrders = 50;
@@ -133,37 +146,47 @@ class AppConstants {
 ```dart
 import 'package:flutter/material.dart';
 
+// Design tokens matching web app CSS vars in globals.css:
+// --paper: #f5f0e6;  --ink: #111111;
+// --ink-strong: #000000;  --ink-muted: #5f5a52;
+// --line: #d8d1c4;  --surface: rgba(255,255,255,0.28);
+// --radius-panel: 28px;  --radius-card: 24px;  --radius-control: 16px;
 class AppTheme {
-  // mofé Colors (matching web app)
   static const Color paperBackground = Color(0xFFF5F0E6);
   static const Color inkText = Color(0xFF111111);
-  static const Color warmAccent = Color(0xFFD4A574);
+  static const Color inkStrong = Color(0xFF000000);
+  static const Color inkMuted = Color(0xFF5F5A52);
+  static const Color borderLine = Color(0xFFD8D1C4);
+  static const Color surfaceWhite = Color(0xFFFFFFFF);
+  static const Color accentAmber = Color(0xFFD4A574);
+  static const Color amberTint = Color(0xFFF5E6D0);
   
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.light(
-      primary: warmAccent,
+      primary: accentAmber,
       background: paperBackground,
-      surface: Colors.white,
+      surface: surfaceWhite,
       onPrimary: Colors.white,
       onBackground: inkText,
       onSurface: inkText,
     ),
     
     // Persian/RTL Typography
-    fontFamily: 'Vazirmatn',  // Self-hosted Persian font
+    fontFamily: 'Vazirmatn',
     textTheme: const TextTheme(
-      displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-      bodyLarge: TextStyle(fontSize: 16),
-      bodyMedium: TextStyle(fontSize: 14),
+      displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: inkStrong),
+      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: inkStrong),
+      bodyLarge: TextStyle(fontSize: 16, color: inkText),
+      bodyMedium: TextStyle(fontSize: 14, color: inkText),
     ),
     
     // Card Style
     cardTheme: CardTheme(
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: borderLine, width: 1),
       ),
     ),
     
@@ -187,157 +210,225 @@ class AppTheme {
 import 'package:equatable/equatable.dart';
 import 'order_item.dart';
 
+// Order statuses matching the Go ordering service:
+// DRAFT → PENDING → SENT → IN_PROGRESS → READY → DELIVERED → CANCELLED
 enum OrderStatus {
+  draft('DRAFT', 'پیش‌نویس'),
   pending('PENDING', 'در انتظار'),
   sent('SENT', 'ارسال شده'),
   inProgress('IN_PROGRESS', 'در حال آماده‌سازی'),
   ready('READY', 'آماده'),
   delivered('DELIVERED', 'تحویل داده شده'),
   cancelled('CANCELLED', 'لغو شده');
-  
+
   const OrderStatus(this.value, this.label);
   final String value;
   final String label;
-  
+
   static OrderStatus fromString(String value) {
-    return OrderStatus.values.firstWhere((e) => e.value == value);
+    return OrderStatus.values.firstWhere(
+      (e) => e.value == value.toUpperCase(),
+    );
   }
 }
 
+// Lightweight order summary returned by GET /api/orders (list endpoint)
+// The Go list endpoint does NOT include items, venueId, waiterId, etc.
+class OrderSummary extends Equatable {
+  final String id;
+  final String? tableNumber;
+  final OrderStatus status;
+  final int total;
+  final DateTime createdAt;
+  final String createdBy;
+
+  const OrderSummary({
+    required this.id,
+    this.tableNumber,
+    required this.status,
+    required this.total,
+    required this.createdAt,
+    required this.createdBy,
+  });
+
+  factory OrderSummary.fromJson(Map<String, dynamic> json) {
+    return OrderSummary(
+      id: json['id'],
+      tableNumber: json['tableNumber'] as String?,
+      status: OrderStatus.fromString(json['status']),
+      total: json['total'] as int,
+      createdAt: DateTime.parse(json['createdAt']),
+      createdBy: json['createdBy'] as String? ?? '',
+    );
+  }
+
+  @override
+  List<Object?> get props => [id, status, total];
+}
+
+// Full order detail returned by GET /api/orders/{id}
 class Order extends Equatable {
   final String id;
   final String venueId;
   final String waiterId;
-  final String waiterName;
-  final int tableNumber;
+  final String? tableNumber;
+  final int guestCount;
   final OrderStatus status;
-  final List<OrderItem> items;
-  final double subtotal;
-  final double tax;
-  final double total;
+  final int subtotal;
+  final int total;
   final String? notes;
+  final List<OrderItem> items;
   final DateTime createdAt;
-  final DateTime updatedAt;
-  
-  // Offline tracking
+  final DateTime? sentToKitchenAt;
+  final DateTime? readyAt;
+  final DateTime? deliveredAt;
+  final DateTime? cancelledAt;
+  final String createdBy;
+
+  // Offline tracking (local only)
   final bool isSynced;
-  final String? localId;  // UUID for offline orders
-  
+  final String? localId;
+
   const Order({
     required this.id,
     required this.venueId,
     required this.waiterId,
-    required this.waiterName,
-    required this.tableNumber,
+    this.tableNumber,
+    this.guestCount = 1,
     required this.status,
-    required this.items,
-    required this.subtotal,
-    required this.tax,
-    required this.total,
+    this.subtotal = 0,
+    this.total = 0,
     this.notes,
+    this.items = const [],
     required this.createdAt,
-    required this.updatedAt,
+    this.sentToKitchenAt,
+    this.readyAt,
+    this.deliveredAt,
+    this.cancelledAt,
+    this.createdBy = '',
     this.isSynced = true,
     this.localId,
   });
-  
+
   factory Order.fromJson(Map<String, dynamic> json) {
+    final items = json['items'] != null
+        ? (json['items'] as List).map((i) => OrderItem.fromJson(i)).toList()
+        : <OrderItem>[];
     return Order(
       id: json['id'],
-      venueId: json['venueId'],
-      waiterId: json['waiterId'],
-      waiterName: json['waiterName'],
-      tableNumber: json['tableNumber'],
+      venueId: json['venueId'] as String? ?? '',
+      waiterId: json['waiterId'] as String? ?? '',
+      tableNumber: json['tableNumber'] as String?,
+      guestCount: json['guestCount'] as int? ?? 1,
       status: OrderStatus.fromString(json['status']),
-      items: (json['items'] as List)
-          .map((i) => OrderItem.fromJson(i))
-          .toList(),
-      subtotal: (json['subtotal'] as num).toDouble(),
-      tax: (json['tax'] as num).toDouble(),
-      total: (json['total'] as num).toDouble(),
-      notes: json['notes'],
+      subtotal: json['subtotal'] as int? ?? 0,
+      total: json['total'] as int? ?? 0,
+      notes: json['notes'] as String?,
+      items: items,
       createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      sentToKitchenAt: json['sentToKitchenAt'] != null
+          ? DateTime.parse(json['sentToKitchenAt'])
+          : null,
+      readyAt: json['readyAt'] != null
+          ? DateTime.parse(json['readyAt'])
+          : null,
+      deliveredAt: json['deliveredAt'] != null
+          ? DateTime.parse(json['deliveredAt'])
+          : null,
+      cancelledAt: json['cancelledAt'] != null
+          ? DateTime.parse(json['cancelledAt'])
+          : null,
+      createdBy: json['createdBy'] as String? ?? '',
     );
   }
-  
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'venueId': venueId,
     'waiterId': waiterId,
-    'waiterName': waiterName,
-    'tableNumber': tableNumber,
+    if (tableNumber != null) 'tableNumber': tableNumber,
+    'guestCount': guestCount,
     'status': status.value,
-    'items': items.map((i) => i.toJson()).toList(),
     'subtotal': subtotal,
-    'tax': tax,
     'total': total,
-    'notes': notes,
+    if (notes != null) 'notes': notes,
+    'items': items.map((i) => i.toJson()).toList(),
     'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
+    'createdBy': createdBy,
   };
-  
+
   Order copyWith({
     OrderStatus? status,
     List<OrderItem>? items,
-    double? subtotal,
-    double? tax,
-    double? total,
+    int? subtotal,
+    int? total,
     bool? isSynced,
   }) {
     return Order(
       id: id,
       venueId: venueId,
       waiterId: waiterId,
-      waiterName: waiterName,
       tableNumber: tableNumber,
+      guestCount: guestCount,
       status: status ?? this.status,
-      items: items ?? this.items,
       subtotal: subtotal ?? this.subtotal,
-      tax: tax ?? this.tax,
       total: total ?? this.total,
       notes: notes,
+      items: items ?? this.items,
       createdAt: createdAt,
-      updatedAt: DateTime.now(),
+      sentToKitchenAt: sentToKitchenAt,
+      readyAt: readyAt,
+      deliveredAt: deliveredAt,
+      cancelledAt: cancelledAt,
+      createdBy: createdBy,
       isSynced: isSynced ?? this.isSynced,
       localId: localId,
     );
   }
-  
+
   @override
-  List<Object?> get props => [id, status, items, updatedAt];
+  List<Object?> get props => [id, status, items];
 }
 ```
 
 ### **models/order_item.dart**
 ```dart
+// Item statuses matching the Go ordering service:
+// PENDING → SENT → PREPARING → READY → DELIVERED → CANCELLED
 enum ItemStatus {
   pending('PENDING', 'در انتظار'),
   sent('SENT', 'ارسال شده'),
   preparing('PREPARING', 'در حال آماده‌سازی'),
   ready('READY', 'آماده'),
-  served('SERVED', 'سرو شده'),
+  delivered('DELIVERED', 'تحویل شده'),
   cancelled('CANCELLED', 'لغو شده');
-  
+
   const ItemStatus(this.value, this.label);
   final String value;
   final String label;
-  
+
   static ItemStatus fromString(String value) {
-    return ItemStatus.values.firstWhere((e) => e.value == value);
+    return ItemStatus.values.firstWhere(
+      (e) => e.value == value.toUpperCase(),
+    );
   }
 }
 
+// Go ordering service supports only "KITCHEN" and "BAR"
 enum Station {
   kitchen('KITCHEN', 'آشپزخانه'),
   bar('BAR', 'بار');
-  
+
   const Station(this.value, this.label);
   final String value;
   final String label;
-  
+
   static Station fromString(String value) {
-    return Station.values.firstWhere((e) => e.value == value);
+    // Handle both lowercase (Next.js API: "kitchen"/"bar")
+    // and uppercase (Go service: "KITCHEN"/"BAR")
+    return Station.values.firstWhere(
+      (e) => e.value == value.toUpperCase(),
+    );
   }
 }
 
@@ -345,23 +436,29 @@ class OrderItem extends Equatable {
   final String id;
   final String orderId;
   final String menuItemId;
-  final String name;
+  final String menuItemName;
+  final String? variantId;
   final String? variantName;
   final int quantity;
-  final double unitPrice;
-  final double totalPrice;
+  final int unitPrice;    // Integer Toman
+  final int totalPrice;   // Integer Toman
   final ItemStatus status;
   final Station station;
   final String? notes;
+  final int courseNumber;
   final DateTime createdAt;
   final DateTime? sentAt;
+  final DateTime? preparingAt;
   final DateTime? readyAt;
-  
+  final DateTime? deliveredAt;
+  final DateTime? cancelledAt;
+
   const OrderItem({
     required this.id,
     required this.orderId,
     required this.menuItemId,
-    required this.name,
+    required this.menuItemName,
+    this.variantId,
     this.variantName,
     required this.quantity,
     required this.unitPrice,
@@ -369,47 +466,61 @@ class OrderItem extends Equatable {
     required this.status,
     required this.station,
     this.notes,
+    this.courseNumber = 1,
     required this.createdAt,
     this.sentAt,
+    this.preparingAt,
     this.readyAt,
+    this.deliveredAt,
+    this.cancelledAt,
   });
-  
+
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
       id: json['id'],
       orderId: json['orderId'],
       menuItemId: json['menuItemId'],
-      name: json['name'],
-      variantName: json['variantName'],
-      quantity: json['quantity'],
-      unitPrice: (json['unitPrice'] as num).toDouble(),
-      totalPrice: (json['totalPrice'] as num).toDouble(),
+      menuItemName: json['menuItemName'] as String? ?? json['name'] ?? '',
+      variantId: json['variantId'] as String?,
+      variantName: json['variantName'] as String?,
+      quantity: json['quantity'] as int,
+      unitPrice: json['unitPrice'] as int,
+      totalPrice: json['totalPrice'] as int,
       status: ItemStatus.fromString(json['status']),
       station: Station.fromString(json['station']),
-      notes: json['notes'],
+      notes: json['notes'] as String?,
+      courseNumber: json['courseNumber'] as int? ?? 1,
       createdAt: DateTime.parse(json['createdAt']),
       sentAt: json['sentAt'] != null ? DateTime.parse(json['sentAt']) : null,
+      preparingAt: json['preparingAt'] != null ? DateTime.parse(json['preparingAt']) : null,
       readyAt: json['readyAt'] != null ? DateTime.parse(json['readyAt']) : null,
+      deliveredAt: json['deliveredAt'] != null ? DateTime.parse(json['deliveredAt']) : null,
+      cancelledAt: json['cancelledAt'] != null ? DateTime.parse(json['cancelledAt']) : null,
     );
   }
-  
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'orderId': orderId,
     'menuItemId': menuItemId,
-    'name': name,
-    'variantName': variantName,
+    'menuItemName': menuItemName,
+    if (variantId != null) 'variantId': variantId,
+    if (variantName != null) 'variantName': variantName,
     'quantity': quantity,
     'unitPrice': unitPrice,
     'totalPrice': totalPrice,
     'status': status.value,
     'station': station.value,
-    'notes': notes,
+    if (notes != null) 'notes': notes,
+    'courseNumber': courseNumber,
     'createdAt': createdAt.toIso8601String(),
     'sentAt': sentAt?.toIso8601String(),
+    'preparingAt': preparingAt?.toIso8601String(),
     'readyAt': readyAt?.toIso8601String(),
+    'deliveredAt': deliveredAt?.toIso8601String(),
+    'cancelledAt': cancelledAt?.toIso8601String(),
   };
-  
+
   OrderItem copyWith({
     int? quantity,
     ItemStatus? status,
@@ -419,7 +530,8 @@ class OrderItem extends Equatable {
       id: id,
       orderId: orderId,
       menuItemId: menuItemId,
-      name: name,
+      menuItemName: menuItemName,
+      variantId: variantId,
       variantName: variantName,
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice,
@@ -427,12 +539,16 @@ class OrderItem extends Equatable {
       status: status ?? this.status,
       station: station,
       notes: notes ?? this.notes,
+      courseNumber: courseNumber,
       createdAt: createdAt,
       sentAt: sentAt,
+      preparingAt: preparingAt,
       readyAt: readyAt,
+      deliveredAt: deliveredAt,
+      cancelledAt: cancelledAt,
     );
   }
-  
+
   @override
   List<Object?> get props => [id, quantity, status, notes];
 }
@@ -440,64 +556,92 @@ class OrderItem extends Equatable {
 
 ### **models/menu_item.dart**
 ```dart
-class MenuItem extends Equatable {
-  final String id;
-  final String name;
-  final String? description;
-  final double basePrice;
-  final List<ItemVariant> variants;
-  final Station station;
-  final bool isAvailable;
-  
-  const MenuItem({
-    required this.id,
-    required this.name,
-    this.description,
-    required this.basePrice,
-    this.variants = const [],
-    required this.station,
-    this.isAvailable = true,
-  });
-  
-  factory MenuItem.fromJson(Map<String, dynamic> json) {
-    return MenuItem(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      basePrice: (json['basePrice'] as num).toDouble(),
-      variants: (json['variants'] as List?)
-          ?.map((v) => ItemVariant.fromJson(v))
-          .toList() ?? [],
-      station: Station.fromString(json['station']),
-      isAvailable: json['isAvailable'] ?? true,
-    );
-  }
-  
-  @override
-  List<Object?> get props => [id, name, basePrice, variants];
-}
+import 'package:equatable/equatable.dart';
+import 'order_item.dart'; // for Station enum
 
+// Lightweight variant model (fetched separately from /api/venues/{venueId}/items/{itemId}/variants)
 class ItemVariant extends Equatable {
   final String id;
-  final String name;
-  final double priceModifier;
-  
+  final String nameFa;
+  final String? nameEn;
+  final int priceModifier; // Integer Toman, added to base price
+
   const ItemVariant({
     required this.id,
-    required this.name,
+    required this.nameFa,
+    this.nameEn,
     required this.priceModifier,
   });
-  
+
   factory ItemVariant.fromJson(Map<String, dynamic> json) {
     return ItemVariant(
       id: json['id'],
-      name: json['name'],
-      priceModifier: (json['priceModifier'] as num).toDouble(),
+      nameFa: json['nameFa'],
+      nameEn: json['nameEn'] as String?,
+      priceModifier: json['priceModifier'] as int,
     );
   }
-  
+
   @override
-  List<Object?> get props => [id, name, priceModifier];
+  List<Object?> get props => [id, nameFa, priceModifier];
+}
+
+// MenuItem matches Prisma schema fields returned by GET /api/venues/{venueId}/items
+// NOTE: variants and allergens are NOT included in the list endpoint;
+// they must be fetched separately via their dedicated endpoints.
+class MenuItem extends Equatable {
+  final String id;
+  final String venueId;
+  final String categoryId;
+  final String nameFa;
+  final String? nameEn;
+  final String? description;
+  final int priceToman;        // Integer Toman (NOT double)
+  final Station station;       // "kitchen" or "bar"
+  final int? calories;
+  final String? photoAssetId;
+  final bool visibleOnPublicMenu;
+  final bool isSoldOut;        // Inverted logic vs Flutter plan's isAvailable
+  final int displayOrder;
+
+  const MenuItem({
+    required this.id,
+    required this.venueId,
+    required this.categoryId,
+    required this.nameFa,
+    this.nameEn,
+    this.description,
+    required this.priceToman,
+    required this.station,
+    this.calories,
+    this.photoAssetId,
+    this.visibleOnPublicMenu = true,
+    this.isSoldOut = false,
+    this.displayOrder = 0,
+  });
+
+  bool get isAvailable => !isSoldOut;
+
+  factory MenuItem.fromJson(Map<String, dynamic> json) {
+    return MenuItem(
+      id: json['id'],
+      venueId: json['venueId'],
+      categoryId: json['categoryId'],
+      nameFa: json['nameFa'],
+      nameEn: json['nameEn'] as String?,
+      description: json['description'] as String?,
+      priceToman: json['priceToman'] as int,
+      station: Station.fromString(json['station']),
+      calories: json['calories'] as int?,
+      photoAssetId: json['photoAssetId'] as String?,
+      visibleOnPublicMenu: json['visibleOnPublicMenu'] as bool? ?? true,
+      isSoldOut: json['isSoldOut'] as bool? ?? false,
+      displayOrder: json['displayOrder'] as int? ?? 0,
+    );
+  }
+
+  @override
+  List<Object?> get props => [id, nameFa, priceToman, station];
 }
 ```
 
@@ -586,74 +730,123 @@ import '../config/constants.dart';
 class AuthService {
   final Dio _dio;
   final FlutterSecureStorage _storage;
-  
+  String? _cachedToken;
+
   AuthService(this._dio, this._storage);
-  
-  Future<SessionData?> login(String phoneNumber, String password) async {
-    try {
-      final response = await _dio.post(
-        '${AppConstants.baseUrl}/api/auth/login',
-        data: {
-          'phoneNumber': phoneNumber,
-          'password': password,
-        },
-      );
-      
-      // Extract session cookie from response
-      final cookies = response.headers['set-cookie'];
-      final sessionCookie = cookies?.firstWhere(
-        (c) => c.startsWith('${AppConstants.sessionCookieName}='),
-        orElse: () => '',
-      );
-      
-      if (sessionCookie != null && sessionCookie.isNotEmpty) {
-        final token = _extractTokenFromCookie(sessionCookie);
-        await _storage.write(key: 'session_token', value: token);
-        
-        return SessionData(
-          userId: response.data['userId'],
-          venueId: response.data['venueId'],
-          venueName: response.data['venueName'],
-          userName: response.data['userName'],
-          role: response.data['role'],
-        );
-      }
-      
-      return null;
-    } catch (e) {
-      rethrow;
-    }
+
+  // Login uses email (NOT phone). The backend sets mofe_session cookie.
+  // Login response is { "success": true } + Set-Cookie header.
+  // User profile data must be fetched via GET /api/me.
+  Future<void> login(String email, String password) async {
+    final response = await _dio.post(
+      '${AppConstants.baseUrl}/api/auth/login',
+      data: { 'email': email, 'password': password },
+      options: Options(validateStatus: (s) => s! < 500),
+    );
+    // Extract the raw session token from Set-Cookie header.
+    // We need the raw token value for the WebSocket Cookie header
+    // (Dio's CookieJar handles HTTP automatically, but WebSocket
+    // needs it set manually).
+    await cacheTokenFromCookie(response.headers);
   }
-  
+
+  // Fetch current user profile + venue memberships from GET /api/me
+  Future<Map<String, dynamic>> fetchMe() async {
+    final response = await _dio.get('${AppConstants.baseUrl}/api/me');
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<void> logout() async {
+    try {
+      await _dio.post('${AppConstants.baseUrl}/api/auth/logout');
+    } catch (_) {}
     await _storage.delete(key: 'session_token');
-    // Optionally call backend logout endpoint
+    _cachedToken = null;
   }
-  
-  Future<String?> getSessionToken() {
-    return _storage.read(key: 'session_token');
+
+  Future<String?> getSessionToken() async {
+    _cachedToken ??= await _storage.read(key: 'session_token');
+    return _cachedToken;
   }
-  
-  String _extractTokenFromCookie(String cookie) {
-    final parts = cookie.split(';')[0].split('=');
-    return parts.length > 1 ? parts[1] : '';
+
+  // Called by Dio interceptor after login to cache the token
+  Future<void> cacheTokenFromCookie(Headers headers) async {
+    final cookies = headers['set-cookie'];
+    if (cookies == null) return;
+    final sessionCookie = cookies.where(
+      (c) => c.startsWith('${AppConstants.sessionCookieName}='),
+    ).firstOrNull;
+    if (sessionCookie == null) return;
+    // Format: "mofe_session=<hex_token>; Path=/; HttpOnly; ..."
+    final token = sessionCookie
+        .split(';')[0]
+        .split('=')
+        .sublist(1)
+        .join('=');
+    await _storage.write(key: 'session_token', value: token);
+    _cachedToken = token;
+  }
+}
+
+class VenueMembership {
+  final String venueId;
+  final String role;
+  final String venueName;
+
+  const VenueMembership({
+    required this.venueId,
+    required this.role,
+    required this.venueName,
+  });
+
+  factory VenueMembership.fromJson(Map<String, dynamic> json) {
+    return VenueMembership(
+      venueId: json['venueId'],
+      role: json['role'],
+      venueName: json['venueName'] ?? json['venue']?['nameFa'] ?? '',
+    );
   }
 }
 
 class SessionData {
   final String userId;
-  final String venueId;
-  final String venueName;
   final String userName;
-  final String role;
-  
+  final String email;
+  final List<VenueMembership> memberships;
+
+  // Convenience: the currently selected venue
+  String get currentVenueId => AppConstants.currentVenueId;
+  VenueMembership? get currentMembership => memberships.isEmpty
+      ? null
+      : memberships.firstWhere(
+          (m) => m.venueId == currentVenueId,
+          orElse: () => memberships.first,
+        );
+
   SessionData({
     required this.userId,
-    required this.venueId,
-    required this.venueName,
     required this.userName,
-    required this.role,
+    required this.email,
+    required this.memberships,
   });
+
+  factory SessionData.fromJson(Map<String, dynamic> json) {
+    final user = json['user'] as Map<String, dynamic>;
+    final memberships = (json['memberships'] as List?)
+            ?.map((m) => VenueMembership.fromJson(m as Map<String, dynamic>))
+            .toList() ??
+        [];
+    // If user belongs to exactly one venue, auto-select it
+    if (memberships.length == 1 && AppConstants.currentVenueId.isEmpty) {
+      AppConstants.currentVenueId = memberships.first.venueId;
+    }
+    return SessionData(
+      userId: user['id'],
+      userName: user['name'] ?? '',
+      email: user['email'] ?? '',
+      memberships: memberships,
+    );
+  }
 }
 ```
 
@@ -665,97 +858,148 @@ import '../models/order.dart';
 import '../models/menu_item.dart';
 
 class ApiService {
-  final Dio _dio;
-  
-  ApiService(this._dio);
-  
-  // Orders
-  Future<Order> createOrder({
-    required int tableNumber,
-    required List<Map<String, dynamic>> items,
+  final Dio _dio;        // For Next.js API (auth, menu, etc.)
+  final Dio _orderDio;   // For Go ordering service
+
+  ApiService(this._dio, this._orderDio);
+
+  // ── Orders (Go ordering service) ──────────────────────────
+
+  // Step 1: Create empty order, returns orderId
+  Future<String> createOrder({
+    String? tableNumber,
+    int guestCount = 1,
     String? notes,
   }) async {
-    final response = await _dio.post(
-      '${AppConstants.baseUrl}/api/orders',
+    final response = await _orderDio.post(
+      '${AppConstants.orderServiceUrl}/api/orders',
       data: {
-        'tableNumber': tableNumber,
-        'items': items,
-        'notes': notes,
+        if (tableNumber != null && tableNumber.isNotEmpty)
+          'tableNumber': tableNumber,
+        'guestCount': guestCount,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
       },
     );
-    
-    return Order.fromJson(response.data);
+    return response.data['orderId'] as String;
   }
-  
-  Future<List<Order>> getOrders({
-    OrderStatus? status,
-    int? tableNumber,
+
+  // Step 2: Add item to existing order
+  Future<String> addItemToOrder(
+    String orderId, {
+    required String menuItemId,
+    String? variantId,
+    required int quantity,
+    String? notes,
   }) async {
-    final response = await _dio.get(
-      '${AppConstants.baseUrl}/api/orders',
+    final response = await _orderDio.post(
+      '${AppConstants.orderServiceUrl}/api/orders/$orderId/items',
+      data: {
+        'menuItemId': menuItemId,
+        if (variantId != null) 'variantId': variantId,
+        'quantity': quantity,
+        if (notes != null) 'notes': notes,
+      },
+    );
+    return response.data['itemId'] as String;
+  }
+
+  // Convenience: create order + add all items in one logical call
+  Future<Order> createOrderWithItems({
+    String? tableNumber,
+    int guestCount = 1,
+    String? notes,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final orderId = await createOrder(
+      tableNumber: tableNumber,
+      guestCount: guestCount,
+      notes: notes,
+    );
+    for (final item in items) {
+      await addItemToOrder(
+        orderId,
+        menuItemId: item['menuItemId'],
+        variantId: item['variantId'],
+        quantity: item['quantity'],
+        notes: item['notes'],
+      );
+    }
+    return getOrder(orderId);
+  }
+
+  // List orders: returns lightweight OrderSummary objects
+  Future<List<OrderSummary>> getOrders({OrderStatus? status}) async {
+    final response = await _orderDio.get(
+      '${AppConstants.orderServiceUrl}/api/orders',
       queryParameters: {
         if (status != null) 'status': status.value,
-        if (tableNumber != null) 'table': tableNumber,
       },
     );
-    
     return (response.data as List)
-        .map((o) => Order.fromJson(o))
+        .map((o) => OrderSummary.fromJson(o as Map<String, dynamic>))
         .toList();
   }
-  
+
+  // Get full order detail (with items)
   Future<Order> getOrder(String orderId) async {
-    final response = await _dio.get(
-      '${AppConstants.baseUrl}/api/orders/$orderId',
+    final response = await _orderDio.get(
+      '${AppConstants.orderServiceUrl}/api/orders/$orderId',
     );
-    
-    return Order.fromJson(response.data);
+    return Order.fromJson(response.data as Map<String, dynamic>);
   }
-  
-  Future<void> updateOrderStatus(String orderId, OrderStatus status) async {
-    await _dio.patch(
-      '${AppConstants.baseUrl}/api/orders/$orderId',
-      data: {'status': status.value},
-    );
-  }
-  
-  // Order Items
-  Future<void> addItemToOrder(String orderId, Map<String, dynamic> item) async {
-    await _dio.post(
-      '${AppConstants.baseUrl}/api/orders/$orderId/items',
-      data: item,
+
+  // Send order to kitchen/bar
+  Future<void> sendToKitchen(String orderId) async {
+    await _orderDio.post(
+      '${AppConstants.orderServiceUrl}/api/orders/$orderId/send',
     );
   }
-  
+
+  // Update order item (qty, notes)
   Future<void> updateOrderItem(
     String orderId,
     String itemId, {
     int? quantity,
     String? notes,
   }) async {
-    await _dio.patch(
-      '${AppConstants.baseUrl}/api/orders/$orderId/items/$itemId',
+    await _orderDio.patch(
+      '${AppConstants.orderServiceUrl}/api/orders/$orderId/items/$itemId',
       data: {
         if (quantity != null) 'quantity': quantity,
         if (notes != null) 'notes': notes,
       },
     );
   }
-  
+
+  // Cancel order item
   Future<void> cancelOrderItem(String orderId, String itemId) async {
-    await _dio.delete(
-      '${AppConstants.baseUrl}/api/orders/$orderId/items/$itemId',
+    await _orderDio.delete(
+      '${AppConstants.orderServiceUrl}/api/orders/$orderId/items/$itemId',
     );
   }
-  
-  // Menu
+
+  // ── Menu (Next.js API) ───────────────────────────────────
+
+  // Menu items are scoped to a venue: GET /api/venues/{venueId}/items
+  // Does NOT include variants or allergens (separate endpoints).
   Future<List<MenuItem>> getMenu() async {
+    final venueId = AppConstants.currentVenueId;
     final response = await _dio.get(
-      '${AppConstants.baseUrl}/api/menu',
+      '${AppConstants.baseUrl}/api/venues/$venueId/items',
     );
-    
     return (response.data as List)
-        .map((m) => MenuItem.fromJson(m))
+        .map((m) => MenuItem.fromJson(m as Map<String, dynamic>))
+        .toList();
+  }
+
+  // Fetch variants for a specific menu item
+  Future<List<ItemVariant>> getItemVariants(String menuItemId) async {
+    final venueId = AppConstants.currentVenueId;
+    final response = await _dio.get(
+      '${AppConstants.baseUrl}/api/venues/$venueId/items/$menuItemId/variants',
+    );
+    return (response.data as List)
+        .map((v) => ItemVariant.fromJson(v as Map<String, dynamic>))
         .toList();
   }
 }
@@ -765,10 +1009,16 @@ class ApiService {
 ```dart
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/io.dart';
 import '../config/constants.dart';
 import '../models/websocket_event.dart';
 
+// WebSocket auth is COOKIE-BASED (not query param).
+// The Go ordering service reads the mofe_session cookie during the
+// WebSocket upgrade handshake. Flutter's WebSocket does NOT send
+// cookies automatically — we must set the Cookie header manually.
 class WebSocketService {
   WebSocketChannel? _channel;
   final String _sessionToken;
@@ -776,30 +1026,40 @@ class WebSocketService {
   Timer? _reconnectTimer;
   Timer? _pingTimer;
   bool _isConnected = false;
-  
+
   WebSocketService(this._sessionToken);
-  
+
   Stream<WebSocketEvent> get events => _eventController.stream;
   bool get isConnected => _isConnected;
-  
+
   void connect() {
     try {
-      final uri = Uri.parse('${AppConstants.wsUrl}?session=$_sessionToken');
-      _channel = WebSocketChannel.connect(uri);
-      
+      final uri = Uri.parse(AppConstants.wsUrl);
+      // The Go auth middleware requires the mofe_session cookie.
+      // We send it manually since Flutter's WebSocket does not
+      // include cookies from the HTTP cookie store.
+      final headers = <String, dynamic>{
+        HttpHeaders.cookieHeader:
+            '${AppConstants.sessionCookieName}=$_sessionToken',
+      };
+      _channel = WebSocketChannel.connect(
+        uri,
+        headers: headers,
+      );
+
       _channel!.stream.listen(
         _handleMessage,
         onError: _handleError,
         onDone: _handleDisconnect,
       );
-      
+
       _isConnected = true;
       _startPingTimer();
     } catch (e) {
       _scheduleReconnect();
     }
   }
-  
+
   void _handleMessage(dynamic message) {
     try {
       final data = jsonDecode(message as String);
@@ -809,23 +1069,23 @@ class WebSocketService {
       // Invalid message format
     }
   }
-  
+
   void _handleError(error) {
     _isConnected = false;
     _scheduleReconnect();
   }
-  
+
   void _handleDisconnect() {
     _isConnected = false;
     _pingTimer?.cancel();
     _scheduleReconnect();
   }
-  
+
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(AppConstants.wsReconnectDelay, connect);
   }
-  
+
   void _startPingTimer() {
     _pingTimer?.cancel();
     _pingTimer = Timer.periodic(AppConstants.wsPingInterval, (_) {
@@ -834,14 +1094,14 @@ class WebSocketService {
       }
     });
   }
-  
+
   void disconnect() {
     _reconnectTimer?.cancel();
     _pingTimer?.cancel();
     _channel?.sink.close();
     _isConnected = false;
   }
-  
+
   void dispose() {
     disconnect();
     _eventController.close();
@@ -861,18 +1121,21 @@ import '../models/order.dart';
 import 'storage_service.dart';
 import 'api_service.dart';
 
+/// Stores full order data for offline queuing:
+/// { localId, venueId, tableNumber, guestCount, notes, items: [...],
+///   createdAt, isSynced }
 class OfflineQueueService {
   final AppDatabase _db;
   final ApiService _api;
   final Connectivity _connectivity;
   final _uuid = const Uuid();
-  
+
   StreamSubscription? _connectivitySub;
   Timer? _syncTimer;
   bool _isSyncing = false;
-  
+
   OfflineQueueService(this._db, this._api, this._connectivity);
-  
+
   void startListening() {
     _connectivitySub = _connectivity.onConnectivityChanged.listen((result) {
       if (result != ConnectivityResult.none && !_isSyncing) {
@@ -880,56 +1143,73 @@ class OfflineQueueService {
       }
     });
   }
-  
-  Future<String> queueOrder(Order order) async {
+
+  Future<String> queueOrder({
+    String? tableNumber,
+    int guestCount = 1,
+    String? notes,
+    required List<Map<String, dynamic>> items,
+  }) async {
     final localId = _uuid.v4();
-    final orderWithLocalId = order.copyWith(isSynced: false);
-    
-    await _db.insertOfflineOrder(
-      localId,
-      jsonEncode(orderWithLocalId.toJson()),
-    );
-    
+    final payload = jsonEncode({
+      'localId': localId,
+      'tableNumber': tableNumber,
+      'guestCount': guestCount,
+      'notes': notes,
+      'items': items,
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+
+    await _db.insertOfflineOrder(localId, payload);
+
     // Attempt immediate sync if online
     final connectivity = await _connectivity.checkConnectivity();
     if (connectivity != ConnectivityResult.none) {
       unawaited(_syncPendingOrders());
     }
-    
+
     return localId;
   }
-  
+
   Future<void> _syncPendingOrders() async {
     if (_isSyncing) return;
     _isSyncing = true;
-    
+
     try {
       final unsyncedOrders = await _db.getUnsyncedOrders();
-      
+
       for (final offlineOrder in unsyncedOrders) {
         try {
-          final orderData = jsonDecode(offlineOrder.orderJson);
-          final order = Order.fromJson(orderData);
-          
-          // Recreate order via API
-          await _api.createOrder(
-            tableNumber: order.tableNumber,
-            items: order.items.map((item) => {
-              'menuItemId': item.menuItemId,
-              'variantId': item.variantName != null ? 'variant_id' : null,
-              'quantity': item.quantity,
-              'notes': item.notes,
-            }).toList(),
-            notes: order.notes,
+          final data = jsonDecode(offlineOrder.orderJson) as Map<String, dynamic>;
+
+          // Step 1: Create empty order
+          final orderId = await _api.createOrder(
+            tableNumber: data['tableNumber'] as String?,
+            guestCount: data['guestCount'] as int? ?? 1,
+            notes: data['notes'] as String?,
           );
-          
+
+          // Step 2: Add each item
+          final items = data['items'] as List;
+          for (final item in items) {
+            await _api.addItemToOrder(
+              orderId,
+              menuItemId: item['menuItemId'],
+              variantId: item['variantId'],
+              quantity: item['quantity'],
+              notes: item['notes'],
+            );
+          }
+
           await _db.markAsSynced(offlineOrder.localId);
-          
+
           // Delete synced orders after 24 hours
-          if (offlineOrder.createdAt.difference(DateTime.now()).inHours > 24) {
+          if (offlineOrder.createdAt
+              .difference(DateTime.now())
+              .inHours
+              .abs() > 24) {
             await _db.deleteOrder(offlineOrder.localId);
           }
-          
         } catch (e) {
           // Failed to sync this order, continue to next
           continue;
@@ -939,12 +1219,12 @@ class OfflineQueueService {
       _isSyncing = false;
     }
   }
-  
+
   Future<int> getPendingOrdersCount() async {
     final orders = await _db.getUnsyncedOrders();
     return orders.length;
   }
-  
+
   void dispose() {
     _connectivitySub?.cancel();
     _syncTimer?.cancel();
@@ -964,41 +1244,60 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/auth_service.dart';
 import '../config/constants.dart';
 
-// Dio instance with interceptors
+// ── Dio instances ───────────────────────────────────────
+// Two separate services each with their own Dio:
+// Next.js API (auth, menu)  &  Go ordering service (orders)
+
+final storageProvider = Provider<FlutterSecureStorage>(
+  (_) => const FlutterSecureStorage(),
+);
+
+// Dio for Next.js API (baseUrl /api/*)
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
     baseUrl: AppConstants.baseUrl,
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
   ));
-  
-  // Add auth interceptor
+  _addAuthInterceptor(dio, ref);
+  return dio;
+});
+
+// Dio for Go ordering service (orderServiceUrl /api/orders/*)
+final orderDioProvider = Provider<Dio>((ref) {
+  final dio = Dio(BaseOptions(
+    baseUrl: AppConstants.orderServiceUrl,
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+  ));
+  _addAuthInterceptor(dio, ref);
+  return dio;
+});
+
+void _addAuthInterceptor(Dio dio, Ref ref) {
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) async {
       final storage = const FlutterSecureStorage();
       final token = await storage.read(key: 'session_token');
-      
       if (token != null) {
-        options.headers['Cookie'] = '${AppConstants.sessionCookieName}=$token';
+        options.headers['Cookie'] =
+            '${AppConstants.sessionCookieName}=$token';
       }
-      
+      // Multi-venue: add X-Venue-ID header if user has >1 venue
+      final session = ref.read(authProvider).session;
+      if (session != null && session.memberships.length > 1) {
+        options.headers['X-Venue-ID'] = AppConstants.currentVenueId;
+      }
       return handler.next(options);
     },
     onError: (error, handler) {
       if (error.response?.statusCode == 401) {
-        // Session expired - trigger logout
         ref.read(authProvider.notifier).logout();
       }
       return handler.next(error);
     },
   ));
-  
-  return dio;
-});
-
-final storageProvider = Provider<FlutterSecureStorage>(
-  (_) => const FlutterSecureStorage(),
-);
+}
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(
@@ -1007,62 +1306,79 @@ final authServiceProvider = Provider<AuthService>((ref) {
   );
 });
 
-// Auth state
+// ── Auth state ──────────────────────────────────────────
 class AuthState {
   final SessionData? session;
   final bool isLoading;
   final String? error;
-  
+  final bool isInitialized; // true after session check
+
   const AuthState({
     this.session,
     this.isLoading = false,
     this.error,
+    this.isInitialized = false,
   });
-  
+
   bool get isAuthenticated => session != null;
-  
+
   AuthState copyWith({
     SessionData? session,
     bool? isLoading,
     String? error,
+    bool? isInitialized,
   }) {
     return AuthState(
       session: session ?? this.session,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      isInitialized: isInitialized ?? this.isInitialized,
     );
   }
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
-  
-  AuthNotifier(this._authService) : super(const AuthState()) {
+  final Ref _ref;
+
+  AuthNotifier(this._authService, this._ref) : super(const AuthState()) {
     _checkExistingSession();
   }
-  
+
+  // On app start, check if we have a stored session cookie
+  // and validate it by calling GET /api/me
   Future<void> _checkExistingSession() async {
     final token = await _authService.getSessionToken();
-    if (token != null) {
-      // Token exists, verify with backend or load cached session data
-      // For now, we'll require re-login
+    if (token == null) {
+      state = state.copyWith(isInitialized: true);
+      return;
+    }
+    try {
+      final meData = await _authService.fetchMe();
+      final session = SessionData.fromJson(meData);
+      state = state.copyWith(session: session, isInitialized: true);
+    } catch (_) {
+      // Session invalid or expired
+      await _authService.logout();
+      state = state.copyWith(isInitialized: true);
     }
   }
-  
-  Future<void> login(String phoneNumber, String password) async {
+
+  Future<void> login(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
-    
     try {
-      final session = await _authService.login(phoneNumber, password);
-      
-      if (session != null) {
-        state = state.copyWith(session: session, isLoading: false);
-      } else {
-        state = state.copyWith(
-          isLoading: false,
-          error: 'ورود ناموفق. لطفاً دوباره تلاش کنید.',
-        );
-      }
+      // Step 1: POST /api/auth/login (sets cookie)
+      await _authService.login(email, password);
+
+      // Step 2: GET /api/me to get user + venue memberships
+      final meData = await _authService.fetchMe();
+      final session = SessionData.fromJson(meData);
+
+      state = state.copyWith(session: session, isLoading: false);
+    } on DioException catch (e) {
+      final msg = e.response?.data?['error'] as String? ??
+          'خطا در اتصال به سرور';
+      state = state.copyWith(isLoading: false, error: msg);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -1070,15 +1386,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
     }
   }
-  
+
+  // Call after user picks a venue (multi-venue users)
+  void selectVenue(String venueId) {
+    AppConstants.currentVenueId = venueId;
+  }
+
   Future<void> logout() async {
     await _authService.logout();
-    state = const AuthState();
+    AppConstants.currentVenueId = '';
+    state = const AuthState(isInitialized: true);
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.watch(authServiceProvider));
+final authProvider =
+    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  return AuthNotifier(
+    ref.watch(authServiceProvider),
+    ref,
+  );
 });
 ```
 
@@ -1113,7 +1439,7 @@ import 'auth_provider.dart';
 import 'connectivity_provider.dart';
 
 final apiServiceProvider = Provider<ApiService>((ref) {
-  return ApiService(ref.watch(dioProvider));
+  return ApiService(ref.watch(dioProvider), ref.watch(orderDioProvider));
 });
 
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -1130,49 +1456,65 @@ final offlineQueueProvider = Provider<OfflineQueueService>((ref) {
   return service;
 });
 
-final websocketServiceProvider = Provider<WebSocketService?>((ref) {
-  final authState = ref.watch(authProvider);
-  
-  if (!authState.isAuthenticated) return null;
-  
-  final token = ref.watch(storageProvider).read(key: 'session_token');
-  
-  return token.then((t) {
-    if (t == null) return null;
-    final ws = WebSocketService(t);
-    ws.connect();
-    
-    // Listen to WebSocket events and update orders
-    ws.events.listen((event) {
-      ref.read(ordersProvider.notifier).handleWebSocketEvent(event);
-    });
-    
-    return ws;
-  }) as WebSocketService?;
-});
+// WebSocket connection is managed imperatively in the app lifecycle,
+// not as a Riverpod provider. The websocket_service_provider below
+// is available for injection but should only be accessed after auth.
+// Use the orders_provider or app-level init to start the WS connection.
+final websocketServiceProvider = StateProvider<WebSocketService?>((ref) => null);
 
-// Orders state
+// Start WebSocket connection after login succeeds
+Future<void> initializeWebSocket(Ref ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) return;
+
+  final token = await ref.read(authServiceProvider).getSessionToken();
+  if (token == null) return;
+
+  final ws = WebSocketService(token);
+  ws.connect();
+
+  ws.events.listen((event) {
+    ref.read(ordersProvider.notifier).handleWebSocketEvent(event);
+  });
+
+  ref.read(websocketServiceProvider.notifier).state = ws;
+}
+
+// Call this on app logout
+void disposeWebSocket(Ref ref) {
+  final ws = ref.read(websocketServiceProvider);
+  ws?.dispose();
+  ref.read(websocketServiceProvider.notifier).state = null;
+}
+
+// ── Orders state ────────────────────────────────────────
+// Stores OrderSummary for the list view. Full Order objects
+// are fetched on demand when viewing order details.
 class OrdersState {
-  final List<Order> orders;
+  final List<OrderSummary> summaries;
+  final Map<String, Order> orderDetails; // cache: orderId → full Order
   final bool isLoading;
   final String? error;
   final int pendingOfflineOrders;
-  
+
   const OrdersState({
-    this.orders = const [],
+    this.summaries = const [],
+    this.orderDetails = const {},
     this.isLoading = false,
     this.error,
     this.pendingOfflineOrders = 0,
   });
-  
+
   OrdersState copyWith({
-    List<Order>? orders,
+    List<OrderSummary>? summaries,
+    Map<String, Order>? orderDetails,
     bool? isLoading,
     String? error,
     int? pendingOfflineOrders,
   }) {
     return OrdersState(
-      orders: orders ?? this.orders,
+      summaries: summaries ?? this.summaries,
+      orderDetails: orderDetails ?? this.orderDetails,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       pendingOfflineOrders: pendingOfflineOrders ?? this.pendingOfflineOrders,
@@ -1184,19 +1526,18 @@ class OrdersNotifier extends StateNotifier<OrdersState> {
   final ApiService _api;
   final OfflineQueueService _offlineQueue;
   final Ref _ref;
-  
-  OrdersNotifier(this._api, this._offlineQueue, this._ref) 
+
+  OrdersNotifier(this._api, this._offlineQueue, this._ref)
       : super(const OrdersState()) {
     loadOrders();
     _updatePendingCount();
   }
-  
+
   Future<void> loadOrders({OrderStatus? status}) async {
     state = state.copyWith(isLoading: true, error: null);
-    
     try {
-      final orders = await _api.getOrders(status: status);
-      state = state.copyWith(orders: orders, isLoading: false);
+      final summaries = await _api.getOrders(status: status);
+      state = state.copyWith(summaries: summaries, isLoading: false);
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -1204,67 +1545,67 @@ class OrdersNotifier extends StateNotifier<OrdersState> {
       );
     }
   }
-  
+
+  // Fetch full order detail (with items)
+  Future<Order> fetchOrderDetail(String orderId) async {
+    final order = await _api.getOrder(orderId);
+    state = state.copyWith(
+      orderDetails: {...state.orderDetails, orderId: order},
+    );
+    return order;
+  }
+
+  // 2-step order creation: create empty order, then add items
   Future<void> createOrder({
-    required int tableNumber,
-    required List<Map<String, dynamic>> items,
+    String? tableNumber,
+    int guestCount = 1,
     String? notes,
+    required List<Map<String, dynamic>> items,
   }) async {
     final isOnline = _ref.read(isOnlineProvider);
-    
+
     if (!isOnline) {
       // Queue for offline sync
-      final order = Order(
-        id: 'pending',
-        venueId: _ref.read(authProvider).session!.venueId,
-        waiterId: _ref.read(authProvider).session!.userId,
-        waiterName: _ref.read(authProvider).session!.userName,
+      await _offlineQueue.queueOrder(
         tableNumber: tableNumber,
-        status: OrderStatus.pending,
-        items: items.map((item) => OrderItem(
-          id: 'pending',
-          orderId: 'pending',
-          menuItemId: item['menuItemId'],
-          name: item['name'],
-          variantName: item['variantName'],
-          quantity: item['quantity'],
-          unitPrice: item['unitPrice'],
-          totalPrice: item['unitPrice'] * item['quantity'],
-          status: ItemStatus.pending,
-          station: Station.fromString(item['station']),
-          notes: item['notes'],
-          createdAt: DateTime.now(),
-        )).toList(),
-        subtotal: items.fold(0.0, (sum, item) => 
-          sum + (item['unitPrice'] * item['quantity'])),
-        tax: 0.0,
-        total: items.fold(0.0, (sum, item) => 
-          sum + (item['unitPrice'] * item['quantity'])),
+        guestCount: guestCount,
         notes: notes,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        isSynced: false,
+        items: items,
       );
-      
-      await _offlineQueue.queueOrder(order);
       await _updatePendingCount();
       return;
     }
-    
+
     try {
-      final newOrder = await _api.createOrder(
+      final order = await _api.createOrderWithItems(
         tableNumber: tableNumber,
-        items: items,
+        guestCount: guestCount,
         notes: notes,
+        items: items,
       );
-      
-      state = state.copyWith(orders: [newOrder, ...state.orders]);
+      // Refresh the list
+      await loadOrders();
     } catch (e) {
-      // If online but request failed, queue for retry
-      rethrow;
+      // If online but the request failed, queue for offline retry
+      await _offlineQueue.queueOrder(
+        tableNumber: tableNumber,
+        guestCount: guestCount,
+        notes: notes,
+        items: items,
+      );
+      await _updatePendingCount();
     }
   }
-  
+
+  Future<void> sendToKitchen(String orderId) async {
+    try {
+      await _api.sendToKitchen(orderId);
+      await loadOrders();
+    } catch (e) {
+      state = state.copyWith(error: 'خطا در ارسال سفارش');
+    }
+  }
+
   Future<void> updateOrderItem({
     required String orderId,
     required String itemId,
@@ -1272,77 +1613,93 @@ class OrdersNotifier extends StateNotifier<OrdersState> {
     String? notes,
   }) async {
     try {
-      await _api.updateOrderItem(orderId, itemId, quantity: quantity, notes: notes);
+      await _api.updateOrderItem(orderId, itemId,
+          quantity: quantity, notes: notes);
       await loadOrders();
     } catch (e) {
       state = state.copyWith(error: 'خطا در به‌روزرسانی آیتم');
     }
   }
-  
+
   Future<void> cancelOrderItem(String orderId, String itemId) async {
     try {
       await _api.cancelOrderItem(orderId, itemId);
+      final updated = await _api.getOrder(orderId);
+      state = state.copyWith(
+        orderDetails: {...state.orderDetails, orderId: updated},
+      );
       await loadOrders();
     } catch (e) {
       state = state.copyWith(error: 'خطا در لغو آیتم');
     }
   }
-  
+
   void handleWebSocketEvent(WebSocketEvent event) {
     switch (event.type) {
       case 'order_created':
-        final order = Order.fromJson(event.payload);
-        state = state.copyWith(orders: [order, ...state.orders]);
+        // Refresh the list — the payload is a full order but we want
+        // to keep the list consistent. For simplicity, just reload.
+        loadOrders();
         break;
-        
+
       case 'item_status_changed':
-        _updateItemInOrders(
-          event.payload['orderId'],
-          event.payload['itemId'],
-          ItemStatus.fromString(event.payload['status']),
+        _updateItemInCachedOrder(
+          event.payload['orderId'] as String,
+          event.payload['itemId'] as String,
+          ItemStatus.fromString(event.payload['status'] as String),
         );
         break;
-        
+
       case 'order_status_changed':
-        _updateOrderStatus(
-          event.payload['orderId'],
-          OrderStatus.fromString(event.payload['status']),
+        _updateSummaryStatus(
+          event.payload['orderId'] as String,
+          OrderStatus.fromString(event.payload['status'] as String),
         );
         break;
     }
   }
-  
-  void _updateItemInOrders(String orderId, String itemId, ItemStatus newStatus) {
-    final updatedOrders = state.orders.map((order) {
-      if (order.id != orderId) return order;
-      
-      final updatedItems = order.items.map((item) {
-        if (item.id != itemId) return item;
-        return item.copyWith(status: newStatus);
-      }).toList();
-      
-      return order.copyWith(items: updatedItems);
+
+  void _updateItemInCachedOrder(
+      String orderId, String itemId, ItemStatus newStatus) {
+    final cached = state.orderDetails[orderId];
+    if (cached == null) return;
+
+    final updatedItems = cached.items.map((item) {
+      if (item.id != itemId) return item;
+      return item.copyWith(status: newStatus);
     }).toList();
-    
-    state = state.copyWith(orders: updatedOrders);
+
+    state = state.copyWith(
+      orderDetails: {
+        ...state.orderDetails,
+        orderId: cached.copyWith(items: updatedItems),
+      },
+    );
   }
-  
-  void _updateOrderStatus(String orderId, OrderStatus newStatus) {
-    final updatedOrders = state.orders.map((order) {
-      if (order.id != orderId) return order;
-      return order.copyWith(status: newStatus);
+
+  void _updateSummaryStatus(String orderId, OrderStatus newStatus) {
+    final updated = state.summaries.map((s) {
+      if (s.id != orderId) return s;
+      return OrderSummary(
+        id: s.id,
+        tableNumber: s.tableNumber,
+        status: newStatus,
+        total: s.total,
+        createdAt: s.createdAt,
+        createdBy: s.createdBy,
+      );
     }).toList();
-    
-    state = state.copyWith(orders: updatedOrders);
+    state = state.copyWith(summaries: updated);
   }
-  
+
   Future<void> _updatePendingCount() async {
     final count = await _offlineQueue.getPendingOrdersCount();
     state = state.copyWith(pendingOfflineOrders: count);
   }
 }
 
-final ordersProvider = StateNotifierProvider<OrdersNotifier, OrdersState>((ref) {
+final ordersProvider =
+    StateNotifierProvider<OrdersNotifier, OrdersState>((ref) {
   return OrdersNotifier(
     ref.watch(apiServiceProvider),
     ref.watch(offlineQueueProvider),
@@ -1358,14 +1715,24 @@ import '../models/menu_item.dart';
 import '../services/api_service.dart';
 import 'auth_provider.dart';
 
+// Menu items are venue-scoped: GET /api/venues/{venueId}/items
+// Refetches when venue changes (via AppConstants.currentVenueId).
+final venueIdProvider = Provider<String>((ref) {
+  final session = ref.watch(authProvider).session;
+  if (session == null) return '';
+  return session.currentVenueId;
+});
+
 final menuProvider = FutureProvider<List<MenuItem>>((ref) async {
   final api = ref.watch(apiServiceProvider);
+  final venueId = ref.watch(venueIdProvider);
+  if (venueId.isEmpty) return [];
   return await api.getMenu();
 });
 
 final menuByStationProvider = Provider<Map<Station, List<MenuItem>>>((ref) {
   final menu = ref.watch(menuProvider);
-  
+
   return menu.when(
     data: (items) {
       final grouped = <Station, List<MenuItem>>{};
@@ -1426,14 +1793,14 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -1441,7 +1808,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
       ref.read(authProvider.notifier).login(
-        _phoneController.text.trim(),
+        _emailController.text.trim(),
         _passwordController.text,
       );
     }
@@ -1459,7 +1826,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWarm,
+      backgroundColor: AppTheme.paperBackground,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -1485,7 +1852,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       fontFamily: 'DMSerifDisplay',
                       fontSize: 32,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.inkDark,
+                      color: AppTheme.inkStrong,
                     ),
                   ),
                   
@@ -1496,30 +1863,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: AppTheme.textMuted,
+                      color: AppTheme.inkMuted,
                     ),
                   ),
                   
                   const SizedBox(height: 48),
                   
-                  // Phone number field
+                  // Email field (not phone — login uses email)
                   TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
                     textDirection: TextDirection.ltr,
                     decoration: InputDecoration(
-                      labelText: 'شماره موبایل',
-                      hintText: '09123456789',
-                      prefixIcon: const Icon(Icons.phone),
+                      labelText: 'ایمیل',
+                      hintText: 'example@email.com',
+                      prefixIcon: const Icon(Icons.email),
                       filled: true,
                       fillColor: AppTheme.surfaceWhite,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppTheme.borderWarm),
+                        borderSide: BorderSide(color: AppTheme.borderLine),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppTheme.borderWarm),
+                        borderSide: BorderSide(color: AppTheme.borderLine),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1531,10 +1898,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'لطفاً شماره موبایل را وارد کنید';
+                        return 'لطفاً ایمیل را وارد کنید';
                       }
-                      if (!RegExp(r'^09\d{9}$').hasMatch(value)) {
-                        return 'شماره موبایل معتبر نیست';
+                      if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                          .hasMatch(value)) {
+                        return 'ایمیل معتبر نیست';
                       }
                       return null;
                     },
@@ -1565,11 +1933,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       fillColor: AppTheme.surfaceWhite,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppTheme.borderWarm),
+                        borderSide: BorderSide(color: AppTheme.borderLine),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppTheme.borderWarm),
+                        borderSide: BorderSide(color: AppTheme.borderLine),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -1684,10 +2052,12 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen>
   }
 
   void _onTabChanged() {
+    // Order statuses matching Go service: DRAFT, PENDING, SENT,
+    // IN_PROGRESS, READY, DELIVERED, CANCELLED
     final statusMap = [
       null, // All
       OrderStatus.pending,
-      OrderStatus.preparing,
+      OrderStatus.inProgress,
       OrderStatus.ready,
     ];
     
@@ -1718,7 +2088,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen>
             .toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWarm,
+      backgroundColor: AppTheme.paperBackground,
       appBar: AppBar(
         backgroundColor: AppTheme.surfaceWhite,
         elevation: 0,
@@ -1731,14 +2101,14 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen>
                 fontFamily: 'DMSerifDisplay',
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.inkDark,
+                color: AppTheme.inkStrong,
               ),
             ),
             Text(
-              authState.session?.venueName ?? '',
+              authState.session?.currentMembership?.venueName ?? '',
               style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.textMuted,
+                color: AppTheme.inkMuted,
               ),
             ),
           ],
@@ -1792,7 +2162,7 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen>
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppTheme.accentAmber,
-          unselectedLabelColor: AppTheme.textMuted,
+          unselectedLabelColor: AppTheme.inkMuted,
           indicatorColor: AppTheme.accentAmber,
           indicatorWeight: 3,
           tabs: const [
@@ -1820,12 +2190,12 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen>
                             Icon(
                               Icons.error_outline,
                               size: 64,
-                              color: AppTheme.textMuted,
+                              color: AppTheme.inkMuted,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               ordersState.error!,
-                              style: TextStyle(color: AppTheme.textMuted),
+                              style: TextStyle(color: AppTheme.inkMuted),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -1845,14 +2215,14 @@ class _OrdersListScreenState extends ConsumerState<OrdersListScreen>
                                 Icon(
                                   Icons.receipt_long,
                                   size: 64,
-                                  color: AppTheme.textMuted,
+                                  color: AppTheme.inkMuted,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'سفارشی وجود ندارد',
                                   style: TextStyle(
                                     fontSize: 16,
-                                    color: AppTheme.textMuted,
+                                    color: AppTheme.inkMuted,
                                   ),
                                 ),
                               ],
@@ -1936,13 +2306,10 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
       } else {
         _cartItems[key] = CartItem(
           menuItemId: menuItem.id,
-          name: menuItem.name,
+          name: menuItem.nameFa,
           variantId: variantId,
           variantName: variantName,
-          unitPrice: variantName != null
-              ? menuItem.variants!
-                  .firstWhere((v) => v['id'] == variantId)['price']
-              : menuItem.price,
+          unitPrice: menuItem.priceToman, // base price; variant modifier added at submit
           quantity: 1,
           station: menuItem.station,
         );
@@ -1979,18 +2346,15 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
 
     final items = _cartItems.values.map((item) => {
       'menuItemId': item.menuItemId,
-      'variantId': item.variantId,
+      if (item.variantId != null) 'variantId': item.variantId,
       'quantity': item.quantity,
       'notes': null,
-      'name': item.name,
-      'variantName': item.variantName,
-      'unitPrice': item.unitPrice,
-      'station': item.station.value,
     }).toList();
 
     try {
+      final tableText = _tableController.text.trim();
       await ref.read(ordersProvider.notifier).createOrder(
-        tableNumber: int.parse(_tableController.text),
+        tableNumber: tableText.isEmpty ? null : tableText,
         items: items,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
       );
@@ -2016,7 +2380,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
     final menuByStation = ref.watch(menuByStationProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWarm,
+      backgroundColor: AppTheme.paperBackground,
       appBar: AppBar(
         backgroundColor: AppTheme.surfaceWhite,
         elevation: 0,
@@ -2026,7 +2390,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
             fontFamily: 'DMSerifDisplay',
             fontSize: 24,
             fontWeight: FontWeight.w700,
-            color: AppTheme.inkDark,
+            color: AppTheme.inkStrong,
           ),
         ),
       ),
@@ -2041,12 +2405,12 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                 Expanded(
                   child: TextField(
                     controller: _tableController,
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.text,
                     decoration: InputDecoration(
                       labelText: 'شماره میز',
                       prefixIcon: const Icon(Icons.table_restaurant),
                       filled: true,
-                      fillColor: AppTheme.backgroundWarm,
+                      fillColor: AppTheme.paperBackground,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -2104,7 +2468,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                   onTap: () => setState(() => _selectedStation = null),
                 ),
                 ...Station.values.map((station) => _StationChip(
-                  label: station.persianName,
+                  label: station.label,
                   isSelected: _selectedStation == station,
                   onTap: () => setState(() => _selectedStation = station),
                 )),
@@ -2202,7 +2566,7 @@ class _NewOrderScreenState extends ConsumerState<NewOrderScreen> {
                       fontFamily: 'DMSerifDisplay',
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.inkDark,
+                      color: AppTheme.inkStrong,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -2268,10 +2632,10 @@ class _StationChip extends StatelessWidget {
         label: Text(label),
         selected: isSelected,
         onSelected: (_) => onTap(),
-        backgroundColor: AppTheme.backgroundWarm,
+        backgroundColor: AppTheme.paperBackground,
         selectedColor: AppTheme.amberTint,
         labelStyle: TextStyle(
-          color: isSelected ? AppTheme.accentAmber : AppTheme.textMuted,
+          color: isSelected ? AppTheme.accentAmber : AppTheme.inkMuted,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
@@ -2284,7 +2648,7 @@ class CartItem {
   final String name;
   final String? variantId;
   final String? variantName;
-  final double unitPrice;
+  final int unitPrice; // Integer Toman (base price, no tax)
   final int quantity;
   final Station station;
 
@@ -2303,7 +2667,7 @@ class CartItem {
     String? name,
     String? variantId,
     String? variantName,
-    double? unitPrice,
+    int? unitPrice,
     int? quantity,
     Station? station,
   }) {
@@ -2331,8 +2695,10 @@ import '../models/order.dart';
 import '../config/theme.dart';
 import 'status_badge.dart';
 
+// OrderCard displays an OrderSummary (list view) without items.
+// For the full detail view, use OrderDetailSheet.
 class OrderCard extends StatelessWidget {
-  final Order order;
+  final OrderSummary order;
   final VoidCallback? onTap;
 
   const OrderCard({
@@ -2348,7 +2714,7 @@ class OrderCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppTheme.borderWarm, width: 1),
+        side: BorderSide(color: AppTheme.borderLine, width: 1),
       ),
       color: AppTheme.surfaceWhite,
       child: InkWell(
@@ -2375,11 +2741,11 @@ class OrderCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'میز ${order.tableNumber}',
+                          'میز ${order.tableNumber ?? '-'}',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
-                            color: AppTheme.inkDark,
+                            color: AppTheme.inkStrong,
                           ),
                         ),
                       ),
@@ -2388,7 +2754,7 @@ class OrderCard extends StatelessWidget {
                         '#${order.id.substring(0, 8)}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.textMuted,
+                          color: AppTheme.inkMuted,
                           fontFamily: 'monospace',
                         ),
                       ),
@@ -2397,58 +2763,6 @@ class OrderCard extends StatelessWidget {
                   StatusBadge(status: order.status),
                 ],
               ),
-
-              const SizedBox(height: 12),
-
-              // Items preview
-              ...order.items.take(3).map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.circle,
-                      size: 6,
-                      color: AppTheme.textMuted,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        item.variantName != null
-                            ? '${item.name} (${item.variantName})'
-                            : item.name,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.inkDark,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      '×${item.quantity}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.accentAmber,
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-
-              // More items indicator
-              if (order.items.length > 3)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    '+ ${order.items.length - 3} آیتم دیگر',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textMuted,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
 
               const Divider(height: 20),
 
@@ -2462,14 +2776,14 @@ class OrderCard extends StatelessWidget {
                       Icon(
                         Icons.person_outline,
                         size: 16,
-                        color: AppTheme.textMuted,
+                        color: AppTheme.inkMuted,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        order.waiterName ?? 'نامشخص',
+                        order.createdBy.isEmpty ? 'نامشخص' : order.createdBy,
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.textMuted,
+                          color: AppTheme.inkMuted,
                         ),
                       ),
                     ],
@@ -2481,26 +2795,26 @@ class OrderCard extends StatelessWidget {
                       Icon(
                         Icons.access_time,
                         size: 16,
-                        color: AppTheme.textMuted,
+                        color: AppTheme.inkMuted,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         _formatTime(order.createdAt),
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.textMuted,
+                          color: AppTheme.inkMuted,
                         ),
                       ),
                     ],
                   ),
 
-                  // Total price
+                  // Total price (int Toman)
                   Text(
-                    '${_formatPrice(order.totalAmount)} تومان',
+                    '${_formatPrice(order.total)} تومان',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.inkDark,
+                      color: AppTheme.inkStrong,
                     ),
                   ),
                 ],
@@ -2518,9 +2832,8 @@ class OrderCard extends StatelessWidget {
     return '$hour:$minute';
   }
 
-  String _formatPrice(double price) {
-    // Format with thousands separator
-    final formatted = price.toInt().toString().replaceAllMapped(
+  String _formatPrice(int price) {
+    final formatted = price.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]},',
     );
@@ -2584,7 +2897,16 @@ class StatusBadge extends StatelessWidget {
     );
   }
 
+  // Order-level statuses matching Go service:
+  // DRAFT, PENDING, SENT, IN_PROGRESS, READY, DELIVERED, CANCELLED
   static final _statusConfig = {
+    OrderStatus.draft: _StatusConfig(
+      label: 'پیش‌نویس',
+      backgroundColor: const Color(0xFFF5F5F5),
+      borderColor: const Color(0xFFBDBDBD),
+      dotColor: const Color(0xFF9E9E9E),
+      textColor: const Color(0xFF616161),
+    ),
     OrderStatus.pending: _StatusConfig(
       label: 'در انتظار',
       backgroundColor: const Color(0xFFFFF8E1),
@@ -2592,7 +2914,14 @@ class StatusBadge extends StatelessWidget {
       dotColor: const Color(0xFFFFC107),
       textColor: const Color(0xFF795548),
     ),
-    OrderStatus.preparing: _StatusConfig(
+    OrderStatus.sent: _StatusConfig(
+      label: 'ارسال شده',
+      backgroundColor: const Color(0xFFE3F2FD),
+      borderColor: const Color(0xFF90CAF9),
+      dotColor: const Color(0xFF2196F3),
+      textColor: const Color(0xFF1565C0),
+    ),
+    OrderStatus.inProgress: _StatusConfig(
       label: 'در حال آماده‌سازی',
       backgroundColor: const Color(0xFFE3F2FD),
       borderColor: const Color(0xFF90CAF9),
@@ -2674,6 +3003,13 @@ class ItemStatusBadge extends StatelessWidget {
       dotColor: const Color(0xFFFFC107),
       textColor: const Color(0xFF795548),
     ),
+    ItemStatus.sent: _StatusConfig(
+      label: 'ارسال شد',
+      backgroundColor: const Color(0xFFE3F2FD),
+      borderColor: const Color(0xFF90CAF9),
+      dotColor: const Color(0xFF2196F3),
+      textColor: const Color(0xFF1565C0),
+    ),
     ItemStatus.preparing: _StatusConfig(
       label: 'در حال آماده‌سازی',
       backgroundColor: const Color(0xFFE3F2FD),
@@ -2712,7 +3048,7 @@ import 'package:flutter/material.dart';
 import '../models/menu_item.dart';
 import '../config/theme.dart';
 
-class MenuItemCard extends StatelessWidget {
+class MenuItemCard extends ConsumerStatefulWidget {
   final MenuItem menuItem;
   final void Function(
     MenuItem item, {
@@ -2727,36 +3063,40 @@ class MenuItemCard extends StatelessWidget {
   });
 
   @override
+  ConsumerState<MenuItemCard> createState() => _MenuItemCardState();
+}
+
+class _MenuItemCardState extends ConsumerState<MenuItemCard> {
+  List<ItemVariant>? _variants;
+  bool _loadingVariants = false;
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.menuItem;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppTheme.borderWarm, width: 1),
+        side: BorderSide(color: AppTheme.borderLine, width: 1),
       ),
       color: AppTheme.surfaceWhite,
       child: InkWell(
-        onTap: () {
-          if (menuItem.variants != null && menuItem.variants!.isNotEmpty) {
-            _showVariantSheet(context);
-          } else {
-            onAdd(menuItem);
-          }
-        },
+        onTap: () => _handleTap(context),
         borderRadius: BorderRadius.circular(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Item image
+            // Item image (photoAssetId → resolved URL via storage service)
             Expanded(
               flex: 3,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
                 ),
-                child: menuItem.imageUrl != null
+                child: item.photoAssetId != null
                     ? Image.network(
-                        menuItem.imageUrl!,
+                        // TODO: resolve photoAssetId to URL via storage service
+                        '/api/assets/${item.photoAssetId}',
                         fit: BoxFit.cover,
                         width: double.infinity,
                         errorBuilder: (_, __, ___) => _PlaceholderImage(),
@@ -2774,13 +3114,13 @@ class MenuItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Name
+                    // Name (use nameFa)
                     Text(
-                      menuItem.name,
+                      item.nameFa,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
-                        color: AppTheme.inkDark,
+                        color: AppTheme.inkText,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -2790,21 +3130,20 @@ class MenuItemCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Price
+                        // Price (int Toman)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (menuItem.variants != null &&
-                                menuItem.variants!.isNotEmpty)
+                            if (_variants != null && _variants!.isNotEmpty)
                               Text(
                                 'از',
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: AppTheme.textMuted,
+                                  color: AppTheme.inkMuted,
                                 ),
                               ),
                             Text(
-                              _formatPrice(menuItem.price),
+                              _formatPrice(item.priceToman),
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -2816,14 +3155,7 @@ class MenuItemCard extends StatelessWidget {
 
                         // Add button
                         GestureDetector(
-                          onTap: () {
-                            if (menuItem.variants != null &&
-                                menuItem.variants!.isNotEmpty) {
-                              _showVariantSheet(context);
-                            } else {
-                              onAdd(menuItem);
-                            }
-                          },
+                          onTap: () => _handleTap(context),
                           child: Container(
                             width: 32,
                             height: 32,
@@ -2845,18 +3177,18 @@ class MenuItemCard extends StatelessWidget {
               ),
             ),
 
-            // Station tag
+            // Station tag (only KITCHEN/BAR exist)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 4),
               decoration: BoxDecoration(
-                color: _stationColor(menuItem.station),
+                color: _stationColor(item.station),
                 borderRadius: const BorderRadius.vertical(
                   bottom: Radius.circular(16),
                 ),
               ),
               child: Text(
-                menuItem.station.persianName,
+                item.station.label,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 11,
@@ -2871,7 +3203,33 @@ class MenuItemCard extends StatelessWidget {
     );
   }
 
+  void _handleTap(BuildContext context) async {
+    // Fetch variants from the API (separate endpoint)
+    if (_variants == null && !_loadingVariants) {
+      _loadingVariants = true;
+      try {
+        final api = ref.read(apiServiceProvider);
+        final variants = await api.getItemVariants(widget.menuItem.id);
+        if (mounted) {
+          setState(() {
+            _variants = variants;
+            _loadingVariants = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) setState(() => _loadingVariants = false);
+      }
+    }
+
+    if (_variants != null && _variants!.isNotEmpty) {
+      _showVariantSheet(context);
+    } else {
+      widget.onAdd(widget.menuItem);
+    }
+  }
+
   void _showVariantSheet(BuildContext context) {
+    final variants = _variants ?? <ItemVariant>[];
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.surfaceWhite,
@@ -2886,12 +3244,12 @@ class MenuItemCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                menuItem.name,
+                widget.menuItem.nameFa,
                 style: TextStyle(
                   fontFamily: 'DMSerifDisplay',
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.inkDark,
+                  color: AppTheme.inkStrong,
                 ),
               ),
               const SizedBox(height: 8),
@@ -2899,16 +3257,17 @@ class MenuItemCard extends StatelessWidget {
                 'یک گزینه انتخاب کنید',
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppTheme.textMuted,
+                  color: AppTheme.inkMuted,
                 ),
               ),
               const SizedBox(height: 16),
-              ...menuItem.variants!.map((variant) {
+              ...variants.map((variant) {
+                final totalPrice = widget.menuItem.priceToman + variant.priceModifier;
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(variant['name'] as String),
+                  title: Text(variant.nameFa),
                   trailing: Text(
-                    _formatPrice((variant['price'] as num).toDouble()),
+                    _formatPrice(totalPrice),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: AppTheme.accentAmber,
@@ -2916,10 +3275,10 @@ class MenuItemCard extends StatelessWidget {
                   ),
                   onTap: () {
                     Navigator.pop(context);
-                    onAdd(
-                      menuItem,
-                      variantId: variant['id'] as String,
-                      variantName: variant['name'] as String,
+                    widget.onAdd(
+                      widget.menuItem,
+                      variantId: variant.id,
+                      variantName: variant.nameFa,
                     );
                   },
                   shape: RoundedRectangleBorder(
@@ -2934,20 +3293,14 @@ class MenuItemCard extends StatelessWidget {
     );
   }
 
-  String _formatPrice(double price) {
-    final formatted = price.toInt().toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]},',
-    );
-    return '$formatted تومان';
+  String _formatPrice(int price) {
+    return '$price تومان';
   }
 
   Color _stationColor(Station station) {
     return switch (station) {
       Station.kitchen => const Color(0xFFE53935),
       Station.bar => const Color(0xFF8E24AA),
-      Station.dessert => const Color(0xFFF4511E),
-      Station.grill => const Color(0xFF6D4C41),
     };
   }
 }
@@ -2960,7 +3313,7 @@ class _PlaceholderImage extends StatelessWidget {
       child: Icon(
         Icons.restaurant,
         size: 40,
-        color: AppTheme.textMuted,
+        color: AppTheme.inkMuted,
       ),
     );
   }
@@ -3022,10 +3375,8 @@ class OrderDetailSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch live order state so WebSocket updates reflect immediately
-    final liveOrder = ref.watch(ordersProvider).orders.firstWhere(
-      (o) => o.id == order.id,
-      orElse: () => order,
-    );
+    final state = ref.watch(ordersProvider);
+    final liveOrder = state.orderDetails[order.id] ?? order;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -3046,7 +3397,7 @@ class OrderDetailSheet extends ConsumerWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.borderWarm,
+                  color: AppTheme.borderLine,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -3061,19 +3412,19 @@ class OrderDetailSheet extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'میز ${liveOrder.tableNumber}',
+                          'میز ${liveOrder.tableNumber ?? '-'}',
                           style: TextStyle(
                             fontFamily: 'DMSerifDisplay',
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.inkDark,
+                            color: AppTheme.inkStrong,
                           ),
                         ),
                         Text(
                           '#${liveOrder.id.substring(0, 8)}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.textMuted,
+                            color: AppTheme.inkMuted,
                             fontFamily: 'monospace',
                           ),
                         ),
@@ -3118,7 +3469,7 @@ class OrderDetailSheet extends ConsumerWidget {
                               child: Text(
                                 liveOrder.notes!,
                                 style: TextStyle(
-                                  color: AppTheme.inkDark,
+                                  color: AppTheme.inkText,
                                   fontSize: 14,
                                 ),
                               ),
@@ -3130,7 +3481,7 @@ class OrderDetailSheet extends ConsumerWidget {
 
                     const SizedBox(height: 16),
 
-                    // Total
+                    // Total (int Toman)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -3139,11 +3490,11 @@ class OrderDetailSheet extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.inkDark,
+                            color: AppTheme.inkStrong,
                           ),
                         ),
                         Text(
-                          '${_formatPrice(liveOrder.totalAmount)} تومان',
+                          '${_formatPrice(liveOrder.total)} تومان',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -3157,31 +3508,30 @@ class OrderDetailSheet extends ConsumerWidget {
               ),
 
               // Actions
-              if (liveOrder.status != OrderStatus.cancelled &&
-                  liveOrder.status != OrderStatus.delivered)
+              if (liveOrder.status == OrderStatus.draft ||
+                  liveOrder.status == OrderStatus.pending)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: Row(
                     children: [
-                      // Mark as delivered
+                      // Send to kitchen (POST /api/orders/{id}/send)
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            ref.read(ordersProvider.notifier).updateOrderStatus(
+                            ref.read(ordersProvider.notifier).sendToKitchen(
                               liveOrder.id,
-                              OrderStatus.delivered,
                             );
                             Navigator.pop(context);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4CAF50),
+                            backgroundColor: const Color(0xFF2196F3),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: const Text(
-                            'تحویل داده شد',
+                            'ارسال به آشپزخانه',
                             style: TextStyle(color: Colors.white),
                           ),
                         ),
@@ -3227,10 +3577,14 @@ class OrderDetailSheet extends ConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              ref.read(ordersProvider.notifier).updateOrderStatus(
-                order.id,
-                OrderStatus.cancelled,
-              );
+              // Cancel each item individually since there's no
+              // "cancel entire order" endpoint in the Go service
+              for (final item in order.items) {
+                ref.read(ordersProvider.notifier).cancelOrderItem(
+                  order.id,
+                  item.id,
+                );
+              }
               Navigator.pop(context);
             },
             style: TextButton.styleFrom(
@@ -3243,8 +3597,8 @@ class OrderDetailSheet extends ConsumerWidget {
     );
   }
 
-  String _formatPrice(double price) {
-    return price.toInt().toString().replaceAllMapped(
+  String _formatPrice(int price) {
+    return price.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (m) => '${m[1]},',
     );
@@ -3269,12 +3623,12 @@ class _OrderItemTile extends ConsumerWidget {
         decoration: BoxDecoration(
           color: isCancelled
               ? const Color(0xFFFFF5F5)
-              : AppTheme.backgroundWarm,
+              : AppTheme.paperBackground,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isCancelled
                 ? const Color(0xFFEF9A9A)
-                : AppTheme.borderWarm,
+                : AppTheme.borderLine,
           ),
         ),
         child: Row(
@@ -3283,14 +3637,14 @@ class _OrderItemTile extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.variantName != null
-                        ? '${item.name} — ${item.variantName}'
-                        : item.name,
-                    style: TextStyle(
+                    Text(
+                      item.variantName != null
+                          ? '${item.menuItemName} — ${item.variantName}'
+                          : item.menuItemName,
+                      style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
-                      color: AppTheme.inkDark,
+                      color: AppTheme.inkStrong,
                       decoration: isCancelled
                           ? TextDecoration.lineThrough
                           : null,
@@ -3302,7 +3656,7 @@ class _OrderItemTile extends ConsumerWidget {
                       item.notes!,
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.textMuted,
+                        color: AppTheme.inkMuted,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -3322,7 +3676,7 @@ class _OrderItemTile extends ConsumerWidget {
                 '×${item.quantity}',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.inkDark,
+                  color: AppTheme.inkStrong,
                 ),
               ),
             ),
@@ -3363,7 +3717,7 @@ class _OrderItemTile extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('لغو آیتم'),
-        content: Text('آیا "${item.name}" حذف شود؟'),
+        content: Text('آیا "${item.menuItemName}" حذف شود؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -3372,7 +3726,7 @@ class _OrderItemTile extends ConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              ref.read(ordersProvider.notifier).cancelItem(
+              ref.read(ordersProvider.notifier).cancelOrderItem(
                 orderId,
                 item.id,
               );
@@ -3436,6 +3790,10 @@ ProviderContainer createTestContainer({
     ],
   );
 }
+
+// Note: websocketServiceProvider is a StateProvider now.
+// For tests, you can set it directly:
+//   container.read(websocketServiceProvider.notifier).state = mockWs;
 ```
 
 ### **test/models/order_test.dart**
@@ -3444,44 +3802,49 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:waiter_app/models/order.dart';
 
 void main() {
-  group('Order model', () {
+  group('Order (detail) model', () {
     final sampleJson = {
       'id': 'abc-123',
       'venueId': 'venue-1',
       'waiterId': 'waiter-1',
-      'waiterName': 'علی',
-      'tableNumber': 5,
+      'tableNumber': '5',
+      'guestCount': 2,
       'status': 'PENDING',
+      'subtotal': 30000,
+      'total': 30000,
+      'notes': null,
+      'createdAt': '2026-06-27T10:00:00.000Z',
+      'createdBy': 'علی',
       'items': [
         {
           'id': 'item-1',
+          'orderId': 'abc-123',
           'menuItemId': 'menu-1',
-          'name': 'چای',
+          'menuItemName': 'چای',
           'variantId': null,
           'variantName': null,
           'quantity': 2,
-          'unitPrice': 15000.0,
-          'totalPrice': 30000.0,
+          'unitPrice': 15000,
+          'totalPrice': 30000,
           'status': 'PENDING',
           'station': 'BAR',
           'notes': null,
+          'courseNumber': 1,
+          'createdAt': '2026-06-27T10:00:00.000Z',
         }
       ],
-      'totalAmount': 30000.0,
-      'notes': null,
-      'createdAt': '2026-06-27T10:00:00.000Z',
-      'updatedAt': '2026-06-27T10:00:00.000Z',
     };
 
     test('fromJson parses correctly', () {
       final order = Order.fromJson(sampleJson);
 
       expect(order.id, 'abc-123');
-      expect(order.tableNumber, 5);
+      expect(order.tableNumber, '5');
       expect(order.status, OrderStatus.pending);
       expect(order.items.length, 1);
       expect(order.items.first.quantity, 2);
-      expect(order.totalAmount, 30000.0);
+      expect(order.total, 30000);
+      expect(order.guestCount, 2);
     });
 
     test('toJson round-trips correctly', () {
@@ -3490,16 +3853,50 @@ void main() {
 
       expect(json['id'], 'abc-123');
       expect(json['status'], 'PENDING');
+      expect(json['total'], 30000);
       expect((json['items'] as List).length, 1);
     });
 
     test('copyWith preserves unchanged fields', () {
       final order = Order.fromJson(sampleJson);
-      final updated = order.copyWith(status: OrderStatus.preparing);
+      final updated = order.copyWith(status: OrderStatus.inProgress);
 
-      expect(updated.status, OrderStatus.preparing);
+      expect(updated.status, OrderStatus.inProgress);
       expect(updated.tableNumber, order.tableNumber);
       expect(updated.items, order.items);
+    });
+  });
+
+  group('OrderSummary (list) model', () {
+    test('fromJson parses list response correctly', () {
+      final json = {
+        'id': 'order-1',
+        'tableNumber': '5',
+        'status': 'DRAFT',
+        'total': 45000,
+        'createdAt': '2026-06-27T10:00:00.000Z',
+        'createdBy': 'Waiter Name',
+      };
+
+      final summary = OrderSummary.fromJson(json);
+      expect(summary.id, 'order-1');
+      expect(summary.tableNumber, '5');
+      expect(summary.status, OrderStatus.draft);
+      expect(summary.total, 45000);
+      expect(summary.createdBy, 'Waiter Name');
+    });
+
+    test('fromJson handles missing tableNumber', () {
+      final json = {
+        'id': 'order-2',
+        'status': 'PENDING',
+        'total': 0,
+        'createdAt': '2026-06-27T10:00:00.000Z',
+        'createdBy': '',
+      };
+
+      final summary = OrderSummary.fromJson(json);
+      expect(summary.tableNumber, isNull);
     });
   });
 }
@@ -3518,17 +3915,13 @@ void main() {
   late MockWebSocketService mockWs;
   late ProviderContainer container;
 
-  final sampleOrder = Order(
+  final sampleSummary = OrderSummary(
     id: 'order-1',
-    venueId: 'venue-1',
-    waiterId: 'waiter-1',
-    waiterName: 'علی',
-    tableNumber: 3,
+    tableNumber: '3',
     status: OrderStatus.pending,
-    items: [],
-    totalAmount: 0,
+    total: 45000,
     createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
+    createdBy: 'علی',
   );
 
   setUp(() {
@@ -3550,80 +3943,50 @@ void main() {
   group('OrdersProvider', () {
     test('initial state is empty and not loading', () {
       final state = container.read(ordersProvider);
-      expect(state.orders, isEmpty);
+      expect(state.summaries, isEmpty);
       expect(state.isLoading, false);
     });
 
-    test('fetchOrders populates state on success', () async {
+    test('loadOrders populates state on success', () async {
       when(() => mockApi.getOrders()).thenAnswer(
-        (_) async => [sampleOrder],
+        (_) async => [sampleSummary],
       );
 
-      await container.read(ordersProvider.notifier).fetchOrders();
+      await container.read(ordersProvider.notifier).loadOrders();
       final state = container.read(ordersProvider);
 
-      expect(state.orders.length, 1);
-      expect(state.orders.first.id, 'order-1');
+      expect(state.summaries.length, 1);
+      expect(state.summaries.first.id, 'order-1');
       expect(state.isLoading, false);
       expect(state.error, isNull);
     });
 
-    test('fetchOrders sets error on failure', () async {
+    test('loadOrders sets error on failure', () async {
       when(() => mockApi.getOrders()).thenThrow(Exception('Network error'));
 
-      await container.read(ordersProvider.notifier).fetchOrders();
+      await container.read(ordersProvider.notifier).loadOrders();
       final state = container.read(ordersProvider);
 
-      expect(state.orders, isEmpty);
+      expect(state.summaries, isEmpty);
       expect(state.error, isNotNull);
     });
 
-    test('WebSocket order_created event adds order to state', () async {
-      // Arrange: seed with empty orders
-      when(() => mockApi.getOrders()).thenAnswer((_) async => []);
+    test('WebSocket order_status_changed updates summary', () async {
+      when(() => mockApi.getOrders()).thenAnswer((_) async => [sampleSummary]);
 
-      // Simulate WS event after initial fetch
-      final wsController = StreamController<WebSocketEvent>();
-      when(() => mockWs.events).thenAnswer((_) => wsController.stream);
+      await container.read(ordersProvider.notifier).loadOrders();
 
-      final freshContainer = createTestContainer(
-        apiService: mockApi,
-        wsService: mockWs,
-      );
-
-      await freshContainer.read(ordersProvider.notifier).fetchOrders();
-
-      // Act: push WS event
-      wsController.add(WebSocketEvent(
-        type: 'order_created',
-        payload: sampleOrder.toJson(),
-      ));
-
-      await Future.delayed(const Duration(milliseconds: 50));
-
-      final state = freshContainer.read(ordersProvider);
-      expect(state.orders.length, 1);
-      expect(state.orders.first.id, 'order-1');
-
-      await wsController.close();
-      freshContainer.dispose();
-    });
-
-    test('updateOrderStatus sends request and updates local state', () async {
-      when(() => mockApi.getOrders()).thenAnswer((_) async => [sampleOrder]);
-      when(() => mockApi.updateOrderStatus('order-1', OrderStatus.delivered))
-          .thenAnswer((_) async => sampleOrder.copyWith(
-                status: OrderStatus.delivered,
-              ));
-
-      await container.read(ordersProvider.notifier).fetchOrders();
-      await container.read(ordersProvider.notifier).updateOrderStatus(
-            'order-1',
-            OrderStatus.delivered,
-          );
+      // Simulate WS event
+      container
+          .read(ordersProvider.notifier)
+          .handleWebSocketEvent(WebSocketEvent(
+            type: 'order_status_changed',
+            payload: {'orderId': 'order-1', 'status': 'DELIVERED'},
+            timestamp: DateTime.now(),
+          ));
 
       final state = container.read(ordersProvider);
-      expect(state.orders.first.status, OrderStatus.delivered);
+      expect(state.summaries.first.status, OrderStatus.delivered);
     });
   });
 }
@@ -3638,41 +4001,37 @@ import 'package:waiter_app/services/api_service.dart';
 import 'package:waiter_app/models/order.dart';
 
 class MockDio extends Mock implements Dio {}
+class MockOrderDio extends Mock implements Dio {}
 
 void main() {
   late MockDio mockDio;
+  late MockOrderDio mockOrderDio;
   late ApiService apiService;
 
   setUp(() {
     mockDio = MockDio();
-    apiService = ApiService(dio: mockDio);
+    mockOrderDio = MockOrderDio();
+    apiService = ApiService(mockDio, mockOrderDio);
   });
 
   group('ApiService.getOrders', () {
-    test('returns list of orders on 200', () async {
-      when(() => mockDio.get(
-            '/api/orders',
+    test('returns list of OrderSummary on 200', () async {
+      when(() => mockOrderDio.get(
+            any(),
             queryParameters: any(named: 'queryParameters'),
           )).thenAnswer((_) async => Response(
             requestOptions: RequestOptions(path: '/api/orders'),
             statusCode: 200,
-            data: {
-              'orders': [
-                {
-                  'id': 'order-1',
-                  'venueId': 'venue-1',
-                  'waiterId': 'waiter-1',
-                  'waiterName': 'علی',
-                  'tableNumber': 3,
-                  'status': 'PENDING',
-                  'items': [],
-                  'totalAmount': 0.0,
-                  'notes': null,
-                  'createdAt': '2026-06-27T10:00:00.000Z',
-                  'updatedAt': '2026-06-27T10:00:00.000Z',
-                }
-              ]
-            },
+            data: [
+              {
+                'id': 'order-1',
+                'tableNumber': '3',
+                'status': 'PENDING',
+                'total': 45000,
+                'createdAt': '2026-06-27T10:00:00.000Z',
+                'createdBy': 'علی',
+              }
+            ],
           ));
 
       final orders = await apiService.getOrders();
@@ -3680,19 +4039,48 @@ void main() {
       expect(orders.length, 1);
       expect(orders.first.id, 'order-1');
       expect(orders.first.status, OrderStatus.pending);
+      expect(orders.first.total, 45000);
     });
+  });
 
-    test('throws on non-200 response', () async {
-      when(() => mockDio.get(
-            '/api/orders',
-            queryParameters: any(named: 'queryParameters'),
+  group('ApiService.createOrder', () {
+    test('creates empty order and returns orderId', () async {
+      when(() => mockOrderDio.post(
+            any(),
+            data: any(named: 'data'),
           )).thenAnswer((_) async => Response(
             requestOptions: RequestOptions(path: '/api/orders'),
-            statusCode: 401,
-            data: {'error': 'Unauthorized'},
+            statusCode: 201,
+            data: {'orderId': 'new-order-1'},
           ));
 
-      expect(() => apiService.getOrders(), throwsException);
+      final orderId = await apiService.createOrder(
+        tableNumber: '5',
+        guestCount: 2,
+      );
+
+      expect(orderId, 'new-order-1');
+    });
+  });
+
+  group('ApiService.addItemToOrder', () {
+    test('adds item and returns itemId', () async {
+      when(() => mockOrderDio.post(
+            any(),
+            data: any(named: 'data'),
+          )).thenAnswer((_) async => Response(
+            requestOptions: RequestOptions(path: '/api/orders/o1/items'),
+            statusCode: 201,
+            data: {'itemId': 'item-1'},
+          ));
+
+      final itemId = await apiService.addItemToOrder(
+        'o1',
+        menuItemId: 'menu-1',
+        quantity: 2,
+      );
+
+      expect(itemId, 'item-1');
     });
   });
 }
@@ -3706,28 +4094,13 @@ import 'package:waiter_app/models/order.dart';
 import 'package:waiter_app/widgets/order_card.dart';
 
 void main() {
-  final sampleOrder = Order(
+  final sampleOrder = OrderSummary(
     id: 'abc-123-def-456',
-    venueId: 'venue-1',
-    waiterId: 'waiter-1',
-    waiterName: 'علی',
-    tableNumber: 7,
-    status: OrderStatus.preparing,
-    items: [
-      OrderItem(
-        id: 'item-1',
-        menuItemId: 'menu-1',
-        name: 'قهوه اسپرسو',
-        quantity: 2,
-        unitPrice: 45000,
-        totalPrice: 90000,
-        status: ItemStatus.preparing,
-        station: Station.bar,
-      ),
-    ],
-    totalAmount: 90000,
+    tableNumber: '7',
+    status: OrderStatus.pending,
+    total: 90000,
     createdAt: DateTime(2026, 6, 27, 10, 30),
-    updatedAt: DateTime(2026, 6, 27, 10, 30),
+    createdBy: 'علی',
   );
 
   testWidgets('displays table number', (tester) async {
@@ -3740,18 +4113,6 @@ void main() {
     );
 
     expect(find.text('میز 7'), findsOneWidget);
-  });
-
-  testWidgets('displays item name', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: OrderCard(order: sampleOrder),
-        ),
-      ),
-    );
-
-    expect(find.text('قهوه اسپرسو'), findsOneWidget);
   });
 
   testWidgets('calls onTap when tapped', (tester) async {
@@ -3781,7 +4142,7 @@ void main() {
       ),
     );
 
-    expect(find.text('در حال آماده‌سازی'), findsOneWidget);
+    expect(find.text('در انتظار'), findsOneWidget);
   });
 }
 ```
