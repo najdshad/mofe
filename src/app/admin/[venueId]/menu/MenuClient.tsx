@@ -92,6 +92,7 @@ function SortableCategoryRow({
         {...listeners}
         className="cursor-grab touch-none p-1 text-ink-muted hover:text-ink transition-colors"
         title="جابجایی"
+        suppressHydrationWarning
       >
         <GripIcon size={16} />
       </button>
