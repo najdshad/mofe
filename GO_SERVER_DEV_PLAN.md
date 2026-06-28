@@ -181,6 +181,7 @@ services:
       DATABASE_URL: postgresql://mofe:mofe@db:5432/mofe
       PORT: 8080
       SESSION_COOKIE_NAME: mofe_session
+      REDIS_URL: redis://redis:6379/0    # Optional — omit for single-instance
     depends_on:
       db:
         condition: service_healthy
@@ -275,9 +276,11 @@ ordering-service/
 │   └── handlers/
 │       ├── orders.go              # REST endpoints: CRUD order/items, send to kitchen (with WS broadcasts)
 │       ├── orders_test.go         # Integration tests
-│       ├── ws.go                  # WebSocket Hub with venue-scoped broadcast
+│       ├── ws.go                  # WebSocket Hub with venue-scoped broadcast + Redis pub/sub integration
+│       ├── redis.go               # Redis pub/sub client for horizontal WS scaling
 │       ├── health.go              # GET /health endpoint
-│       └── analytics.go           # GET /api/admin/analytics/daily-summary
+│       ├── analytics.go           # GET /api/admin/analytics/daily-summary
+│       └── analytics_test.go      # Analytics integration tests
 ├── migrations/
 │   ├── 001_add_orders_tables.up.sql
 │   └── 001_add_orders_tables.down.sql
@@ -294,17 +297,20 @@ github.com/go-chi/chi/v5 v5.3.0
 github.com/jackc/pgx/v5 v5.10.0
 github.com/gorilla/websocket v1.5.3
 github.com/google/uuid v1.6.0
-github.com/golang-migrate/migrate/v4 v4.19.1      # NEW: automated migrations
-github.com/prometheus/client_golang v1.23.2         # NEW: metrics
-golang.org/x/time v0.15.0                           # NEW: rate limiting
+github.com/golang-migrate/migrate/v4 v4.19.1       # automated migrations
+github.com/prometheus/client_golang v1.23.2        # metrics
+golang.org/x/time v0.15.0                          # rate limiting
+github.com/redis/go-redis/v9 v9.21.0               # Redis pub/sub for WS scaling (optional)
 ```
 
 ---
 
 ## **What's Next**
 
-### Phase 3+ Additions (Future Work)
-- [ ] Redis-backed WebSocket pub/sub for horizontal scaling
+### Phase 3+ Implemented
+- [x] Integration tests for analytics endpoint (`analytics_test.go`) — 4 tests: empty data, invalid date, seeded data, date param
+- [x] Redis-backed WebSocket pub/sub for horizontal scaling — optional via `REDIS_URL` env var, Hub auto-subscribes/unsubscribes per venue
+
+### Phase 3+ Future Work (Remaining)
 - [ ] SQLC for type-safe queries (optional)
-- [ ] Add integration tests for analytics endpoint
 - [ ] Alerting rules for Prometheus metrics

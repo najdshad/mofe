@@ -48,7 +48,20 @@ func main() {
 	}
 	slog.Info("Migrations applied")
 
-	hub := handlers.NewHub()
+	var hub *handlers.Hub
+	if cfg.RedisURL != "" {
+		rps, err := handlers.NewRedisPubSub(cfg.RedisURL)
+		if err != nil {
+			slog.Error("Failed to connect to Redis", "error", err)
+			os.Exit(1)
+		}
+		defer rps.Close()
+		hub = handlers.NewHubWithRedis(rps)
+		slog.Info("Redis pub/sub enabled for WebSocket scaling")
+	} else {
+		hub = handlers.NewHub()
+		slog.Info("Redis not configured, using local WebSocket hub only")
+	}
 	go hub.Run()
 
 	orderHandler := handlers.NewOrderHandler(db, hub)

@@ -9,6 +9,7 @@ type Config struct {
 	DatabaseURL       string
 	Port              int
 	SessionCookieName string
+	RedisURL          string
 }
 
 func Load() *Config {
@@ -23,6 +24,7 @@ func Load() *Config {
 		DatabaseURL:       getEnv("DATABASE_URL", "postgres://mofe:mofe@localhost:5432/mofe"),
 		Port:              port,
 		SessionCookieName: getEnv("SESSION_COOKIE_NAME", "mofe_session"),
+		RedisURL:          getEnv("REDIS_URL", ""),
 	}
 }
 

@@ -12,6 +12,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mofe-menu/ordering-service/internal/middleware"
 	"github.com/mofe-menu/ordering-service/internal/models"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func setupTestHandler(t *testing.T) (*OrderHandler, func()) {

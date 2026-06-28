@@ -29,17 +29,26 @@ type Client struct {
 }
 
 type Hub struct {
-	clients    map[string]map[*Client]bool
-	broadcast  chan *Message
-	register   chan *Client
-	unregister chan *Client
-	mu         sync.RWMutex
+	clients     map[string]map[*Client]bool
+	broadcast   chan *Message
+	register    chan *Client
+	unregister  chan *Client
+	mu          sync.RWMutex
+	redisPubSub *RedisPubSub
+	redisCh     <-chan *Message
 }
 
 type Message struct {
 	VenueID string          `json:"-"`
 	Type    string          `json:"type"`
 	Payload json.RawMessage `json:"payload"`
+}
+
+func NewHubWithRedis(rps *RedisPubSub) *Hub {
+	h := NewHub()
+	h.redisPubSub = rps
+	h.redisCh = rps.Channel()
+	return h
 }
 
 const (
@@ -66,33 +75,59 @@ func (h *Hub) Run() {
 	defer ticker.Stop()
 
 	for {
+		var redisCh <-chan *Message
+		if h.redisPubSub != nil && h.redisCh != nil {
+			redisCh = h.redisCh
+		}
+
 		select {
 		case client := <-h.register:
 			h.mu.Lock()
-			if h.clients[client.venueID] == nil {
+			wasEmpty := h.clients[client.venueID] == nil
+			if wasEmpty {
 				h.clients[client.venueID] = make(map[*Client]bool)
 			}
 			h.clients[client.venueID][client] = true
+			venueID := client.venueID
 			h.mu.Unlock()
+
+			if wasEmpty && h.redisPubSub != nil {
+				if err := h.redisPubSub.Subscribe(venueID); err != nil {
+					slog.Error("Failed to subscribe to Redis channel",
+						"venueId", venueID, "error", err)
+				}
+			}
+
 			slog.Info("WebSocket client connected",
-				"venueId", client.venueID,
+				"venueId", venueID,
 				"userId", client.userID,
 			)
 
 		case client := <-h.unregister:
 			h.mu.Lock()
-			if clients, ok := h.clients[client.venueID]; ok {
+			var venueEmpty bool
+			venueID := client.venueID
+			if clients, ok := h.clients[venueID]; ok {
 				if _, exists := clients[client]; exists {
 					delete(clients, client)
 					close(client.send)
 				}
-				if len(clients) == 0 {
-					delete(h.clients, client.venueID)
+				venueEmpty = len(clients) == 0
+				if venueEmpty {
+					delete(h.clients, venueID)
 				}
 			}
 			h.mu.Unlock()
+
+			if venueEmpty && h.redisPubSub != nil {
+				if err := h.redisPubSub.Unsubscribe(venueID); err != nil {
+					slog.Error("Failed to unsubscribe from Redis channel",
+						"venueId", venueID, "error", err)
+				}
+			}
+
 			slog.Info("WebSocket client disconnected",
-				"venueId", client.venueID,
+				"venueId", venueID,
 				"userId", client.userID,
 			)
 
@@ -100,6 +135,16 @@ func (h *Hub) Run() {
 			h.mu.RLock()
 			clients := h.clients[message.VenueID]
 			h.mu.RUnlock()
+
+			if h.redisPubSub != nil {
+				if err := h.redisPubSub.Publish(message.VenueID, message.Type, message.Payload); err != nil {
+					slog.Error("Failed to publish to Redis",
+						"venueId", message.VenueID,
+						"type", message.Type,
+						"error", err,
+					)
+				}
+			}
 
 			data, err := json.Marshal(message)
 			if err != nil {
@@ -114,6 +159,28 @@ func (h *Hub) Run() {
 					h.mu.Lock()
 					close(client.send)
 					delete(h.clients[message.VenueID], client)
+					h.mu.Unlock()
+				}
+			}
+
+		case redisMsg := <-redisCh:
+			h.mu.RLock()
+			clients := h.clients[redisMsg.VenueID]
+			h.mu.RUnlock()
+
+			data, err := json.Marshal(redisMsg)
+			if err != nil {
+				slog.Error("Failed to marshal Redis relay message", "error", err)
+				continue
+			}
+
+			for client := range clients {
+				select {
+				case client.send <- data:
+				default:
+					h.mu.Lock()
+					close(client.send)
+					delete(h.clients[redisMsg.VenueID], client)
 					h.mu.Unlock()
 				}
 			}
