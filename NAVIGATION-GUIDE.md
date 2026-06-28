@@ -103,14 +103,14 @@ mofe-menu/
 │   │   └── format.ts        # formatPrice() — Persian numeral formatting
 │   └── proxy.ts             # Next.js 16 auth proxy (export name: proxy, not middleware)
 ├── ordering-service/        # Go ordering service (port 8080)
-│   ├── cmd/server/         # Entry point
+│   ├── cmd/server/         # Entry point (router, middleware, migrations, graceful shutdown)
 │   ├── internal/
-│   │   ├── config/         # Env-based config
+│   │   ├── config/         # Env-based config (DB, port, Redis)
 │   │   ├── database/       # pgx connection pool
-│   │   ├── models/         # Domain types (Order, Session, etc.)
-│   │   ├── middleware/     # Auth, CORS, logging, recovery
-│   │   └── handlers/       # REST endpoints + WebSocket hub
-│   ├── migrations/         # SQL migrations (quoted camelCase for Prisma compat)
+│   │   ├── models/         # Domain types (Order, Session, ErrorResponse)
+│   │   ├── middleware/     # Auth, CORS, logging, recovery, metrics, ratelimit
+│   │   └── handlers/       # REST endpoints + WebSocket hub + analytics + Redis pub/sub
+│   ├── migrations/         # SQL migrations (golang-migrate, quoted camelCase for Prisma compat)
 │   ├── scripts/            # Seed test data
 │   ├── go.mod / go.sum
 │   └── Dockerfile          # Multi-stage (golang:1.23-alpine → scratch)
@@ -151,12 +151,16 @@ User Browser → Next.js App Router → Server Components (data fetching)
 ```
 Flutter App / Admin UI → REST API /api/orders (auth via mofe_session cookie)
                              ↓
-                     chi router → auth middleware (Session + VenueMember)
+                     chi router → rate limiter → auth middleware → metrics
                              ↓
                      OrderHandler → PostgreSQL (orders + order_items tables)
                              ↓
                      WebSocket hub → real-time broadcast to venue clients
+                                    ↓ (optional)
+                              Redis pub/sub → cross-instance relay
 ```
+
+Middleware stack: `RequestID → RealIP → Logger → Recoverer → CORS → MetricsMiddleware → RateLimiter → AuthMiddleware (per-route)`
 
 ### Internal Tool Flow
 
@@ -342,8 +346,11 @@ docker compose up -d
 - Ordering service runs on port 8080 (Go, chi v5)
 - nginx reverse-proxies 3 virtual hosts: `mofe.ir` (landing), `app.mofe.ir` (admin), `menu.mofe.ir` (public menus)
 - WebSocket endpoint `/ws` upgraded via nginx with 24h proxy timeout
+- Prometheus metrics at `/metrics` on the ordering service
+- Rate limiting (100 req/s per user) applied globally
+- Automated migrations via golang-migrate at startup
 - Persistent volumes: `mofe-db` (PostgreSQL data), `mofe-uploads` (logo images)
-- Optional Redis 7 for WebSocket state scaling
+- Optional Redis 7 for WebSocket horizontal scaling across multiple instances
 
 ---
 

@@ -30,7 +30,7 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | DB Driver | pgx v5 |
 | Migrations | golang-migrate |
 | Port | 8080 |
-| Caching | Redis 7 (optional, Phase 2) |
+| Caching | Redis 7 (optional, horizontal WS scaling) |
 
 ## Quick Start
 
@@ -129,28 +129,37 @@ Managed via `docker compose` alongside the Next.js app (port 8080).
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | Health check |
+| `GET` | `/health` | Health check (DB ping) |
+| `GET` | `/metrics` | Prometheus metrics |
 | `POST` | `/api/orders` | Create order |
-| `GET` | `/api/orders` | List orders (venue-scoped) |
+| `GET` | `/api/orders` | List orders (venue-scoped, `?status=` filter) |
 | `GET` | `/api/orders/:id` | Get order with items |
 | `POST` | `/api/orders/:id/items` | Add item to order |
 | `PATCH` | `/api/orders/:id/items/:itemId` | Update item quantity/notes |
 | `DELETE` | `/api/orders/:id/items/:itemId` | Cancel item |
 | `POST` | `/api/orders/:id/send` | Send order to kitchen |
 | `GET` | `/api/admin/orders` | Admin list all orders (OWNER/MANAGER) |
+| `GET` | `/api/admin/analytics/daily-summary` | Daily analytics (OWNER/MANAGER) |
 | `GET` | `/ws` | WebSocket (venue-scoped real-time updates) |
 
 **WebSocket Events:**
 
 | Event | Direction | Payload |
 | --- | --- | --- |
-| `order_created` | Server → Client | `{ orderId, venueId }` |
-| `item_added` | Server → Client | `{ orderId, itemId }` |
+| `order_created` | Server → Client | `{ orderId, venueId, waiterName, tableNumber, guestCount }` |
+| `item_added` | Server → Client | `{ orderId, itemId, menuItemName, quantity, unitPrice, station }` |
+| `item_updated` | Server → Client | `{ orderId, itemId, quantity, notes }` |
 | `item_status_changed` | Server → Client | `{ orderId, itemId, status, timestamp }` |
-| `order_status_changed` | Server → Client | `{ orderId, status, readyAt }` |
-| `item_cancelled` | Server → Client | `{ orderId, itemId }` |
+| `order_status_changed` | Server → Client | `{ orderId, status, sentToKitchenAt }` |
+| `item_cancelled` | Server → Client | `{ orderId, itemId, cancelledAt }` |
+| `menu_item_unavailable` | Server → Client | _(reserved)_ |
 
-Auth: `mofe_session` cookie (shared with Next.js). Multi-venue users must send `X-Venue-ID` header.
+**Middleware:**
+- Auth: `mofe_session` cookie (shared with Next.js). Multi-venue users must send `X-Venue-ID` header.
+- Rate limiting: per-user token bucket (100 req/s, burst 200), returns 429 with `Retry-After`
+- Metrics: Prometheus counters/histograms/gauges on all requests
+- Migrations: automated via golang-migrate at startup (`file://migrations`)
+- Observability: structured JSON logging (slog), request ID + Real IP, panic recovery
 
 ## Features
 
@@ -344,14 +353,14 @@ mofe-menu/
 │   │   └── storage.ts          # File storage abstraction (local/S3-compatible)
 │   └── proxy.ts                # Auth proxy (export: proxy, not middleware)
 ├── ordering-service/            # Go ordering service
-│   ├── cmd/server/main.go      # Entry point
+│   ├── cmd/server/main.go      # Entry point (router, middleware, migrations, graceful shutdown)
 │   ├── internal/
-│   │   ├── config/             # env-based config
+│   │   ├── config/             # env-based config (DB, port, Redis)
 │   │   ├── database/           # pgx pool setup
-│   │   ├── models/             # domain types
-│   │   ├── middleware/         # auth, cors, logging, recovery
-│   │   └── handlers/          # REST + WebSocket handlers
-│   ├── migrations/             # SQL migrations
+│   │   ├── models/             # domain types (Order, Session, ErrorResponse)
+│   │   ├── middleware/         # auth, cors, logging, recovery, metrics, ratelimit
+│   │   └── handlers/          # REST + WebSocket + analytics + Redis pub/sub
+│   ├── migrations/             # SQL migrations (golang-migrate)
 │   ├── scripts/                # Seed test data
 │   ├── go.mod / go.sum
 │   └── Dockerfile              # Multi-stage (golang:1.23-alpine → scratch)
@@ -378,9 +387,13 @@ mofe-menu/
 - **Auth:** Reuses the existing `mofe_session` cookie — SHA-256 hashed, matched against `"Session"` table. No separate auth system.
 - **Venue isolation:** Service infers `venueId` from the session. Multi-venue users must send `X-Venue-ID` header.
 - **Prices:** All price columns use `INT` (toman) to match Prisma's `MenuItem.priceToman`. No decimal types.
-- **Migration:** Run `001_add_orders_tables.up.sql` against the same PostgreSQL DB. Tables reference Prisma's `"Venue"` and `"User"` with quoted camelCase identifiers.
-- **WebSocket:** Venue-scoped hub broadcasts real-time order/item status changes. Ping/pong heartbeat every 30s.
-- **Configuration:** `DATABASE_URL`, `PORT` (default 8080), `SESSION_COOKIE_NAME` (default `mofe_session`).
+- **Migrations:** Automated via golang-migrate at startup (`file://migrations`). Tables reference Prisma's `"Venue"` and `"User"` with quoted camelCase identifiers.
+- **WebSocket:** Venue-scoped hub broadcasts real-time order/item status changes. Optional Redis pub/sub for horizontal scaling across multiple instances.
+- **WebSocket broadcasts:** All mutation handlers (`CreateOrder`, `AddItem`, `UpdateItem`, `CancelItem`, `SendToKitchen`) broadcast typed events to venue clients.
+- **Prometheus metrics:** `/metrics` endpoint with request counters, duration histograms, active requests gauge, business counters (orders created, items ordered), DB query duration.
+- **Rate limiting:** Per-user token bucket (100 req/s, burst 200) via `golang.org/x/time/rate`. Falls back to `RemoteAddr` for unauthenticated requests.
+- **Analytics:** `GET /api/admin/analytics/daily-summary` returns daily order/revenue stats with top 10 items. Date query param, role-gated (OWNER/MANAGER).
+- **Configuration:** `DATABASE_URL`, `PORT` (default 8080), `SESSION_COOKIE_NAME` (default `mofe_session`), `REDIS_URL` (optional, for WS horizontal scaling).
 
 ## Important Notes
 

@@ -132,7 +132,7 @@ All use `forwardRef` where applicable. Variants:
 ```bash
 cd ordering-service
 go build ./cmd/server   # Build binary
-go test ./...           # Run tests
+go test ./...           # Run tests (12 total: 8 order + 4 analytics)
 go vet ./...            # Static analysis
 go mod tidy             # Sync dependencies
 ```
@@ -143,9 +143,13 @@ go mod tidy             # Sync dependencies
 - **Auth:** Reuses `mofe_session` cookie from Next.js. Middleware queries `"Session"` + `"VenueMember"` tables.
 - **Multi-venue:** If user belongs to >1 venue, requires `X-Venue-ID` header. Single-venue users auto-infer.
 - **Venue isolation:** Every handler checks `session.VenueID` against the order's `venue_id`.
-- **WebSocket:** Hub per venue, broadcasts on order/item status changes. Ping/pong heartbeat every 30s.
-- **Migrations:** Raw SQL in `migrations/`. Tables reference Prisma's camelCase tables with quoted identifiers.
+- **WebSocket:** Hub per venue, broadcasts on order/item status changes. Ping/pong heartbeat every 30s. Optional Redis pub/sub for horizontal scaling across multiple instances.
+- **Migrations:** Automated via golang-migrate at startup (`file://migrations`). Tables reference Prisma's camelCase tables with quoted identifiers.
 - **Error format:** `{ "error": string, "code": string }` — compatible with Next.js `errorResponse()` format.
+- **Metrics:** Prometheus `/metrics` endpoint with request counters, duration histograms, active requests gauge, business counters.
+- **Rate limiting:** Per-user token bucket (100 req/s, burst 200) applied globally via middleware. Keys by `UserID` when authenticated, falls back to `RemoteAddr`.
+- **WebSocket broadcasts:** All 5 mutation handlers broadcast typed events via the Hub. Redis pub/sub enabled when `REDIS_URL` is configured.
+- **Analytics:** `GET /api/admin/analytics/daily-summary` returns daily stats (totalOrders, totalRevenue, avgOrderValue, top 10 items). Role-gated (OWNER/MANAGER).
 
 ### Key File Locations
 
@@ -155,11 +159,16 @@ go mod tidy             # Sync dependencies
 | Config | `ordering-service/internal/config/config.go` |
 | DB pool | `ordering-service/internal/database/postgres.go` |
 | Auth middleware | `ordering-service/internal/middleware/auth.go` |
+| Rate limiter | `ordering-service/internal/middleware/ratelimit.go` |
+| Prometheus metrics | `ordering-service/internal/middleware/metrics.go` |
 | Order handlers | `ordering-service/internal/handlers/orders.go` |
 | WebSocket hub | `ordering-service/internal/handlers/ws.go` |
+| Redis pub/sub | `ordering-service/internal/handlers/redis.go` |
+| Analytics handler | `ordering-service/internal/handlers/analytics.go` |
 | Domain types | `ordering-service/internal/models/` |
 | Migration (up) | `ordering-service/migrations/001_add_orders_tables.up.sql` |
 | Dockerfile | `ordering-service/Dockerfile` |
+| Tests | `ordering-service/internal/handlers/orders_test.go` + `analytics_test.go` |
 
 ### Prisma Compatibility
 
@@ -179,12 +188,24 @@ go mod tidy             # Sync dependencies
 
 #### Adding a new middleware
 1. Create file in `ordering-service/internal/middleware/`
-2. Add to router chain in `cmd/server/main.go`
+2. Register in router chain in `cmd/server/main.go` (add to `r.Use(...)`)
+3. Build + vet
+
+#### Adding a new WebSocket event type
+1. Add constant in `ordering-service/internal/handlers/ws.go` (e.g., `EventFoo = "foo"`)
+2. Wire broadcast in the relevant handler via `h.hub.BroadcastToVenue(venueID, EventFoo, payload)`
 
 #### Modifying the database schema
 1. Edit `prisma/schema.prisma` for Prisma models
 2. Add/edit migration in `ordering-service/migrations/`
 3. Build + vet
+
+#### Adding a new handler file (e.g., analytics.go)
+1. Create file in `ordering-service/internal/handlers/`
+2. Define handler struct (e.g., `type FooHandler struct { db *sql.DB }`)
+3. Define constructor: `func NewFooHandler(db *sql.DB) *FooHandler`
+4. Register routes in `cmd/server/main.go`
+5. Build + vet + test
 
 ### Key File Locations
 
@@ -259,6 +280,9 @@ SMTP_PORT="587"
 SMTP_USER=""
 SMTP_PASS=""
 SMTP_FROM="noreply@mofe.ir"
+
+# Redis (optional — for ordering-service WebSocket scaling)
+REDIS_URL=""
 
 # S3-compatible storage (optional — uses local filesystem when unset)
 S3_BUCKET=""
