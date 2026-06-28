@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"net/http"
 
 	"github.com/mofe-menu/ordering-service/internal/models"
@@ -20,7 +19,7 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("mofe_session")
 			if err != nil {
-				writeError(w, http.StatusUnauthorized, "Unauthorized", "MISSING_SESSION")
+				models.WriteError(w, http.StatusUnauthorized, "Unauthorized", "MISSING_SESSION")
 				return
 			}
 
@@ -44,15 +43,15 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 
 			if err != nil {
 				if err == sql.ErrNoRows {
-					writeError(w, http.StatusUnauthorized, "Invalid session", "INVALID_SESSION")
+					models.WriteError(w, http.StatusUnauthorized, "Invalid session", "INVALID_SESSION")
 				} else {
-					writeError(w, http.StatusInternalServerError, "Internal error", "DB_ERROR")
+					models.WriteError(w, http.StatusInternalServerError, "Internal error", "DB_ERROR")
 				}
 				return
 			}
 
 			if venueCount == 0 {
-				writeError(w, http.StatusForbidden, "No venue membership", "NO_VENUE")
+				models.WriteError(w, http.StatusForbidden, "No venue membership", "NO_VENUE")
 				return
 			}
 
@@ -60,7 +59,7 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 			if venueCount > 1 {
 				venueHeader := r.Header.Get("X-Venue-ID")
 				if venueHeader == "" {
-					writeError(w, http.StatusBadRequest, "Multiple venues: specify X-Venue-ID header", "MULTI_VENUE")
+					models.WriteError(w, http.StatusBadRequest, "Multiple venues: specify X-Venue-ID header", "MULTI_VENUE")
 					return
 				}
 				err = db.QueryRowContext(r.Context(), `
@@ -68,7 +67,7 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 					WHERE "userId" = $1 AND "venueId" = $2
 				`, session.UserID, venueHeader).Scan(&venueID, &role)
 				if err != nil {
-					writeError(w, http.StatusForbidden, "Not a member of this venue", "VENUE_ACCESS_DENIED")
+					models.WriteError(w, http.StatusForbidden, "Not a member of this venue", "VENUE_ACCESS_DENIED")
 					return
 				}
 			} else {
@@ -77,7 +76,7 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 					WHERE "userId" = $1
 				`, session.UserID).Scan(&venueID, &role)
 				if err != nil {
-					writeError(w, http.StatusInternalServerError, "Failed to get venue", "DB_ERROR")
+					models.WriteError(w, http.StatusInternalServerError, "Failed to get venue", "DB_ERROR")
 					return
 				}
 			}
@@ -101,7 +100,7 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			session := GetSession(r.Context())
 			if session == nil {
-				writeError(w, http.StatusUnauthorized, "Unauthorized", "NO_SESSION")
+				models.WriteError(w, http.StatusUnauthorized, "Unauthorized", "NO_SESSION")
 				return
 			}
 
@@ -112,22 +111,7 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 				}
 			}
 
-			writeError(w, http.StatusForbidden, "Forbidden", "INSUFFICIENT_ROLE")
+			models.WriteError(w, http.StatusForbidden, "Forbidden", "INSUFFICIENT_ROLE")
 		})
 	}
-}
-
-type ErrorResponse struct {
-	Error   string `json:"error"`
-	Code    string `json:"code,omitempty"`
-	Details string `json:"details,omitempty"`
-}
-
-func writeError(w http.ResponseWriter, status int, msg, code string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(ErrorResponse{
-		Error: msg,
-		Code:  code,
-	})
 }

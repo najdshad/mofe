@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/mofe-menu/ordering-service/internal/models"
 )
 
 func Recoverer(next http.Handler) http.Handler {
@@ -14,7 +16,7 @@ func Recoverer(next http.Handler) http.Handler {
 					"error", rec,
 					"stack", string(debug.Stack()),
 				)
-				writeError(w, http.StatusInternalServerError, "Internal server error", "PANIC")
+				models.WriteError(w, http.StatusInternalServerError, "Internal server error", "PANIC")
 			}
 		}()
 		next.ServeHTTP(w, r)

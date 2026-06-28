@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/mofe-menu/ordering-service/internal/middleware"
+	"github.com/mofe-menu/ordering-service/internal/models"
 )
 
 type OrderHandler struct {
@@ -32,7 +33,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body", "INVALID_JSON")
+		models.WriteError(w, http.StatusBadRequest, "Invalid request body", "INVALID_JSON")
 		return
 	}
 
@@ -74,7 +75,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 			"venueId", session.VenueID,
 			"userId", session.UserID,
 		)
-		writeError(w, http.StatusInternalServerError, "Failed to create order", "CREATE_FAILED")
+		models.WriteError(w, http.StatusInternalServerError, "Failed to create order", "CREATE_FAILED")
 		return
 	}
 
@@ -101,17 +102,17 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body", "INVALID_JSON")
+		models.WriteError(w, http.StatusBadRequest, "Invalid request body", "INVALID_JSON")
 		return
 	}
 
 	if req.Quantity <= 0 {
-		writeError(w, http.StatusBadRequest, "Quantity must be positive", "INVALID_QUANTITY")
+		models.WriteError(w, http.StatusBadRequest, "Quantity must be positive", "INVALID_QUANTITY")
 		return
 	}
 
 	if req.MenuItemID == "" {
-		writeError(w, http.StatusBadRequest, "menuItemId is required", "MISSING_FIELD")
+		models.WriteError(w, http.StatusBadRequest, "menuItemId is required", "MISSING_FIELD")
 		return
 	}
 
@@ -123,20 +124,20 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
+			models.WriteError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
 		} else {
-			writeError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+			models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
 		}
 		return
 	}
 
 	if venueID != session.VenueID {
-		writeError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
+		models.WriteError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
 		return
 	}
 
 	if currentStatus != "DRAFT" && currentStatus != "PENDING" && currentStatus != "SENT" {
-		writeError(w, http.StatusBadRequest, "Cannot modify order in status: "+currentStatus, "INVALID_STATUS")
+		models.WriteError(w, http.StatusBadRequest, "Cannot modify order in status: "+currentStatus, "INVALID_STATUS")
 		return
 	}
 
@@ -162,9 +163,9 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "Menu item not found", "ITEM_NOT_FOUND")
+			models.WriteError(w, http.StatusNotFound, "Menu item not found", "ITEM_NOT_FOUND")
 		} else {
-			writeError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+			models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
 		}
 		return
 	}
@@ -193,7 +194,7 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 			"orderId", orderID,
 			"menuItemId", req.MenuItemID,
 		)
-		writeError(w, http.StatusInternalServerError, "Failed to add item", "ADD_ITEM_FAILED")
+		models.WriteError(w, http.StatusInternalServerError, "Failed to add item", "ADD_ITEM_FAILED")
 		return
 	}
 
@@ -247,7 +248,7 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	rows, err := h.db.QueryContext(r.Context(), query, args...)
 	if err != nil {
 		slog.Error("Failed to fetch orders", "error", err, "venueId", session.VenueID)
-		writeError(w, http.StatusInternalServerError, "Failed to fetch orders", "DB_ERROR")
+		models.WriteError(w, http.StatusInternalServerError, "Failed to fetch orders", "DB_ERROR")
 		return
 	}
 	defer rows.Close()
@@ -326,15 +327,15 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
+			models.WriteError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
 		} else {
-			writeError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+			models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
 		}
 		return
 	}
 
 	if o.VenueID != session.VenueID {
-		writeError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
+		models.WriteError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
 		return
 	}
 
@@ -349,7 +350,7 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		ORDER BY course_number, created_at
 	`, orderID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Failed to fetch items", "DB_ERROR")
+		models.WriteError(w, http.StatusInternalServerError, "Failed to fetch items", "DB_ERROR")
 		return
 	}
 	defer rows.Close()
@@ -466,12 +467,12 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "Invalid request body", "INVALID_JSON")
+		models.WriteError(w, http.StatusBadRequest, "Invalid request body", "INVALID_JSON")
 		return
 	}
 
 	if req.Quantity != nil && *req.Quantity <= 0 {
-		writeError(w, http.StatusBadRequest, "Quantity must be positive", "INVALID_QUANTITY")
+		models.WriteError(w, http.StatusBadRequest, "Quantity must be positive", "INVALID_QUANTITY")
 		return
 	}
 
@@ -485,20 +486,20 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
+			models.WriteError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
 		} else {
-			writeError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+			models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
 		}
 		return
 	}
 
 	if venueID != session.VenueID || foundOrderID != orderID {
-		writeError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
+		models.WriteError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
 		return
 	}
 
 	if currentStatus != "PENDING" && currentStatus != "SENT" {
-		writeError(w, http.StatusBadRequest, "Cannot modify item in status: "+currentStatus, "INVALID_STATUS")
+		models.WriteError(w, http.StatusBadRequest, "Cannot modify item in status: "+currentStatus, "INVALID_STATUS")
 		return
 	}
 
@@ -520,7 +521,7 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(updates) == 0 {
-		writeError(w, http.StatusBadRequest, "No fields to update", "NO_FIELDS")
+		models.WriteError(w, http.StatusBadRequest, "No fields to update", "NO_FIELDS")
 		return
 	}
 
@@ -534,7 +535,7 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	_, err = h.db.ExecContext(r.Context(), query, args...)
 	if err != nil {
 		slog.Error("Failed to update item", "error", err, "itemId", itemID)
-		writeError(w, http.StatusInternalServerError, "Failed to update item", "UPDATE_FAILED")
+		models.WriteError(w, http.StatusInternalServerError, "Failed to update item", "UPDATE_FAILED")
 		return
 	}
 
@@ -577,15 +578,15 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
+			models.WriteError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
 		} else {
-			writeError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+			models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
 		}
 		return
 	}
 
 	if venueID != session.VenueID || foundOrderID != orderID {
-		writeError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
+		models.WriteError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
 		return
 	}
 
@@ -596,7 +597,7 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 	`, itemID)
 	if err != nil {
 		slog.Error("Failed to cancel item", "error", err, "itemId", itemID)
-		writeError(w, http.StatusInternalServerError, "Failed to cancel item", "CANCEL_FAILED")
+		models.WriteError(w, http.StatusInternalServerError, "Failed to cancel item", "CANCEL_FAILED")
 		return
 	}
 
@@ -648,20 +649,20 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			writeError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
+			models.WriteError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
 		} else {
-			writeError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+			models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
 		}
 		return
 	}
 
 	if venueID != session.VenueID {
-		writeError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
+		models.WriteError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
 		return
 	}
 
 	if currentStatus != "DRAFT" && currentStatus != "PENDING" {
-		writeError(w, http.StatusBadRequest, "Order already sent or in invalid status: "+currentStatus, "INVALID_STATUS")
+		models.WriteError(w, http.StatusBadRequest, "Order already sent or in invalid status: "+currentStatus, "INVALID_STATUS")
 		return
 	}
 
@@ -671,7 +672,7 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 	`, orderID)
 	if err != nil {
 		slog.Error("Failed to send order to kitchen", "error", err, "orderId", orderID)
-		writeError(w, http.StatusInternalServerError, "Failed to send order", "SEND_FAILED")
+		models.WriteError(w, http.StatusInternalServerError, "Failed to send order", "SEND_FAILED")
 		return
 	}
 
@@ -692,17 +693,3 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "sent"})
 }
 
-type ErrorResponse struct {
-	Error   string `json:"error"`
-	Code    string `json:"code,omitempty"`
-	Details string `json:"details,omitempty"`
-}
-
-func writeError(w http.ResponseWriter, status int, msg, code string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(ErrorResponse{
-		Error: msg,
-		Code:  code,
-	})
-}

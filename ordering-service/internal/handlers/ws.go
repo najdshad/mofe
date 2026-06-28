@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/mofe-menu/ordering-service/internal/middleware"
+	"github.com/mofe-menu/ordering-service/internal/models"
 )
 
 var upgrader = websocket.Upgrader{
@@ -150,7 +151,7 @@ func (h *Hub) BroadcastToVenue(venueID, msgType string, payload interface{}) {
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 	if session == nil {
-		writeError(w, http.StatusUnauthorized, "Unauthorized", "NO_SESSION")
+		models.WriteError(w, http.StatusUnauthorized, "Unauthorized", "NO_SESSION")
 		return
 	}
 
