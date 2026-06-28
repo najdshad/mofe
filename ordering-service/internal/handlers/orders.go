@@ -16,11 +16,12 @@ import (
 )
 
 type OrderHandler struct {
-	db *sql.DB
+	db  *sql.DB
+	hub *Hub
 }
 
-func NewOrderHandler(db *sql.DB) *OrderHandler {
-	return &OrderHandler{db: db}
+func NewOrderHandler(db *sql.DB, hub *Hub) *OrderHandler {
+	return &OrderHandler{db: db, hub: hub}
 }
 
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +85,16 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		"venueId", session.VenueID,
 		"waiter", waiterName,
 	)
+
+	h.hub.BroadcastToVenue(session.VenueID, EventOrderCreated, map[string]interface{}{
+		"orderId":    orderID,
+		"venueId":    session.VenueID,
+		"waiterId":   session.UserID,
+		"waiterName": waiterName,
+		"tableNumber": tableNumber,
+		"guestCount": guestCount,
+		"notes":      notes,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -219,6 +230,20 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		"quantity", req.Quantity,
 		"totalPrice", totalPrice,
 	)
+
+	h.hub.BroadcastToVenue(session.VenueID, EventItemAdded, map[string]interface{}{
+		"itemId":     itemID,
+		"orderId":    orderID,
+		"menuItemId": req.MenuItemID,
+		"menuItemName": itemName,
+		"variantId":  req.VariantID,
+		"variantName": variantName.String,
+		"quantity":   req.Quantity,
+		"unitPrice":  unitPrice,
+		"totalPrice": totalPrice,
+		"station":    station,
+		"notes":      req.Notes,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -559,6 +584,13 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 		"venueId", session.VenueID,
 	)
 
+	h.hub.BroadcastToVenue(session.VenueID, EventItemUpdated, map[string]interface{}{
+		"itemId":    itemID,
+		"orderId":   orderID,
+		"quantity":  req.Quantity,
+		"notes":     req.Notes,
+	})
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "updated"})
 }
@@ -634,6 +666,12 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 		"venueId", session.VenueID,
 	)
 
+	h.hub.BroadcastToVenue(session.VenueID, EventItemCancelled, map[string]interface{}{
+		"itemId":    itemID,
+		"orderId":   orderID,
+		"cancelledAt": time.Now(),
+	})
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "cancelled"})
 }
@@ -688,6 +726,17 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 		"orderId", orderID,
 		"venueId", session.VenueID,
 	)
+
+	h.hub.BroadcastToVenue(session.VenueID, EventOrderStatusChanged, map[string]interface{}{
+		"orderId": orderID,
+		"status":  "SENT",
+		"sentToKitchenAt": time.Now(),
+	})
+
+	h.hub.BroadcastToVenue(session.VenueID, EventItemStatusChanged, map[string]interface{}{
+		"orderId": orderID,
+		"status":  "SENT",
+	})
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "sent"})

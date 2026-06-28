@@ -30,7 +30,10 @@ func setupTestHandler(t *testing.T) (*OrderHandler, func()) {
 		db.Close()
 	}
 
-	return &OrderHandler{db: db}, clean
+	hub := NewHub()
+	go hub.Run()
+
+	return NewOrderHandler(db, hub), clean
 }
 
 func createTestSession() *models.Session {

@@ -204,17 +204,107 @@ services:
 
 ---
 
+### **Phase 2: Real-Time & Observability ✅**
+
+#### 2.1 WebSocket Broadcast Wiring ✅
+- [x] `OrderHandler` holds a `*Hub` reference — passed via `NewOrderHandler(db, hub)`
+- [x] `CreateOrder` → broadcasts `order_created` with orderId, venueId, waiter info
+- [x] `AddItem` → broadcasts `item_added` with itemId, orderId, menu item details
+- [x] `UpdateItem` → broadcasts `item_updated` with itemId, orderId, updated fields
+- [x] `CancelItem` → broadcasts `item_cancelled` with itemId, orderId, timestamp
+- [x] `SendToKitchen` → broadcasts `order_status_changed` + `item_status_changed`
+- [x] Added `menu_item_unavailable` event type constant for future use
+
+#### 2.2 Prometheus Metrics ✅
+- [x] New file: `internal/middleware/metrics.go`
+- [x] Request counter (`ordering_service_requests_total`) with method/path/status labels
+- [x] Request duration histogram (`ordering_service_request_duration_seconds`)
+- [x] Active requests gauge (`ordering_service_active_requests`)
+- [x] Business counters: `ordering_service_orders_created_total`, `ordering_service_items_ordered_total`
+- [x] DB query duration histogram (`ordering_service_db_query_duration_seconds`)
+- [x] `/metrics` endpoint registered via `promhttp.Handler()`
+
+#### 2.3 Rate Limiting Middleware ✅
+- [x] New file: `internal/middleware/ratelimit.go`
+- [x] Per-user token bucket using `golang.org/x/time/rate`
+- [x] Configurable at construction: `NewRateLimiter(100, 200)` → 100 req/sec with burst 200
+- [x] Keys by `UserID` when authenticated, falls back to `RemoteAddr`
+- [x] Background cleanup goroutine (evicts visitors after 10min idle)
+- [x] Returns 429 with `Retry-After: 60` header
+
+#### 2.4 golang-migrate Integration ✅
+- [x] `runMigrations()` called at startup in `main.go`
+- [x] Uses `github.com/golang-migrate/migrate/v4` with `file://migrations` source
+- [x] Gracefully handles `ErrNoChange` (no-op when already up-to-date)
+- [x] Migration files copied into scratch Docker image (`COPY /app/migrations /migrations`)
+
+### **Phase 3: Analytics ✅**
+
+#### 3.1 Analytics Endpoint
+- [x] New file: `internal/handlers/analytics.go`
+- [x] `GET /api/admin/analytics/daily-summary` (behind OWNER/MANAGER auth)
+- [x] Query param `?date=YYYY-MM-DD` (defaults to today)
+- [x] Returns: totalOrders, totalRevenue, avgOrderValue, totalItems, breakdown by status
+- [x] Returns: top 10 items by quantity with revenue
+- [x] Excludes cancelled items from revenue/top items calculations
+
+---
+
+### **Implemented Directory Structure (Updated)**
+
+```
+ordering-service/
+├── cmd/server/
+│   └── main.go                    # Entry point: chi router, middleware, migrations, graceful shutdown
+├── internal/
+│   ├── config/
+│   │   └── config.go              # DATABASE_URL, PORT, SESSION_COOKIE_NAME from env
+│   ├── database/
+│   │   └── postgres.go            # pgx pool setup (sql.Open with pgx stdlib)
+│   ├── models/
+│   │   ├── order.go               # Order, OrderItem, OrderStatus, ItemStatus, Station
+│   │   ├── session.go             # Session (UserID, VenueID, Role, ExpiresAt)
+│   │   └── errors.go              # ErrorResponse struct
+│   ├── middleware/
+│   │   ├── auth.go                # mofe_session cookie validation + multi-venue support
+│   │   ├── cors.go                # CORS headers
+│   │   ├── logging.go             # Structured request logging (slog)
+│   │   ├── recovery.go            # Panic recovery
+│   │   ├── metrics.go             # Prometheus metrics (counters, histograms, gauges)
+│   │   └── ratelimit.go           # Per-user token bucket rate limiter (100 req/s)
+│   └── handlers/
+│       ├── orders.go              # REST endpoints: CRUD order/items, send to kitchen (with WS broadcasts)
+│       ├── orders_test.go         # Integration tests
+│       ├── ws.go                  # WebSocket Hub with venue-scoped broadcast
+│       ├── health.go              # GET /health endpoint
+│       └── analytics.go           # GET /api/admin/analytics/daily-summary
+├── migrations/
+│   ├── 001_add_orders_tables.up.sql
+│   └── 001_add_orders_tables.down.sql
+├── scripts/
+│   └── seed_test_data.sql
+├── go.mod / go.sum
+└── Dockerfile                     # Multi-stage (golang:1.23-alpine → scratch)
+```
+
+### **Actual Dependencies**
+
+```
+github.com/go-chi/chi/v5 v5.3.0
+github.com/jackc/pgx/v5 v5.10.0
+github.com/gorilla/websocket v1.5.3
+github.com/google/uuid v1.6.0
+github.com/golang-migrate/migrate/v4 v4.19.1      # NEW: automated migrations
+github.com/prometheus/client_golang v1.23.2         # NEW: metrics
+golang.org/x/time v0.15.0                           # NEW: rate limiting
+```
+
+---
+
 ## **What's Next**
 
-### Phase 2 Additions (Future Work)
-- [ ] Wire WebSocket broadcasts into handlers (e.g., broadcast `order_created` after `CreateOrder`)
-- [ ] Prometheus metrics (`/metrics`)
-- [ ] Rate limiting middleware (100 req/min per user)
-- [ ] golang-migrate integration for automated migration runs
-- [ ] Daily analytics snapshot (Option 2 in plan)
-
-### Phase 3+ Additions
-- [ ] Analytics export endpoint (`/api/admin/analytics/daily-summary`)
+### Phase 3+ Additions (Future Work)
 - [ ] Redis-backed WebSocket pub/sub for horizontal scaling
-- [ ] Add `menu_item_unavailable` WebSocket event type
 - [ ] SQLC for type-safe queries (optional)
+- [ ] Add integration tests for analytics endpoint
+- [ ] Alerting rules for Prometheus metrics

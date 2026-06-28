@@ -12,6 +12,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/mofe-menu/ordering-service/internal/config"
 	"github.com/mofe-menu/ordering-service/internal/database"
 	"github.com/mofe-menu/ordering-service/internal/handlers"
@@ -38,10 +41,20 @@ func main() {
 
 	slog.Info("Database connected")
 
+	// Run migrations
+	if err := runMigrations(cfg.DatabaseURL); err != nil {
+		slog.Error("Failed to run migrations", "error", err)
+		os.Exit(1)
+	}
+	slog.Info("Migrations applied")
+
 	hub := handlers.NewHub()
 	go hub.Run()
 
-	orderHandler := handlers.NewOrderHandler(db)
+	orderHandler := handlers.NewOrderHandler(db, hub)
+	analyticsHandler := handlers.NewAnalyticsHandler(db)
+
+	rl := middleware.NewRateLimiter(100, 200)
 
 	r := chi.NewRouter()
 
@@ -50,8 +63,11 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.CORS)
+	r.Use(middleware.MetricsMiddleware)
+	r.Use(rl.Middleware)
 
 	r.Get("/health", handlers.HealthCheck(db))
+	r.Handle("/metrics", middleware.MetricsHandler())
 
 	r.Route("/api/orders", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(db))
@@ -70,6 +86,7 @@ func main() {
 		r.Use(middleware.RequireRole("OWNER", "MANAGER"))
 
 		r.Get("/orders", orderHandler.ListOrders)
+		r.Get("/analytics/daily-summary", analyticsHandler.DailySummary)
 	})
 
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
@@ -109,4 +126,18 @@ func main() {
 	}
 
 	slog.Info("Server stopped")
+}
+
+func runMigrations(databaseURL string) error {
+	m, err := migrate.New("file://migrations", databaseURL)
+	if err != nil {
+		return fmt.Errorf("failed to create migrator: %w", err)
+	}
+	defer m.Close()
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	return nil
 }
