@@ -24,27 +24,6 @@ export async function buildPublicSnapshot(venueId: string) {
     },
   });
 
-  const itemPhotoIds: string[] = [];
-  if (venue.menuPhotoMode) {
-    for (const cat of categories) {
-      for (const item of cat.menuItems) {
-        if (item.photoAssetId) itemPhotoIds.push(item.photoAssetId);
-      }
-    }
-  }
-
-  const assetIds = new Set<string>();
-  if (venue.logoAssetId) assetIds.add(venue.logoAssetId);
-  for (const id of itemPhotoIds) assetIds.add(id);
-
-  const assets = assetIds.size > 0
-    ? await prisma.asset.findMany({
-        where: { id: { in: Array.from(assetIds) } },
-        select: { id: true, publicUrl: true },
-      })
-    : [];
-  const assetMap = new Map(assets.map((a) => [a.id, a.publicUrl]));
-
   const publicUrl = getPublicMenuUrl(venue.slug);
 
   return {
@@ -54,7 +33,7 @@ export async function buildPublicSnapshot(venueId: string) {
       nameEn: venue.nameEn,
       welcomeMessage: venue.welcomeMessage,
       accentColor: venue.accentColor,
-      logoUrl: venue.logoAssetId ? assetMap.get(venue.logoAssetId) ?? null : null,
+      logoUrl: venue.logoAssetId ?? null,
       slug: venue.slug,
       publicUrl,
       publicStatus: venue.publicStatus,
@@ -86,7 +65,7 @@ export async function buildPublicSnapshot(venueId: string) {
           allergenCodes: item.allergens.map((a) => a.allergenCode),
           photoUrl:
             venue.menuPhotoMode && item.photoAssetId
-              ? assetMap.get(item.photoAssetId) ?? null
+              ? item.photoAssetId
               : null,
         })),
       })),
