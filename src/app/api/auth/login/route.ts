@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       },
     });
 
-    logAudit({
+    await logAudit({
       actorUserId: user.id,
       action: "auth.login",
       entityType: "user",
