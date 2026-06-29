@@ -108,6 +108,7 @@ model MenuItem {
   venue    Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id])
   variants MenuItemVariant[]
+  prices MenuItemPrice[]
   allergens MenuItemAllergen[]
 
   @@index([venueId, categoryId, displayOrder])
@@ -188,6 +189,20 @@ model MenuItemVariant {
   nameFa      String
   nameEn      String?
   priceModifier Int    @default(0)
+  displayOrder Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@index([menuItemId, displayOrder])
+}
+
+model MenuItemPrice {
+  id          String   @id @default(uuid())
+  menuItemId  String
+  description String
+  priceToman  Int
   displayOrder Int     @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

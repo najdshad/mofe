@@ -17,6 +17,7 @@ export async function buildPublicSnapshot(venueId: string) {
         orderBy: { displayOrder: "asc" },
         include: {
           variants: { orderBy: { displayOrder: "asc" } },
+          prices: { orderBy: { displayOrder: "asc" } },
           allergens: true,
         },
       },
@@ -77,6 +78,10 @@ export async function buildPublicSnapshot(venueId: string) {
             nameFa: v.nameFa,
             nameEn: v.nameEn,
             priceModifier: v.priceModifier,
+          })),
+          prices: item.prices.map((p) => ({
+            description: p.description,
+            priceToman: p.priceToman,
           })),
           allergenCodes: item.allergens.map((a) => a.allergenCode),
           photoUrl:

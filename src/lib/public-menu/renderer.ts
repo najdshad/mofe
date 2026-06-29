@@ -1,6 +1,11 @@
 import { ALLERGEN_LABELS } from "@/lib/allergens";
 import { formatPrice } from "@/lib/format";
 
+export interface SnapshotItemPrice {
+  description: string;
+  priceToman: number;
+}
+
 export interface SnapshotItemVariant {
   nameFa: string;
   nameEn: string | null;
@@ -17,6 +22,7 @@ export interface SnapshotCategoryItem {
   calories: number | null;
   soldOut: boolean;
   variants?: SnapshotItemVariant[];
+  prices?: SnapshotItemPrice[];
   allergenCodes?: string[];
   photoUrl?: string | null;
 }
@@ -93,6 +99,7 @@ function renderItemCard(item: SnapshotCategoryItem, showPhotos: boolean): string
   const variants = item.variants ?? [];
   const allergenCodes = item.allergenCodes ?? [];
   const photoUrl = item.photoUrl ?? null;
+  const itemPrices = item.prices ?? [];
   if (showPhotos && photoUrl) {
     return `
           <article class="item-card${item.soldOut ? " sold-out" : ""}">
@@ -117,6 +124,15 @@ function renderItemCard(item: SnapshotCategoryItem, showPhotos: boolean): string
                   <span class="variant-pill">
                     ${esc(v.nameFa)}${v.nameEn ? ` (${esc(v.nameEn)})` : ""}
                     ${v.priceModifier !== 0 ? `<span class="variant-price">${v.priceModifier > 0 ? "+" : ""}${formatPrice(v.priceModifier)}</span>` : ""}
+                  </span>`).join("")}
+              </div>` : ""}
+              ${itemPrices.length > 0 ? `
+              <div class="item-prices">
+                ${itemPrices.map((p) => `
+                  <span class="price-bubble">
+                    <span class="price-bubble-amount">${formatPrice(p.priceToman)}</span>
+                    <span class="price-bubble-unit">تومان</span>
+                    ${p.description ? `<span class="price-bubble-desc">${esc(p.description)}</span>` : ""}
                   </span>`).join("")}
               </div>` : ""}
               <div class="item-meta">
@@ -148,6 +164,15 @@ function renderItemCard(item: SnapshotCategoryItem, showPhotos: boolean): string
                     <span class="variant-pill">
                       ${esc(v.nameFa)}${v.nameEn ? ` (${esc(v.nameEn)})` : ""}
                       ${v.priceModifier !== 0 ? `<span class="variant-price">${v.priceModifier > 0 ? "+" : ""}${formatPrice(v.priceModifier)}</span>` : ""}
+                    </span>`).join("")}
+                </div>` : ""}
+                ${itemPrices.length > 0 ? `
+                <div class="item-prices">
+                  ${itemPrices.map((p) => `
+                    <span class="price-bubble">
+                      <span class="price-bubble-amount">${formatPrice(p.priceToman)}</span>
+                      <span class="price-bubble-unit">تومان</span>
+                      ${p.description ? `<span class="price-bubble-desc">${esc(p.description)}</span>` : ""}
                     </span>`).join("")}
                 </div>` : ""}
                 <div class="item-meta">
@@ -434,6 +459,36 @@ ${FONT_FACE_DECLARATIONS}
       font-family: "EB Garamond", "Georgia", serif;
       font-size: 12px;
       color: #111111;
+    }
+    .item-prices {
+      margin-top: 8px;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .price-bubble {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid rgba(17, 17, 17, 0.52);
+      border-radius: 999px;
+      padding: 3px 12px;
+      font-size: 13px;
+      background: rgba(17, 17, 17, 0.04);
+      line-height: 1.4;
+    }
+    .price-bubble-amount {
+      font-family: "EB Garamond", "Georgia", serif;
+      font-weight: 500;
+      color: #111111;
+      white-space: nowrap;
+    }
+    .price-bubble-desc {
+      color: #59544b;
+    }
+    .price-bubble-unit {
+      font-size: 10px;
+      color: #7a7367;
     }
     .item-meta {
       margin-top: 8px;

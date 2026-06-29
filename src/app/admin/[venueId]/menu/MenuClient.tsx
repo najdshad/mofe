@@ -363,6 +363,7 @@ function ItemModal({
   const [photoAssetId, setPhotoAssetId] = useState(initial?.photoAssetId ?? null);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [variants, setVariants] = useState<{ nameFa: string; nameEn: string; priceModifier: number }[] | null>(null);
+  const [prices, setPrices] = useState<{ description: string; priceToman: number }[] | null>(null);
   const [allergenCodes, setAllergenCodes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -383,6 +384,19 @@ function ItemModal({
           }
         })
         .catch((e) => { console.error("Failed to load variants:", e); setVariants([]); });
+      fetch(`/api/venues/${venueId}/items/${initial.id}/prices`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setPrices(data.map((p: { description: string; priceToman: number }) => ({
+              description: p.description,
+              priceToman: p.priceToman,
+            })));
+          } else {
+            setPrices([]);
+          }
+        })
+        .catch((e) => { console.error("Failed to load prices:", e); setPrices([]); });
       fetch(`/api/venues/${venueId}/items/${initial.id}/allergens`)
         .then((r) => r.json())
         .then((data) => {
@@ -455,7 +469,7 @@ function ItemModal({
         visibleOnPublicMenu,
         isSoldOut,
       });
-      if (initial && variants && variants.length > 0) {
+      if (initial && variants) {
         await fetch(`/api/venues/${venueId}/items/${initial.id}/variants`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -464,6 +478,18 @@ function ItemModal({
               nameFa: v.nameFa,
               nameEn: v.nameEn || null,
               priceModifier: v.priceModifier,
+            })),
+          }),
+        });
+      }
+      if (initial && prices) {
+        await fetch(`/api/venues/${venueId}/items/${initial.id}/prices`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prices: prices.map((p) => ({
+              description: p.description,
+              priceToman: p.priceToman,
             })),
           }),
         });
@@ -678,6 +704,54 @@ function ItemModal({
                 className="text-xs text-ink-muted hover:text-ink transition-colors"
               >
                 + افزودن تنوع
+              </button>
+            </div>
+          </div>
+        )}
+        {initial && (
+          <div className="space-y-1.5">
+            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+              قیمت‌ها
+            </label>
+            <div className="space-y-2">
+              {(prices ?? []).map((p, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    value={p.description}
+                    onChange={(e) => {
+                      const current = prices ?? [];
+                      const next = [...current];
+                      next[i] = { ...next[i], description: e.target.value };
+                      setPrices(next);
+                    }}
+                    placeholder="توضیحات (مثلاً: سایز کوچک)"
+                    className="flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
+                  />
+                  <input
+                    type="number"
+                    value={p.priceToman}
+                    onChange={(e) => {
+                      const current = prices ?? [];
+                      const next = [...current];
+                      next[i] = { ...next[i], priceToman: Number(e.target.value) };
+                      setPrices(next);
+                    }}
+                    placeholder="قیمت"
+                    className="w-24 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
+                  />
+                  <button
+                    onClick={() => setPrices((prev) => (prev ?? []).filter((_, j) => j !== i))}
+                    className="text-xs text-ink-muted hover:text-red-600 transition-colors"
+                  >
+                    حذف
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={() => setPrices((prev) => [...(prev ?? []), { description: "", priceToman: 0 }])}
+                className="text-xs text-ink-muted hover:text-ink transition-colors"
+              >
+                + افزودن قیمت
               </button>
             </div>
           </div>
