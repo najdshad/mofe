@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 	"strconv"
 )
@@ -20,8 +21,14 @@ func Load() *Config {
 		}
 	}
 
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		slog.Error("DATABASE_URL is required")
+		os.Exit(1)
+	}
+
 	return &Config{
-		DatabaseURL:       getEnv("DATABASE_URL", "postgres://mofe:mofe@localhost:5432/mofe"),
+		DatabaseURL:       databaseURL,
 		Port:              port,
 		SessionCookieName: getEnv("SESSION_COOKIE_NAME", "mofe_session"),
 		RedisURL:          getEnv("REDIS_URL", ""),

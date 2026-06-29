@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createPasswordResetToken } from "@/lib/auth";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, getClientIP } from "@/lib/rate-limit";
 import { sendPasswordResetEmail } from "@/lib/mailer";
 
 export async function POST(request: Request) {
@@ -16,8 +16,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const rl = await rateLimit(`password-reset:${ip}`);
+    const rl = await rateLimit(`password-reset:${getClientIP(request)}`);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "تلاش‌های زیاد. لطفاً بعداً تلاش کنید." },
@@ -27,20 +26,18 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return NextResponse.json(
-        { error: "حساب کاربری با این ایمیل یافت نشد" },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        message: "اگر این ایمیل در سیستم ثبت شده باشد، لینک بازنشانی ارسال خواهد شد"
+      });
     }
 
     const token = await createPasswordResetToken(user.id);
-    const resetUrl = `${new URL(request.url).origin}/password-reset/${token}`;
 
-    sendPasswordResetEmail(email, resetUrl).catch(() => {
-      // Email delivery is non-blocking; reset URL still works
+    sendPasswordResetEmail(email, `${new URL(request.url).origin}/password-reset/${token}`).catch(() => {
+      // Email delivery is non-blocking
     });
 
-    return NextResponse.json({ resetUrl, message: "لینک بازنشانی رمز عبور ایجاد شد" });
+    return NextResponse.json({ message: "لینک بازنشانی رمز عبور ایجاد شد" });
   } catch {
     return NextResponse.json(
       { error: "خطا در سرور" },

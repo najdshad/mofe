@@ -35,18 +35,18 @@ describe("errorResponse", () => {
     expect(body).toEqual({ error: "Unauthorized" });
   });
 
-  it("maps Error starting with 'Unauthorized' to 403", async () => {
+  it("maps plain Error starting with 'Unauthorized' to 500 (no string-based status)", async () => {
     const res = errorResponse(new Error("Unauthorized: no access to this venue"));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body).toEqual({ error: "Unauthorized: no access to this venue" });
+    expect(body.error).toBe("Internal server error");
   });
 
-  it("maps Error starting with 'Forbidden' to 403", async () => {
+  it("maps plain Error starting with 'Forbidden' to 500 (no string-based status)", async () => {
     const res = errorResponse(new Error("Forbidden: requires role owner"));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body).toEqual({ error: "Forbidden: requires role owner" });
+    expect(body.error).toBe("Internal server error");
   });
 
   it("maps generic Error to 500", async () => {

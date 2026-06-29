@@ -12,9 +12,19 @@ import (
 	"github.com/mofe-menu/ordering-service/internal/models"
 )
 
+var allowedOrigins = map[string]bool{
+	"https://admin.mofe.ir":     true,
+	"http://localhost:3000":     true,
+	"https://admin.noghteh.ir":  true,
+}
+
+func isAllowedOrigin(origin string) bool {
+	return allowedOrigins[origin]
+}
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true
+		return isAllowedOrigin(r.Header.Get("Origin"))
 	},
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,

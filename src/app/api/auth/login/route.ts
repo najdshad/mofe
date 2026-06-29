@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession, verifyPassword } from "@/lib/auth";
 import { DEMO_EMAIL, ensureDemoData } from "@/lib/demo";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, getClientIP } from "@/lib/rate-limit";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const ip = getClientIP(request);
     const rl = await rateLimit(`login:${ip}`);
     if (!rl.allowed) {
       return NextResponse.json(
@@ -33,36 +34,43 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: "رمز عبور باید حداقل ۶ کاراکتر باشد" },
+        { error: "رمز عبور باید حداقل ۸ کاراکتر باشد" },
         { status: 400 }
       );
     }
 
     let user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user && email === DEMO_EMAIL) {
+    if (process.env.NODE_ENV !== "production" && !user && email === DEMO_EMAIL) {
       const demo = await ensureDemoData(prisma);
       user = demo.user;
     }
 
-    if (!user || !user.passwordHash) {
+    if (!user || !user.passwordHash || user.status !== "active") {
       return NextResponse.json(
         { error: "نام کاربری یا رمز عبور اشتباه است" },
         { status: 401 }
       );
     }
 
-    if (user.status !== "active") {
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
       return NextResponse.json(
-        { error: "حساب کاربری فعال نیست" },
-        { status: 403 }
+        { error: "حساب کاربری قفل شده است. لطفاً بعداً تلاش کنید." },
+        { status: 429 }
       );
     }
 
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
+      const attempts = (user.failedLoginAttempts ?? 0) + 1;
+      const updates: Record<string, unknown> = { failedLoginAttempts: attempts };
+      if (attempts >= 10) {
+        updates.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      }
+      await prisma.user.update({ where: { id: user.id }, data: updates });
+
       return NextResponse.json(
         { error: "نام کاربری یا رمز عبور اشتباه است" },
         { status: 401 }
@@ -73,7 +81,19 @@ export async function POST(request: Request) {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() },
+      data: {
+        lastLoginAt: new Date(),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
+    });
+
+    logAudit({
+      actorUserId: user.id,
+      action: "auth.login",
+      entityType: "user",
+      entityId: user.id,
+      metadata: { ip },
     });
 
     return NextResponse.json({ success: true });

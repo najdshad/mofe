@@ -77,6 +77,7 @@ func main() {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.CORS)
 	r.Use(middleware.MetricsMiddleware)
+	r.Use(middleware.CSRF)
 	r.Use(rl.Middleware)
 
 	r.Get("/health", handlers.HealthCheck(db))

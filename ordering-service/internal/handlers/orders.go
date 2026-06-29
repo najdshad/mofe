@@ -15,6 +15,11 @@ import (
 	"github.com/mofe-menu/ordering-service/internal/models"
 )
 
+const (
+	maxNotesLength       = 500
+	maxTableNumberLength = 20
+)
+
 type OrderHandler struct {
 	db  *sql.DB
 	hub *Hub
@@ -40,6 +45,15 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	if req.GuestCount < 1 {
 		req.GuestCount = 1
+	}
+
+	if len(req.Notes) > maxNotesLength {
+		models.WriteError(w, http.StatusBadRequest, "Notes too long", "NOTES_TOO_LONG")
+		return
+	}
+	if len(req.TableNumber) > maxTableNumberLength {
+		models.WriteError(w, http.StatusBadRequest, "Table number too long", "TABLE_NUMBER_TOO_LONG")
+		return
 	}
 
 	var waiterName string
@@ -124,6 +138,11 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 
 	if req.MenuItemID == "" {
 		models.WriteError(w, http.StatusBadRequest, "menuItemId is required", "MISSING_FIELD")
+		return
+	}
+
+	if len(req.Notes) > maxNotesLength {
+		models.WriteError(w, http.StatusBadRequest, "Notes too long", "NOTES_TOO_LONG")
 		return
 	}
 
@@ -600,13 +619,13 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 	orderID := chi.URLParam(r, "id")
 	itemID := chi.URLParam(r, "itemId")
 
-	var foundOrderID, venueID string
+	var foundOrderID, venueID, currentStatus string
 	err := h.db.QueryRowContext(r.Context(), `
-		SELECT oi.order_id, o.venue_id
+		SELECT oi.order_id, o.venue_id, oi.status
 		FROM order_items oi
 		JOIN orders o ON oi.order_id = o.id
 		WHERE oi.id = $1
-	`, itemID).Scan(&foundOrderID, &venueID)
+	`, itemID).Scan(&foundOrderID, &venueID, &currentStatus)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -619,6 +638,11 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 
 	if venueID != session.VenueID || foundOrderID != orderID {
 		models.WriteError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
+		return
+	}
+
+	if currentStatus != "PENDING" && currentStatus != "SENT" {
+		models.WriteError(w, http.StatusBadRequest, "Cannot cancel item in status: "+currentStatus, "INVALID_STATUS")
 		return
 	}
 
@@ -720,6 +744,20 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 	`, orderID)
 	if err != nil {
 		slog.Error("Failed to update item statuses", "error", err, "orderId", orderID)
+	}
+
+	_, err = h.db.ExecContext(r.Context(), `
+		UPDATE orders
+		SET subtotal = (
+			SELECT COALESCE(SUM(total_price), 0)
+			FROM order_items
+			WHERE order_id = $1 AND status != 'CANCELLED'
+		),
+		total = subtotal
+		WHERE id = $1
+	`, orderID)
+	if err != nil {
+		slog.Error("Failed to recalculate order total on send", "error", err, "orderId", orderID)
 	}
 
 	slog.Info("Order sent to kitchen",

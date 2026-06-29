@@ -8,16 +8,18 @@ datasource db {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  name            String
-  email           String    @unique
-  passwordHash    String?
-  role            String    @default("user")
-  emailVerifiedAt DateTime?
-  lastLoginAt     DateTime?
-  status          String    @default("active")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                  String    @id @default(uuid())
+  name                String
+  email               String    @unique
+  passwordHash        String?
+  role                String    @default("user")
+  emailVerifiedAt     DateTime?
+  lastLoginAt         DateTime?
+  status              String    @default("active")
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   sessions         Session[]
   venueMembers     VenueMember[]
@@ -254,6 +256,7 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
 }
 
 model RateLimitEntry {
@@ -265,14 +268,16 @@ model RateLimitEntry {
 }
 
 model Session {
-  id        String    @id @default(uuid())
-  userId    String
-  tokenHash String    @unique
-  expiresAt DateTime
-  createdAt DateTime  @default(now())
-  revokedAt DateTime?
+  id             String    @id @default(uuid())
+  userId         String
+  tokenHash      String    @unique
+  expiresAt      DateTime
+  lastActivityAt DateTime?
+  createdAt      DateTime  @default(now())
+  revokedAt      DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
+  @@index([userId, lastActivityAt])
 }

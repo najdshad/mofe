@@ -39,9 +39,19 @@ export async function PATCH(
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await request.json();
+
+    const ALLOWED_FIELDS = [
+      "nameFa", "nameEn", "description", "priceToman", "station",
+      "calories", "visibleOnPublicMenu", "isSoldOut", "displayOrder",
+    ] as const;
+    const data: Record<string, unknown> = {};
+    for (const field of ALLOWED_FIELDS) {
+      if (field in body) data[field] = body[field];
+    }
+
     const item = await prisma.menuItem.update({
       where: { id: itemId, venueId },
-      data: body,
+      data,
     });
 
     await logAudit({

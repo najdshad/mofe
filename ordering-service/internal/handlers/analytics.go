@@ -41,6 +41,11 @@ type TopItem struct {
 func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 
+	if session.Role != "OWNER" && session.Role != "MANAGER" {
+		models.WriteError(w, http.StatusForbidden, "Forbidden", "INSUFFICIENT_ROLE")
+		return
+	}
+
 	dateStr := r.URL.Query().Get("date")
 	if dateStr == "" {
 		dateStr = time.Now().Format("2006-01-02")

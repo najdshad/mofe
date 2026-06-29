@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { requireVenueAccess } from "@/lib/permissions";
+import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { VALID_STATIONS } from "@/lib/constants";
 import { logAudit } from "@/lib/audit";
@@ -32,7 +32,8 @@ export async function POST(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    await requireVenueAccess(user.id, venueId);
+    const hasAccess = await canManage(user.id, venueId);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await request.json();
     if (!Array.isArray(body.schedules)) {

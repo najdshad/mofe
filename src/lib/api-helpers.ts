@@ -27,13 +27,5 @@ export function errorResponse(error: unknown) {
   if (error instanceof ApiError) {
     return NextResponse.json({ error: error.message }, { status: error.status });
   }
-  if (error instanceof Error) {
-    if (error.message.startsWith("Unauthorized")) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-    if (error.message.startsWith("Forbidden")) {
-      return NextResponse.json({ error: error.message }, { status: 403 });
-    }
-  }
   return NextResponse.json({ error: "Internal server error" }, { status: 500 });
 }

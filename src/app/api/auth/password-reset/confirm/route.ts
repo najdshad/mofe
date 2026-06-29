@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { validatePasswordResetToken, consumePasswordResetToken, hashPassword } from "@/lib/auth";
+import { validatePasswordResetToken, hashPassword } from "@/lib/auth";
+import { rateLimit, getClientIP } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const rl = await rateLimit(`password-reset-confirm:${getClientIP(request)}`);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "تلاش‌های زیاد. لطفاً بعداً تلاش کنید." },
+        { status: 429 }
+      );
+    }
+
     const raw = await request.json();
     const token = (raw.token ?? "").trim();
     const password = (raw.password ?? "").trim();
@@ -15,9 +24,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: "رمز عبور باید حداقل ۶ کاراکتر باشد" },
+        { error: "رمز عبور باید حداقل ۸ کاراکتر باشد" },
         { status: 400 }
       );
     }

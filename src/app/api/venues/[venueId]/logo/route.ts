@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { requireVenueAccess } from "@/lib/permissions";
+import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import sharp from "sharp";
 import path from "path";
@@ -17,7 +17,8 @@ export async function POST(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    await requireVenueAccess(user.id, venueId);
+    const hasAccess = await canManage(user.id, venueId);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const formData = await request.formData();
     const file = formData.get("logo") as File | null;
@@ -85,7 +86,8 @@ export async function DELETE(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    await requireVenueAccess(user.id, venueId);
+    const hasAccess = await canManage(user.id, venueId);
+    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId } });
     if (!venue) {

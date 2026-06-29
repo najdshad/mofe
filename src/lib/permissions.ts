@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { ApiError } from "./api-helpers";
 
 export type Role = "owner" | "manager" | "staff";
 const VALID_ROLES: Role[] = ["owner", "manager", "staff"];
@@ -19,7 +20,7 @@ export async function getVenueMembership(userId: string, venueId: string) {
 export async function requireVenueAccess(userId: string, venueId: string) {
   const membership = await getVenueMembership(userId, venueId);
   if (!membership) {
-    throw new Error("Unauthorized: no access to this venue");
+    throw new ApiError("Unauthorized: no access to this venue", 401);
   }
   return membership;
 }
@@ -32,8 +33,9 @@ export async function requireRole(
   const membership = await requireVenueAccess(userId, venueId);
   const role = ensureValidRole(membership.role);
   if (!allowedRoles.includes(role)) {
-    throw new Error(
-      `Forbidden: requires one of roles ${allowedRoles.join(", ")}`
+    throw new ApiError(
+      `Forbidden: requires one of roles ${allowedRoles.join(", ")}`,
+      403
     );
   }
   return membership;

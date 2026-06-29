@@ -15,9 +15,15 @@ export async function PATCH(
 
     const body = await request.json();
 
+    const ALLOWED_FIELDS = ["nameFa", "displayOrder", "active"] as const;
+    const data: Record<string, unknown> = {};
+    for (const field of ALLOWED_FIELDS) {
+      if (field in body) data[field] = body[field];
+    }
+
     const category = await prisma.category.update({
       where: { id: categoryId, venueId },
-      data: body,
+      data,
     });
 
     await logAudit({

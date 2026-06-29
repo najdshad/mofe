@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
     if (!name?.trim()) throw new ApiError("Name is required");
     if (!email?.trim()) throw new ApiError("Email is required");
-    if (!password || password.length < 6) throw new ApiError("Password must be at least 6 characters");
+    if (!password || password.length < 8) throw new ApiError("Password must be at least 8 characters");
 
     const existing = await prisma.user.findUnique({ where: { email: email.trim() } });
     if (existing) throw new ApiError("A user with this email already exists");
