@@ -680,16 +680,20 @@ function ItemModal({
                     className="w-24 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
                   />
                   <input
-                    type="number"
-                    value={v.priceModifier}
+                    type="text"
+                    inputMode="numeric"
+                    value={String((Number(priceToman) || 0) + v.priceModifier)}
                     onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, "");
+                      const num = val ? Number(val) : 0;
                       const current = variants ?? [];
                       const next = [...current];
-                      next[i] = { ...next[i], priceModifier: Number(e.target.value) };
+                      const base = Number(priceToman) || 0;
+                      next[i] = { ...next[i], priceModifier: num > 0 ? num - base : 0 };
                       setVariants(next);
                     }}
-                    placeholder="تغییر قیمت"
-                    className="w-20 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
+                    placeholder="قیمت نهایی"
+                    className="w-24 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
                   />
                   <button
                     onClick={() => setVariants((prev) => (prev ?? []).filter((_, j) => j !== i))}

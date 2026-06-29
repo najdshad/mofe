@@ -61,7 +61,7 @@ export function Modal({
         className="w-full max-w-md rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-lg"
       >
         <h3 className="font-serif text-xl text-ink">{title}</h3>
-        <div className="mt-3 text-sm leading-relaxed text-ink-muted">
+        <div className="mt-3 max-h-[55vh] overflow-y-auto text-sm leading-relaxed text-ink-muted">
           {children}
         </div>
         <div className="mt-6 flex items-center justify-end gap-3">
