@@ -682,17 +682,17 @@ function ItemModal({
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={String((Number(priceToman) || 0) + v.priceModifier)}
+                    value={v.priceModifier !== 0 ? String((Number(priceToman) || 0) + v.priceModifier) : ""}
                     onChange={(e) => {
                       const val = e.target.value.replace(/[^0-9]/g, "");
                       const num = val ? Number(val) : 0;
                       const current = variants ?? [];
                       const next = [...current];
                       const base = Number(priceToman) || 0;
-                      next[i] = { ...next[i], priceModifier: num > 0 ? num - base : 0 };
+                      next[i] = { ...next[i], priceModifier: num - base };
                       setVariants(next);
                     }}
-                    placeholder="قیمت نهایی"
+                    placeholder="قیمت"
                     className="w-24 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
                   />
                   <button
@@ -708,54 +708,6 @@ function ItemModal({
                 className="text-xs text-ink-muted hover:text-ink transition-colors"
               >
                 + افزودن تنوع
-              </button>
-            </div>
-          </div>
-        )}
-        {initial && (
-          <div className="space-y-1.5">
-            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
-              قیمت‌ها
-            </label>
-            <div className="space-y-2">
-              {(prices ?? []).map((p, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    value={p.description}
-                    onChange={(e) => {
-                      const current = prices ?? [];
-                      const next = [...current];
-                      next[i] = { ...next[i], description: e.target.value };
-                      setPrices(next);
-                    }}
-                    placeholder="توضیحات (مثلاً: سایز کوچک)"
-                    className="flex-1 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
-                  />
-                  <input
-                    type="number"
-                    value={p.priceToman}
-                    onChange={(e) => {
-                      const current = prices ?? [];
-                      const next = [...current];
-                      next[i] = { ...next[i], priceToman: Number(e.target.value) };
-                      setPrices(next);
-                    }}
-                    placeholder="قیمت"
-                    className="w-24 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-ink focus:border-ink focus:outline-none"
-                  />
-                  <button
-                    onClick={() => setPrices((prev) => (prev ?? []).filter((_, j) => j !== i))}
-                    className="text-xs text-ink-muted hover:text-red-600 transition-colors"
-                  >
-                    حذف
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => setPrices((prev) => [...(prev ?? []), { description: "", priceToman: 0 }])}
-                className="text-xs text-ink-muted hover:text-ink transition-colors"
-              >
-                + افزودن قیمت
               </button>
             </div>
           </div>
@@ -1427,23 +1379,23 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                 filteredItems.map((item, idx) => (
                   <div
                     key={item.id}
-                    style={{ gridTemplateColumns: COL_TEMPLATE }}
-                    className={`grid items-center gap-3 px-4 py-4 ${
+                    style={{ gridTemplateColumns: selectionMode ? COL_TEMPLATE : "2fr 1fr 0.8fr 0.8fr 1fr 0.5fr" }}
+                    className={`grid items-center gap-3 px-5 py-4 ${
                       idx !== filteredItems.length - 1
                         ? "border-b border-line/50"
                         : ""
                     }`}
                   >
-                    <div className="flex items-center">
-                      {selectionMode && (
+                    {selectionMode && (
+                      <div className="flex items-center">
                         <input
                           type="checkbox"
                           checked={selectedItems.has(item.id)}
                           onChange={() => toggleItemSelection(item.id)}
                           className="rounded border-line text-ink focus:ring-ink cursor-pointer"
                         />
-                      )}
-                    </div>
+                      </div>
+                    )}
                     <ItemRowContent
                       item={item}
                       onToggleVisibility={(v) => handleToggleVisibility(item.id, v)}
