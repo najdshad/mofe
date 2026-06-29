@@ -170,16 +170,16 @@ function ItemRowContent({
         />
       </div>
       <div>
-        {item.isSoldOut ? (
-          <Badge variant="soldOut">ناموجود</Badge>
-        ) : (
-          <button
-            onClick={() => onToggleSoldOut(true)}
-            className="text-xs text-ink-muted hover:text-ink transition-colors"
-          >
-            موجود
-          </button>
-        )}
+        <button
+          onClick={() => onToggleSoldOut(!item.isSoldOut)}
+          className={`text-xs transition-colors ${
+            item.isSoldOut
+              ? "rounded px-2 py-0.5 bg-red-50 text-red-700 hover:bg-red-100"
+              : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          {item.isSoldOut ? "ناموجود" : "موجود"}
+        </button>
       </div>
       <div className="flex items-center gap-1">
         <button
@@ -603,15 +603,6 @@ function ItemModal({
               className="rounded border-line text-ink focus:ring-ink"
             />
             <span className="text-sm text-ink">نمایش در منوی عمومی</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isSoldOut}
-              onChange={(e) => setIsSoldOut(e.target.checked)}
-              className="rounded border-line text-ink focus:ring-ink"
-            />
-            <span className="text-sm text-ink">ناموجود</span>
           </label>
         </div>
         {initial && (
