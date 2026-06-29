@@ -79,7 +79,8 @@ export function QRMenuClient({
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const { statusMessage, showStatus } = useStatusMessage();
+  const { statusMessage: appearanceStatus, showStatus: showAppearanceStatus } = useStatusMessage();
+  const { statusMessage: publishStatus, showStatus: showPublishStatus } = useStatusMessage();
   const router = useRouter();
 
   const handleSaveAppearance = async () => {
@@ -95,7 +96,7 @@ export function QRMenuClient({
     });
 
     if (res.ok) {
-      showStatus("تغییرات ذخیره شد");
+      showAppearanceStatus("تغییرات ذخیره شد");
       router.refresh();
     }
   };
@@ -116,11 +117,11 @@ export function QRMenuClient({
     if (res.ok) {
       const data = await res.json();
       setLogoUrl(data.logoUrl);
-      showStatus("لوگو با موفقیت آپلود شد");
+      showAppearanceStatus("لوگو با موفقیت آپلود شد");
       router.refresh();
     } else {
       const data = await res.json();
-      showStatus(data.error || "خطا در آپلود لوگو");
+      showAppearanceStatus(data.error || "خطا در آپلود لوگو");
     }
     setUploading(false);
   };
@@ -132,10 +133,10 @@ export function QRMenuClient({
 
     if (res.ok) {
       setLogoUrl("");
-      showStatus("لوگو حذف شد");
+      showAppearanceStatus("لوگو حذف شد");
       router.refresh();
     } else {
-      showStatus("خطا در حذف لوگو");
+      showAppearanceStatus("خطا در حذف لوگو");
     }
   };
 
@@ -147,10 +148,10 @@ export function QRMenuClient({
 
     if (res.ok) {
       setShowPublishModal(false);
-      showStatus("منو با موفقیت منتشر شد");
+      showPublishStatus("منو با موفقیت منتشر شد");
       router.refresh();
     } else {
-      showStatus("خطا در انتشار منو");
+      showPublishStatus("خطا در انتشار منو");
     }
     setPublishing(false);
   };
@@ -163,10 +164,10 @@ export function QRMenuClient({
 
     if (res.ok) {
       setShowUnpublishModal(false);
-      showStatus("منو از دسترس خارج شد");
+      showPublishStatus("منو از دسترس خارج شد");
       router.refresh();
     } else {
-      showStatus("خطا در لغو انتشار");
+      showPublishStatus("خطا در لغو انتشار");
     }
     setPublishing(false);
   };
@@ -238,8 +239,8 @@ export function QRMenuClient({
               </p>
             </div>
             <Button onClick={handleSaveAppearance}>ذخیره تغییرات</Button>
-            {statusMessage && (
-              <p className="text-sm text-ink-muted">{statusMessage}</p>
+            {appearanceStatus && (
+              <p className="text-sm text-ink-muted">{appearanceStatus}</p>
             )}
           </div>
         </Panel>
@@ -300,6 +301,9 @@ export function QRMenuClient({
                 </p>
               )}
             </div>
+            {publishStatus && (
+              <p className="mt-2 text-sm text-ink-muted">{publishStatus}</p>
+            )}
           </div>
         </Panel>
 
