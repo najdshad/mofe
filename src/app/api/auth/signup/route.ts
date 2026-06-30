@@ -58,8 +58,15 @@ export async function POST(request: Request) {
     }
 
     const ip = getClientIP(request);
-    const rl = await rateLimit(`signup:${ip}`, 3, 86400000);
-    if (!rl.allowed) {
+    if (process.env.NODE_ENV === "production") {
+      const rl = await rateLimit(`signup:${ip}`, 3, 86400000);
+      if (!rl.allowed) {
+        return NextResponse.json(
+          { error: "تلاش‌های زیاد. لطفاً ۲۴ ساعت صبر کنید." },
+          { status: 429 }
+        );
+      }
+    }
       return NextResponse.json(
         { error: "تلاش‌های زیاد. لطفاً ۲۴ ساعت صبر کنید." },
         { status: 429 }
