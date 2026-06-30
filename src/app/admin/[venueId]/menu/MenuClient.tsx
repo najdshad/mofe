@@ -139,28 +139,30 @@ function ItemRowContent({
 }) {
   return (
     <>
-      <div>
-        <div className="font-serif text-lg text-ink">{item.nameFa}</div>
-        {item.nameEn && (
-          <div className="mt-0.5 text-sm text-ink-muted">{item.nameEn}</div>
-        )}
-        {item.description && (
-          <div className="mt-1 max-w-xs truncate text-xs leading-relaxed text-ink-muted">
-            {item.description}
-          </div>
-        )}
-        {item.calories && <Badge variant="muted">{item.calories} kcal</Badge>}
+      <div className="flex items-center justify-start min-w-0">
+        <div>
+          <div className="font-serif text-lg text-ink">{item.nameFa}</div>
+          {item.nameEn && (
+            <div className="mt-0.5 text-sm text-ink-muted">{item.nameEn}</div>
+          )}
+          {item.description && (
+            <div className="mt-1 max-w-xs truncate text-xs leading-relaxed text-ink-muted">
+              {item.description}
+            </div>
+          )}
+          {item.calories && <Badge variant="muted">{item.calories} kcal</Badge>}
+        </div>
       </div>
-      <div className="text-sm text-ink">
-        {item.priceFormatted}
+      <div className="flex items-center justify-center">
+        <span className="text-sm text-ink">{item.priceFormatted}</span>
         <span className="mr-1 text-xs text-ink-muted">تومان</span>
       </div>
-      <div>
+      <div className="flex items-center justify-center">
         <Badge variant="muted">
           {item.station === "bar" ? "بار" : "آشپزخانه"}
         </Badge>
       </div>
-      <div>
+      <div className="flex items-center justify-center">
         <button
           onClick={() => onToggleSoldOut(!item.isSoldOut)}
           className={`w-full rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -172,7 +174,7 @@ function ItemRowContent({
           {item.isSoldOut ? "ناموجود" : "موجود"}
         </button>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center gap-1">
         <button
           onClick={onEdit}
           className="p-1 text-ink-muted hover:text-ink transition-colors"
@@ -228,7 +230,7 @@ function SortableItemRow({
             index !== total - 1 ? "border-b border-line/50" : ""
           }`}
         >
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-center gap-1">
         <button
           {...attributes}
           {...listeners}
@@ -1306,7 +1308,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                     }`}
                   >
                     {selectionMode && (
-                      <div className="flex items-center">
+                      <div className="flex items-center justify-center">
                         <input
                           type="checkbox"
                           checked={selectedItems.has(item.id)}
