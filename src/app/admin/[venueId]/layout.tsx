@@ -27,7 +27,7 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-line bg-paper">
-        <div className="mx-auto flex max-w-[1520px] items-center justify-between px-5 py-3">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-6">
             <Link
               href="/venues"
@@ -55,35 +55,35 @@ export default async function AdminLayout({
       </header>
 
       <nav className="border-b border-line bg-paper">
-        <div className="mx-auto flex max-w-[1520px] gap-6 px-5">
+        <div className="mx-auto flex max-w-5xl gap-4 px-4">
           <Link
             href={`/admin/${venueId}/menu`}
-            className="border-b-2 border-transparent px-1 py-3 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
+            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
           >
             منو
           </Link>
           <Link
             href={`/admin/${venueId}/qr-menu`}
-            className="border-b-2 border-transparent px-1 py-3 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
+            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
           >
             انتشار و QR
           </Link>
           <Link
             href={`/admin/${venueId}/publications`}
-            className="border-b-2 border-transparent px-1 py-3 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
+            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
           >
             انتشارات
           </Link>
           <Link
             href={`/admin/${venueId}/settings`}
-            className="border-b-2 border-transparent px-1 py-3 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
+            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
           >
             تنظیمات
           </Link>
         </div>
       </nav>
 
-      <main className="mx-auto w-full max-w-[1520px] flex-1 px-5 py-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-4">
         {children}
       </main>
     </div>

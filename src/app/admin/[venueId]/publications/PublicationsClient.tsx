@@ -33,25 +33,26 @@ export function PublicationsClient({
   publications: Publication[];
 }) {
   return (
-    <Panel title="تاریخچه انتشارات" subtitle="فهرست انتشارات قبلی منو">
-      <div className="overflow-hidden rounded-[var(--radius-card)] border border-line">
-        <div className="grid grid-cols-[1fr_120px_1fr] gap-3 border-b border-line bg-surface px-4 py-3 text-[11px] uppercase tracking-wider text-ink-muted">
-          <div>تاریخ</div>
-          <div>وضعیت</div>
-          <div>علت</div>
-        </div>
-        {publications.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-ink-muted">
-            هیچ انتشاراتی یافت نشد
+    <div className="max-w-xl">
+      <Panel title="تاریخچه انتشارات" subtitle="فهرست انتشارات قبلی منو">
+        <div className="overflow-hidden rounded-[var(--radius-card)] border border-line">
+          <div className="grid grid-cols-[1fr_100px_1fr] gap-2 border-b border-line bg-surface px-3 py-2.5 text-[11px] uppercase tracking-wider text-ink-muted">
+            <div>تاریخ</div>
+            <div>وضعیت</div>
+            <div>علت</div>
           </div>
-        ) : (
-          publications.map((pub, idx) => (
-            <div
-              key={pub.id}
-              className={`grid grid-cols-[1fr_120px_1fr] items-center gap-3 px-4 py-4 ${
-                idx !== publications.length - 1 ? "border-b border-line/50" : ""
-              }`}
-            >
+          {publications.length === 0 ? (
+            <div className="px-3 py-6 text-center text-sm text-ink-muted">
+              هیچ انتشاراتی یافت نشد
+            </div>
+          ) : (
+            publications.map((pub, idx) => (
+              <div
+                key={pub.id}
+                className={`grid grid-cols-[1fr_100px_1fr] items-center gap-2 px-3 py-3 ${
+                  idx !== publications.length - 1 ? "border-b border-line/50" : ""
+                }`}
+              >
               <div className="text-sm text-ink">
                 {pub.createdAtLabel}
               </div>
@@ -70,7 +71,8 @@ export function PublicationsClient({
             </div>
           ))
         )}
-      </div>
-    </Panel>
+        </div>
+      </Panel>
+    </div>
   );
 }

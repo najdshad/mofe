@@ -82,7 +82,7 @@ function SortableCategoryRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 rounded-2xl border px-3 py-3 transition-colors ${
+      className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 transition-colors ${
         selected ? "border-ink bg-ink/5" : "border-line hover:border-ink"
       }`}
     >
@@ -224,7 +224,7 @@ function SortableItemRow({
         <div
           ref={setNodeRef}
           style={{ ...style, gridTemplateColumns: COL_TEMPLATE }}
-          className={`grid items-center gap-3 px-4 py-4 ${
+          className={`grid items-center gap-2 px-3 py-3 ${
             index !== total - 1 ? "border-b border-line/50" : ""
           }`}
         >
@@ -1117,7 +1117,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
 
   return (
     <>
-      <div className="grid gap-6 xl:grid-cols-[280px_1fr]">
+      <div className="grid gap-4 xl:grid-cols-[240px_1fr]">
         <Panel title="دسته‌ها" subtitle="مدیریت دسته‌بندی آیتم‌ها">
           <div className="space-y-2">
             <button
@@ -1125,14 +1125,14 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                 setEditingCategory(null);
                 setCategoryModalOpen(true);
               }}
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-line py-3 text-sm text-ink-muted hover:border-ink hover:text-ink transition-colors"
+              className="mb-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-line py-2.5 text-sm text-ink-muted hover:border-ink hover:text-ink transition-colors"
             >
               + افزودن دسته
             </button>
 
             <button
               onClick={() => setSelectedCategoryId(null)}
-              className={`w-full rounded-2xl border px-4 py-3 text-right text-sm transition-colors ${
+              className={`w-full rounded-2xl border px-3 py-2.5 text-right text-sm transition-colors ${
                 selectedCategoryId === null
                   ? "border-ink bg-ink/5"
                   : "border-line hover:border-ink"
@@ -1177,9 +1177,9 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
           </div>
         </Panel>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <Panel title="آیتم‌ها">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end">
               <div className="sm:flex-1">
                 <Input
                   label="جستجو"
@@ -1235,7 +1235,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
             </div>
 
             {selectionMode && selectedItems.size > 0 && (
-              <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-ink/20 bg-ink/5 px-4 py-3">
+              <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-ink/20 bg-ink/5 px-3 py-2.5">
                 <span className="text-sm text-ink">
                   {selectedItems.size} آیتم انتخاب شده
                 </span>
@@ -1293,7 +1293,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                   <div
                     key={item.id}
                     style={{ gridTemplateColumns: selectionMode ? COL_TEMPLATE : "2fr 1fr 0.8fr 1fr 0.5fr" }}
-                    className={`grid items-center gap-3 px-5 py-4 ${
+                    className={`grid items-center gap-2 px-4 py-3 ${
                       idx !== filteredItems.length - 1
                         ? "border-b border-line/50"
                         : ""
