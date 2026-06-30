@@ -768,6 +768,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
   );
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [isDragging, setIsDragging] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
@@ -1255,11 +1256,12 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
               </div>
             )}
 
-            <div className="overflow-hidden rounded-[var(--radius-card)] border border-line">
+            <div className={`${isDragging ? "overflow-visible" : "overflow-hidden"} rounded-[var(--radius-card)] border border-line`}>
 
               {selectedCategoryId ? (
                 <DndContext
-                  onDragEnd={handleItemDragEnd}
+                  onDragStart={() => setIsDragging(true)}
+                  onDragEnd={(e) => { setIsDragging(false); handleItemDragEnd(e); }}
                   collisionDetection={closestCenter}
                   sensors={sensors}
                 >
