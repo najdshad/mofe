@@ -803,6 +803,10 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     })
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
+  const selectedCategoryName = selectedCategoryId
+    ? categories.find((c) => c.id === selectedCategoryId)?.nameFa ?? null
+    : null;
+
   const toggleItemSelection = (itemId: string) => {
     setSelectedItems((prev) => {
       const next = new Set(prev);
@@ -1179,7 +1183,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
         </Panel>
 
         <div className="space-y-3">
-          <Panel title="آیتم‌ها">
+          <Panel title={selectedCategoryName ?? "آیتم‌ها"}>
             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end">
               <div className="sm:flex-1">
                 <Input
