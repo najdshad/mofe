@@ -38,6 +38,15 @@ npm run db:studio    # Prisma Studio
 - When enabled: snapshot captures `photoUrl` per item; renderer uses photo card layout
 - When disabled: current text-only theme unchanged
 - Requires re-publish after toggling
+- **Renderer:** Photo mode adds `.photo-mode` class to `<article class="item-card">`. The article gets `padding: 0; overflow: hidden` so the photo spans edge-to-edge with the article's `border-radius: 18px` clipping it at top. `.item-body` gets its own `padding: 12px 14px` for text content.
+
+### Photo Upload (`POST /api/venues/[venueId]/items/[itemId]/photo`)
+- Accepts multipart form with `photo` field (any image type)
+- **Compression:** Sharp resizes to max 500px (`fit: inside`, no enlargement), encodes as **WebP**
+- **Size target:** Binary search finds highest quality (30–95) that keeps output ≤50KB
+- **Fallback:** If even quality 30 exceeds 50KB at 500px, dimension is reduced in 100px steps down to 200px
+- **Storage:** Files saved to `public/uploads/item-{itemId}-{sha256hash}.webp`
+- Deletes old photo file on re-upload (if exists)
 
 ## Must-Do After Every Change
 
@@ -230,6 +239,7 @@ go mod tidy             # Sync dependencies
 | Auth proxy | `src/proxy.ts` |
 | Rate limiter | `src/lib/rate-limit.ts` |
 | Mailer | `src/lib/mailer.ts` |
+| Photo upload API | `src/app/api/venues/[venueId]/items/[itemId]/photo/route.ts` |
 | Storage | `src/lib/storage.ts` |
 | Design tokens + fonts | `src/app/globals.css` |
 | UI components | `src/components/ui/` |

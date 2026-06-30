@@ -10,6 +10,38 @@ import crypto from "crypto";
 
 const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_SIZE_BYTES = 50 * 1024;
+const QUALITY_MIN = 30;
+
+async function compressToTarget(
+  buffer: Buffer,
+  maxDim: number,
+  maxBytes: number
+): Promise<Buffer> {
+  for (let dim = maxDim; dim >= 200; dim -= 100) {
+    let low = QUALITY_MIN;
+    let high = 95;
+    let best: Buffer | null = null;
+
+    while (low <= high) {
+      const mid = Math.round((low + high) / 2);
+      const compressed = await sharp(buffer)
+        .resize(dim, dim, { fit: "inside", withoutEnlargement: true })
+        .webp({ quality: mid })
+        .toBuffer();
+
+      if (compressed.length <= maxBytes) {
+        best = compressed;
+        low = mid + 1;
+      } else {
+        high = mid - 1;
+      }
+    }
+
+    if (best) return best;
+  }
+
+  throw new Error("Could not compress image to under 50KB");
+}
 
 export async function POST(
   request: Request,
@@ -40,26 +72,10 @@ export async function POST(
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    let resized = await sharp(buffer)
-      .resize(500, 500, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 80 })
-      .toBuffer();
-
-    if (resized.length > MAX_SIZE_BYTES) {
-      resized = await sharp(buffer)
-        .resize(500, 500, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 60 })
-        .toBuffer();
-    }
-
-    if (resized.length > MAX_SIZE_BYTES) {
-      resized = await sharp(buffer)
-        .resize(500, 500, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 40 })
-        .toBuffer();
-    }
-
-    if (resized.length > MAX_SIZE_BYTES) {
+    let resized: Buffer;
+    try {
+      resized = await compressToTarget(buffer, 500, MAX_SIZE_BYTES);
+    } catch {
       return NextResponse.json(
         { error: "Could not compress image to under 50KB" },
         { status: 400 }

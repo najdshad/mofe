@@ -102,42 +102,46 @@ function renderItemCard(item: SnapshotCategoryItem, showPhotos: boolean): string
   const itemPrices = item.prices ?? [];
   if (showPhotos && photoUrl) {
     return `
-          <article class="item-card${item.soldOut ? " sold-out" : ""}">
+          <article class="item-card${item.soldOut ? " sold-out" : ""} photo-mode">
             <div class="item-photo-wrap">
               <img class="item-photo" src="${esc(photoUrl)}" alt="" loading="lazy" />
             </div>
             <div class="item-body">
-              <div class="item-price-wrap">
-                <div class="item-price">${formatPrice(item.priceToman)}</div>
-                <div class="item-price-unit">تومان</div>
-              </div>
-              <h3 class="item-name">${esc(item.nameFa)}</h3>
-              ${item.nameEn ? `<p class="item-name-en">${esc(item.nameEn)}</p>` : ""}
-              ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
-              ${allergenCodes.length > 0 ? `
-              <div class="allergen-badges">
-                ${allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || code}</span>`).join("")}
-              </div>` : ""}
-              ${variants.length > 0 ? `
-              <div class="item-variants">
-                ${variants.map((v) => `
-                  <span class="variant-pill">
-                    ${esc(v.nameFa)}${v.nameEn ? ` (${esc(v.nameEn)})` : ""}
-                    ${v.priceModifier !== 0 ? `<span class="variant-price">${v.priceModifier > 0 ? "+" : ""}${formatPrice(v.priceModifier)}</span>` : ""}
-                  </span>`).join("")}
-              </div>` : ""}
-              ${itemPrices.length > 0 ? `
-              <div class="item-prices">
-                ${itemPrices.map((p) => `
-                  <span class="price-bubble">
-                    <span class="price-bubble-amount">${formatPrice(p.priceToman)}</span>
-                    <span class="price-bubble-unit">تومان</span>
-                    ${p.description ? `<span class="price-bubble-desc">${esc(p.description)}</span>` : ""}
-                  </span>`).join("")}
-              </div>` : ""}
-              <div class="item-meta">
-                ${item.soldOut ? '<span class="badge badge-status">ناموجود</span>' : ""}
-                ${item.calories ? `<span class="badge badge-emphasis">${item.calories} kcal</span>` : ""}
+              <div class="item-header">
+                <div class="item-price-wrap">
+                  <div class="item-price">${formatPrice(item.priceToman)}</div>
+                  <div class="item-price-unit">تومان</div>
+                </div>
+                <div class="item-info">
+                  <h3 class="item-name">${esc(item.nameFa)}</h3>
+                  ${item.nameEn ? `<p class="item-name-en">${esc(item.nameEn)}</p>` : ""}
+                  ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
+                  ${allergenCodes.length > 0 ? `
+                  <div class="allergen-badges">
+                    ${allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || code}</span>`).join("")}
+                  </div>` : ""}
+                  ${variants.length > 0 ? `
+                  <div class="item-variants">
+                    ${variants.map((v) => `
+                      <span class="variant-pill">
+                        ${esc(v.nameFa)}${v.nameEn ? ` (${esc(v.nameEn)})` : ""}
+                        ${v.priceModifier !== 0 ? `<span class="variant-price">${v.priceModifier > 0 ? "+" : ""}${formatPrice(v.priceModifier)}</span>` : ""}
+                      </span>`).join("")}
+                  </div>` : ""}
+                  ${itemPrices.length > 0 ? `
+                  <div class="item-prices">
+                    ${itemPrices.map((p) => `
+                      <span class="price-bubble">
+                        <span class="price-bubble-amount">${formatPrice(p.priceToman)}</span>
+                        <span class="price-bubble-unit">تومان</span>
+                        ${p.description ? `<span class="price-bubble-desc">${esc(p.description)}</span>` : ""}
+                      </span>`).join("")}
+                  </div>` : ""}
+                  <div class="item-meta">
+                    ${item.soldOut ? '<span class="badge badge-status">ناموجود</span>' : ""}
+                    ${item.calories ? `<span class="badge badge-emphasis">${item.calories} kcal</span>` : ""}
+                  </div>
+                </div>
               </div>
             </div>
           </article>`;
@@ -581,12 +585,15 @@ ${FONT_FACE_DECLARATIONS}
         padding: 16px 16px 20px;
       }
     }
-    .item-photo-wrap {
-      margin: -12px -14px 10px;
-      border-radius: 18px 18px 0 0;
+    .photo-mode {
+      padding: 0;
       overflow: hidden;
-      max-height: 200px;
+    }
+    .photo-mode .item-photo-wrap {
       background: rgba(17, 17, 17, 0.04);
+    }
+    .photo-mode .item-body {
+      padding: 12px 14px;
     }
     .item-photo {
       width: 100%;
@@ -597,15 +604,7 @@ ${FONT_FACE_DECLARATIONS}
     .item-body {
       direction: rtl;
     }
-    .item-body .item-name {
-      margin-top: 6px;
-    }
-    .item-body .item-meta {
-      justify-content: flex-start;
-    }
-    .item-body .item-price-wrap {
-      text-align: right;
-    }
+
     @media (min-width: 421px) {
       .item-photo {
         height: 240px;
