@@ -105,6 +105,7 @@ function renderItemCard(item: SnapshotCategoryItem, showPhotos: boolean): string
           <article class="item-card${item.soldOut ? " sold-out" : ""} photo-mode">
             <div class="item-photo-wrap">
               <img class="item-photo" src="${esc(photoUrl)}" alt="" loading="lazy" />
+              ${item.soldOut ? '<div class="item-photo-overlay">ناموجود</div>' : ""}
             </div>
             <div class="item-body">
               <div class="item-header">
@@ -602,6 +603,23 @@ ${FONT_FACE_DECLARATIONS}
     }
     .photo-mode .item-photo-wrap {
       background: rgba(17, 17, 17, 0.04);
+      position: relative;
+    }
+    .item-photo-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(17, 17, 17, 0.55);
+      color: #f5f0e6;
+      font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+    .item-card.sold-out .item-photo {
+      opacity: 0.6;
     }
     .photo-mode .item-body {
       padding: 12px 14px;
