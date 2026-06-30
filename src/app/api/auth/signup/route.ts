@@ -119,7 +119,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, venueId: result.venueId }, { status: 201 });
-  } catch {
+  } catch (e) {
+    console.error("[signup] error:", e);
     return NextResponse.json({ error: "خطا در سرور" }, { status: 500 });
   }
 }

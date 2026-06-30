@@ -58,7 +58,8 @@ npm run db:studio    # Prisma Studio
 - **Custom output path:** Client generated at `src/generated/prisma` — import from `@/generated/prisma/client`
 - **Adapter:** `@prisma/adapter-pg` wraps `pg` connection pool
 - **Singleton:** `src/lib/prisma.ts` uses global singleton for hot-reload safety
-- **Schema changes:** After editing `prisma/schema.prisma`, run `npx prisma db push`
+- **Schema changes:** After editing `prisma/schema.prisma`, run `npx prisma db push` then `npx prisma generate`
+- **⚠ Stale cache:** After Prisma schema changes, **restart the dev server** (`kill $(lsof -ti:3000)` then `npm run dev`). The running server caches the Prisma client and won't pick up new fields until restarted.
 - **Seed:** `prisma/seed.ts` uses upsert for idempotency
 
 ### Auth
