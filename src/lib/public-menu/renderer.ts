@@ -395,7 +395,15 @@ ${FONT_FACE_DECLARATIONS}
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
     }
     .item-card.sold-out {
-      opacity: 0.72;
+      background: #eae4d8;
+      border-color: rgba(17, 17, 17, 0.1);
+    }
+    .item-card.sold-out .item-name,
+    .item-card.sold-out .item-name-en,
+    .item-card.sold-out .item-desc,
+    .item-card.sold-out .item-price,
+    .item-card.sold-out .item-price-unit {
+      opacity: 0.4;
     }
     .item-header {
       direction: ltr;
@@ -521,8 +529,11 @@ ${FONT_FACE_DECLARATIONS}
       background: transparent;
     }
     .badge-status {
-      border-color: rgba(17, 17, 17, 0.52);
-      color: #111111;
+      background: #111111;
+      color: #f5f0e6;
+      border-color: #111111;
+      font-weight: 700;
+      letter-spacing: 0.05em;
     }
     .item-price-wrap {
       text-align: left;
