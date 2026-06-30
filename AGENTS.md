@@ -9,7 +9,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (155 tests)
+npm test             # Vitest run (151 tests; use --no-file-parallelism for reliable runs)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -43,7 +43,7 @@ npm run db:studio    # Prisma Studio
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 155 tests pass
+3. `npm test` — all 151 tests pass
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas
@@ -71,6 +71,8 @@ npm run db:studio    # Prisma Studio
 - **Route auth helper:** `requireAuth()` from `@/lib/api-helpers` — used in every API route handler (throws `ApiError` on failure)
 - **Error formatting:** `errorResponse(e)` from `@/lib/api-helpers` — wrap all route handlers in try/catch
 - **Rate limiting:** DB-backed via `RateLimitEntry` model — `await rateLimit(key, maxAttempts=5, windowMs=60000)`
+- **Signup (`POST /api/auth/signup`):** Creates User + Venue + VenueMember(owner) in an atomic transaction. Accepts `{ name, email, password, cafeName, phone? }`. Auto-generates slug from cafe name (Persian→ASCII transliteration). Rate-limited to 3/IP/day in production only (bypassed in dev). Auto-logs in on success, returns `{ venueId }`. Redirect client to `/admin/{venueId}/menu`.
+- **Self-registration:** Landing page (`src/app/page.tsx`) has a functional registration form at `src/app/_components/RegistrationForm.tsx` — client component with inline validation, loading state, and error display.
 
 ### Permissions
 - 3 roles: `owner`, `manager`, `staff`
@@ -216,6 +218,8 @@ go mod tidy             # Sync dependencies
 | Seed data | `prisma/seed.ts` |
 | DB singleton | `src/lib/prisma.ts` |
 | Auth functions | `src/lib/auth.ts` |
+| Signup API | `src/app/api/auth/signup/route.ts` |
+| Registration form | `src/app/_components/RegistrationForm.tsx` |
 | Audit helper | `src/lib/audit.ts` |
 | Allergen constants | `src/lib/allergens.ts` |
 | Price/number formatting | `src/lib/format.ts` |

@@ -67,11 +67,6 @@ export async function POST(request: Request) {
         );
       }
     }
-      return NextResponse.json(
-        { error: "تلاش‌های زیاد. لطفاً ۲۴ ساعت صبر کنید." },
-        { status: 429 }
-      );
-    }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
