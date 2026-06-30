@@ -140,10 +140,10 @@ function ItemRowContent({
   return (
     <>
       <div className="flex items-center justify-start min-w-0">
-        <div>
-          <div className="font-serif text-lg text-ink">{item.nameFa}</div>
+        <div className="min-w-0 overflow-hidden">
+          <div className="truncate font-serif text-lg text-ink">{item.nameFa}</div>
           {item.nameEn && (
-            <div className="mt-0.5 text-sm text-ink-muted">{item.nameEn}</div>
+            <div className="truncate mt-0.5 text-sm text-ink-muted">{item.nameEn}</div>
           )}
           {item.description && (
             <div className="mt-1 max-w-xs truncate text-xs leading-relaxed text-ink-muted">
