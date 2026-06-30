@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, Check, ChevronLeft, Mail, MessageCircle, Phone, QrCode, Sparkles } from "lucide-react";
+import { Check, ChevronLeft, Mail, MessageCircle, Phone, QrCode, Sparkles } from "lucide-react";
+import RegistrationForm from "./_components/RegistrationForm";
 
 const navItems = [
   { label: "چیست؟", href: "#what" },
@@ -35,19 +36,6 @@ function Pill({ children }: { children: React.ReactNode }) {
     <span className="inline-flex items-center rounded-full border border-line bg-paper px-3 py-1 text-[12px] text-ink-muted">
       {children}
     </span>
-  );
-}
-
-function Input({ label, placeholder, type = "text" }: { label: string; placeholder: string; type?: string }) {
-  return (
-    <label className="block text-right">
-      <span className="mb-2 block text-[14px] text-ink">{label}</span>
-      <input
-        type={type}
-        placeholder={placeholder}
-        className="w-full rounded-[16px] border border-line bg-paper px-4 py-3 text-[16px] text-ink outline-none transition duration-150 placeholder:text-[#8a8377] focus:border-ink"
-      />
-    </label>
   );
 }
 
@@ -118,10 +106,11 @@ export default function MofeLandingPage() {
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button>
-                <ArrowLeft className="h-4 w-4 rotate-180" />
-                ثبت‌نام کافه
-              </Button>
+              <a href="#contact">
+                <Button>
+                  ثبت‌نام کافه
+                </Button>
+              </a>
               <Link href="/login">
                 <Button secondary>
                   ورود به سیستم
@@ -260,20 +249,10 @@ export default function MofeLandingPage() {
             <div className="rounded-[28px] border border-line bg-[#f7f2e9] p-6 md:p-8">
               <div className="mb-6 border-b border-line pb-4">
                 <div className="text-[13px] uppercase tracking-[0.25em] text-ink-muted">فرم ثبت‌نام</div>
-                <div className="mt-2 text-[22px] [font-family:Parastoo,serif]">اطلاعات کافه را وارد کنید</div>
+                <div className="mt-2 text-[22px] [font-family:Parastoo,serif]">حساب کافه خود را بسازید</div>
               </div>
 
-              <div className="grid gap-4">
-                <Input label="نام" placeholder="مثلاً: علی رضایی" />
-                <Input label="نام کافه" placeholder="مثلاً: کافه روشن" />
-                <Input label="شماره تلفن" placeholder="09xx xxx xxxx" type="tel" />
-                <div className="pt-2">
-                  <Button>
-                    ثبت اطلاعات کافه
-                    <ArrowLeft className="h-4 w-4 rotate-180" />
-                  </Button>
-                </div>
-              </div>
+              <RegistrationForm />
             </div>
           </div>
         </section>
