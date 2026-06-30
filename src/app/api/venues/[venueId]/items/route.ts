@@ -18,14 +18,12 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("categoryId");
     const station = searchParams.get("station");
-    const visible = searchParams.get("visible");
     const soldOut = searchParams.get("soldOut");
     const search = searchParams.get("search");
 
     const where: Prisma.MenuItemWhereInput = { venueId, deletedAt: null };
     if (categoryId) where.categoryId = categoryId;
     if (station) where.station = station;
-    if (visible !== null) where.visibleOnPublicMenu = visible === "true";
     if (soldOut !== null) where.isSoldOut = soldOut === "true";
     if (search) {
       where.OR = [
@@ -86,7 +84,6 @@ export async function POST(
         priceToman: body.priceToman,
         station: body.station,
         calories: body.calories,
-        visibleOnPublicMenu: body.visibleOnPublicMenu ?? true,
         isSoldOut: body.isSoldOut ?? false,
         displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
       },

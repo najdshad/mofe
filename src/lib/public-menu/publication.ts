@@ -13,7 +13,7 @@ export async function buildPublicSnapshot(venueId: string) {
     orderBy: { displayOrder: "asc" },
     include: {
       menuItems: {
-        where: { deletedAt: null, visibleOnPublicMenu: true },
+        where: { deletedAt: null },
         orderBy: { displayOrder: "asc" },
         include: {
           variants: { orderBy: { displayOrder: "asc" } },

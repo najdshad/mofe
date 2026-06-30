@@ -42,7 +42,7 @@ export async function PATCH(
 
     const ALLOWED_FIELDS = [
       "nameFa", "nameEn", "description", "priceToman", "station",
-      "calories", "visibleOnPublicMenu", "isSoldOut", "displayOrder",
+      "calories", "isSoldOut", "displayOrder",
     ] as const;
     const data: Record<string, unknown> = {};
     for (const field of ALLOWED_FIELDS) {

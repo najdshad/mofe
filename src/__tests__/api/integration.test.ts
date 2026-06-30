@@ -167,13 +167,6 @@ describe("Items CRUD", () => {
     expect(soldOut[0].nameFa).toBe("چای دارچین");
   });
 
-  it("filters items by visibility", async () => {
-    const hidden = await prisma.menuItem.findMany({
-      where: { venueId: data.venue.id, visibleOnPublicMenu: false, deletedAt: null },
-    });
-    expect(hidden).toHaveLength(0);
-  });
-
   it("creates a new item with auto-incrementing displayOrder", async () => {
     const maxOrder = await prisma.menuItem.aggregate({
       where: { venueId: data.venue.id, categoryId: data.categories.cat2.id, deletedAt: null },
@@ -253,38 +246,6 @@ describe("Items CRUD", () => {
     await prisma.menuItem.update({ where: { id: items[1].id }, data: { displayOrder: 2 } });
   });
 
-  it("bulk updates visibility", async () => {
-    const visibleItems = await prisma.menuItem.findMany({
-      where: { venueId: data.venue.id, visibleOnPublicMenu: true, deletedAt: null },
-    });
-
-    const result = await prisma.menuItem.updateMany({
-      where: { id: { in: visibleItems.map((i) => i.id) }, venueId: data.venue.id },
-      data: { visibleOnPublicMenu: false },
-    });
-    expect(result.count).toBe(visibleItems.length);
-
-    await prisma.menuItem.updateMany({
-      where: { venueId: data.venue.id },
-      data: { visibleOnPublicMenu: true },
-    });
-  });
-
-  it("bulk updates visibility filtered by station", async () => {
-    const kitchenItems = await prisma.menuItem.count({
-      where: { venueId: data.venue.id, station: "kitchen", visibleOnPublicMenu: true, deletedAt: null },
-    });
-    const result = await prisma.menuItem.updateMany({
-      where: { venueId: data.venue.id, station: "kitchen", deletedAt: null },
-      data: { visibleOnPublicMenu: false },
-    });
-    expect(result.count).toBe(kitchenItems);
-
-    await prisma.menuItem.updateMany({
-      where: { venueId: data.venue.id },
-      data: { visibleOnPublicMenu: true },
-    });
-  });
 });
 
 describe("Publishing", () => {
@@ -334,7 +295,7 @@ describe("Public Menu Rendering", () => {
       orderBy: { displayOrder: "asc" },
       include: {
         menuItems: {
-          where: { deletedAt: null, visibleOnPublicMenu: true },
+          where: { deletedAt: null },
           orderBy: { displayOrder: "asc" },
         },
       },
@@ -556,24 +517,6 @@ describe("Publication edge cases", () => {
     expect(snapshot).not.toBeNull();
     const catNames = snapshot!.categories.map((c) => c.nameFa);
     expect(catNames).not.toContain("غذا");
-  });
-
-  it("buildPublicSnapshot includes only visible items", async () => {
-    await prisma.menuItem.update({
-      where: { id: data.items.item1.id },
-      data: { visibleOnPublicMenu: false },
-    });
-
-    const snapshot = await buildPublicSnapshot(data.venue.id);
-    const itemsForCat = snapshot!.categories.find((c) =>
-      c.items.some((i) => i.nameFa === "چای نعناع")
-    );
-    expect(itemsForCat).toBeUndefined();
-
-    await prisma.menuItem.update({
-      where: { id: data.items.item1.id },
-      data: { visibleOnPublicMenu: true },
-    });
   });
 
   it("unpublishVenueMenu sets venue to unpublished", async () => {

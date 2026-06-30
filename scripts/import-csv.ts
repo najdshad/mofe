@@ -23,7 +23,6 @@ interface ParsedItem {
   station: string;
   calories: number | null;
   description: string | null;
-  visibleOnPublicMenu: boolean;
   isSoldOut: boolean;
   variants: VariantDef[];
 }
@@ -45,9 +44,7 @@ function parseLine(line: string): ParsedItem {
   const calRaw = cols[5]?.trim();
   const calories = calRaw ? (parseInt(calRaw) || null) : null;
   const description = cols[6]?.trim() || null;
-  const visRaw = cols[7]?.trim();
-  const soldRaw = cols[8]?.trim();
-  const visibleOnPublicMenu = visRaw === "" ? true : visRaw === "true";
+  const soldRaw = cols[7]?.trim();
   const isSoldOut = soldRaw === "" ? false : soldRaw === "true";
 
   // Check if item has variants (multiple prices separated by /)
@@ -69,7 +66,6 @@ function parseLine(line: string): ParsedItem {
         station,
         calories,
         description,
-        visibleOnPublicMenu,
         isSoldOut,
         variants: [
           { nameFa: "سینگل روبوستا", nameEn: "Single Robusta", priceModifier: 0 },
@@ -131,7 +127,6 @@ function parseLine(line: string): ParsedItem {
         station,
         calories,
         description,
-        visibleOnPublicMenu,
         isSoldOut,
         variants: [
           { nameFa: var0Fa, nameEn: var0En ?? undefined, priceModifier: priceParts[0] - basePrice },
@@ -150,7 +145,6 @@ function parseLine(line: string): ParsedItem {
     station,
     calories,
     description,
-    visibleOnPublicMenu,
     isSoldOut,
     variants: [],
   };
@@ -222,7 +216,6 @@ async function main() {
         priceToman: item.priceToman,
         station: item.station,
         calories: item.calories,
-        visibleOnPublicMenu: item.visibleOnPublicMenu,
         isSoldOut: item.isSoldOut,
         displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
       },

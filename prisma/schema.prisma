@@ -99,9 +99,8 @@ model MenuItem {
   priceToman          Int
   station             String
   calories            Int?
-  photoAssetId        String?
-  visibleOnPublicMenu Boolean   @default(true)
-  isSoldOut           Boolean   @default(false)
+  photoAssetId String?
+  isSoldOut    Boolean   @default(false)
   displayOrder        Int       @default(0)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
@@ -114,7 +113,6 @@ model MenuItem {
   allergens MenuItemAllergen[]
 
   @@index([venueId, categoryId, displayOrder])
-  @@index([venueId, visibleOnPublicMenu])
   @@index([venueId, station])
   @@index([venueId, isSoldOut])
 }

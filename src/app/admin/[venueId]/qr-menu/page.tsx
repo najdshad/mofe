@@ -50,7 +50,7 @@ export default async function QRMenuPage({
     orderBy: { displayOrder: "asc" },
     include: {
       menuItems: {
-        where: { deletedAt: null, visibleOnPublicMenu: true },
+        where: { deletedAt: null },
         orderBy: { displayOrder: "asc" },
       },
     },

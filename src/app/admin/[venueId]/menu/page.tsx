@@ -46,7 +46,6 @@ export default async function MenuPage({
     priceToman: i.priceToman,
     priceFormatted: i.priceToman.toLocaleString("fa-IR"),
     station: i.station,
-    visibleOnPublicMenu: i.visibleOnPublicMenu,
     isSoldOut: i.isSoldOut,
     description: i.description,
     calories: i.calories,

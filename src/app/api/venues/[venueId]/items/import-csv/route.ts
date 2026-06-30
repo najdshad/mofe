@@ -65,10 +65,6 @@ export async function POST(
   );
   const idxDescription = findHeaderIndex(headers, "description", "توضیحات");
   const idxCalories = findHeaderIndex(headers, "calories", "کالری");
-  const idxVisible = findHeaderIndex(headers,
-    "visibleonpublicmenu", "visible_on_public_menu", "visible", "نمایش",
-    "visiblepublic", "visible_public", "visible-public",
-  );
   const idxSoldOut = findHeaderIndex(headers, "issoldout", "is_sold_out", "soldout", "sold_out", "ناموجود");
 
   if (idxNameFa === -1) {
@@ -162,8 +158,6 @@ export async function POST(
       const description = idxDescription !== -1 ? sanitizeCsvField(row[idxDescription]?.trim() ?? "") || null : null;
       const caloriesRaw = idxCalories !== -1 ? row[idxCalories]?.trim() : null;
       const calories = caloriesRaw ? parseInt(caloriesRaw, 10) || null : null;
-      const visibleRaw = idxVisible !== -1 ? row[idxVisible]?.trim().toLowerCase() : null;
-      const visibleOnPublicMenu = visibleRaw === "false" || visibleRaw === "0" || visibleRaw === "no" || visibleRaw === "خیر" ? false : true;
       const soldOutRaw = idxSoldOut !== -1 ? row[idxSoldOut]?.trim().toLowerCase() : null;
       const isSoldOut = soldOutRaw === "true" || soldOutRaw === "1" || soldOutRaw === "yes" || soldOutRaw === "بله";
 
@@ -181,7 +175,6 @@ export async function POST(
             priceToman,
             station: station || "kitchen",
             calories,
-            visibleOnPublicMenu,
             isSoldOut,
             displayOrder: order,
           },

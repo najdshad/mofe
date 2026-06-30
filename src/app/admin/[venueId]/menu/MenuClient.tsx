@@ -43,7 +43,6 @@ interface Item {
   priceToman: number;
   priceFormatted: string;
   station: string;
-  visibleOnPublicMenu: boolean;
   isSoldOut: boolean;
   description: string | null;
   calories: number | null;
@@ -125,17 +124,15 @@ function SortableCategoryRow({
   );
 }
 
-const COL_TEMPLATE = "36px 2fr 1fr 0.8fr 0.8fr 1fr 0.5fr";
+const COL_TEMPLATE = "36px 2fr 1fr 0.8fr 1fr 0.5fr";
 
 function ItemRowContent({
   item,
-  onToggleVisibility,
   onToggleSoldOut,
   onEdit,
   onDelete,
 }: {
   item: Item;
-  onToggleVisibility: (v: boolean) => void;
   onToggleSoldOut: (v: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -162,12 +159,6 @@ function ItemRowContent({
         <Badge variant="muted">
           {item.station === "bar" ? "بار" : "آشپزخانه"}
         </Badge>
-      </div>
-      <div>
-        <Toggle
-          on={item.visibleOnPublicMenu}
-          onChange={(v) => onToggleVisibility(v)}
-        />
       </div>
       <div>
         <button
@@ -208,7 +199,6 @@ function SortableItemRow({
   selectionMode,
   checked,
   onToggleCheck,
-  onToggleVisibility,
   onToggleSoldOut,
   onEdit,
   onDelete,
@@ -219,7 +209,6 @@ function SortableItemRow({
   selectionMode: boolean;
   checked: boolean;
   onToggleCheck: () => void;
-  onToggleVisibility: (v: boolean) => void;
   onToggleSoldOut: (v: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -260,7 +249,6 @@ function SortableItemRow({
       </div>
       <ItemRowContent
         item={item}
-        onToggleVisibility={onToggleVisibility}
         onToggleSoldOut={onToggleSoldOut}
         onEdit={onEdit}
         onDelete={onDelete}
@@ -339,7 +327,6 @@ function ItemModal({
     station: string;
     description?: string;
     calories?: number;
-    visibleOnPublicMenu: boolean;
     isSoldOut: boolean;
   }) => Promise<void>;
   categories: { id: string; nameFa: string }[];
@@ -356,9 +343,6 @@ function ItemModal({
   const [station, setStation] = useState(initial?.station ?? "kitchen");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [calories, setCalories] = useState(String(initial?.calories ?? ""));
-  const [visibleOnPublicMenu, setVisibleOnPublicMenu] = useState(
-    initial?.visibleOnPublicMenu ?? true
-  );
   const [isSoldOut, setIsSoldOut] = useState(initial?.isSoldOut ?? false);
   const [photoAssetId, setPhotoAssetId] = useState(initial?.photoAssetId ?? null);
   const [photoLoading, setPhotoLoading] = useState(false);
@@ -466,7 +450,6 @@ function ItemModal({
         station,
         description: description.trim() || undefined,
         calories: calories ? Number(calories) : undefined,
-        visibleOnPublicMenu,
         isSoldOut,
       });
       if (initial && variants) {
@@ -593,17 +576,6 @@ function ItemModal({
             rows={3}
             className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 transition-colors focus:border-ink focus:outline-none resize-none"
           />
-        </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={visibleOnPublicMenu}
-              onChange={(e) => setVisibleOnPublicMenu(e.target.checked)}
-              className="rounded border-line text-ink focus:ring-ink"
-            />
-            <span className="text-sm text-ink">نمایش در منوی عمومی</span>
-          </label>
         </div>
         {initial && (
           <div className="space-y-1.5">
@@ -870,22 +842,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     setSelectedItems(new Set());
   };
 
-  const handleBulkVisibility = async (visible: boolean) => {
-    if (selectedItems.size === 0) return;
-    const itemIds = Array.from(selectedItems);
-    setItems((prev) =>
-      prev.map((i) =>
-        itemIds.includes(i.id) ? { ...i, visibleOnPublicMenu: visible } : i
-      )
-    );
-    setSelectedItems(new Set());
-    await fetch(`/api/venues/${venueId}/items/bulk-visibility`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visible, itemIds }),
-    });
-  };
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
@@ -1002,7 +958,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     station: string;
     description?: string;
     calories?: number;
-    visibleOnPublicMenu: boolean;
     isSoldOut: boolean;
   }) => {
     const created = await fetchApi(`/api/venues/${venueId}/items`, {
@@ -1021,7 +976,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
         priceToman: created.priceToman,
         priceFormatted: created.priceToman.toLocaleString("fa-IR"),
         station: created.station,
-        visibleOnPublicMenu: created.visibleOnPublicMenu,
         isSoldOut: created.isSoldOut,
         description: created.description,
         calories: created.calories,
@@ -1046,7 +1000,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     station: string;
     description?: string;
     calories?: number;
-    visibleOnPublicMenu: boolean;
     isSoldOut: boolean;
   }) => {
     if (!editingItem) return;
@@ -1082,7 +1035,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
               station: data.station,
               description: data.description ?? null,
               calories: data.calories ?? null,
-              visibleOnPublicMenu: data.visibleOnPublicMenu,
               isSoldOut: data.isSoldOut,
             }
           : i
@@ -1106,19 +1058,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
       )
     );
     setDeletingItem(null);
-  };
-
-  const handleToggleVisibility = async (itemId: string, visible: boolean) => {
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === itemId ? { ...i, visibleOnPublicMenu: visible } : i
-      )
-    );
-    await fetch(`/api/venues/${venueId}/items/${itemId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visibleOnPublicMenu: visible }),
-    });
   };
 
   const handleToggleSoldOut = async (itemId: string, soldOut: boolean) => {
@@ -1302,20 +1241,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                 </span>
                 <Button
                   size="sm"
-                  variant="secondary"
-                  onClick={() => handleBulkVisibility(true)}
-                >
-                  نمایش در منوی عمومی
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleBulkVisibility(false)}
-                >
-                  مخفی از منوی عمومی
-                </Button>
-                <Button
-                  size="sm"
                   variant="destructive"
                   onClick={handleBulkDelete}
                 >
@@ -1351,9 +1276,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                         selectionMode={selectionMode}
                         checked={selectedItems.has(item.id)}
                         onToggleCheck={() => toggleItemSelection(item.id)}
-                        onToggleVisibility={(v) =>
-                          handleToggleVisibility(item.id, v)
-                        }
                         onToggleSoldOut={(v) =>
                           handleToggleSoldOut(item.id, v)
                         }
@@ -1370,7 +1292,7 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                 filteredItems.map((item, idx) => (
                   <div
                     key={item.id}
-                    style={{ gridTemplateColumns: selectionMode ? COL_TEMPLATE : "2fr 1fr 0.8fr 0.8fr 1fr 0.5fr" }}
+                    style={{ gridTemplateColumns: selectionMode ? COL_TEMPLATE : "2fr 1fr 0.8fr 1fr 0.5fr" }}
                     className={`grid items-center gap-3 px-5 py-4 ${
                       idx !== filteredItems.length - 1
                         ? "border-b border-line/50"
@@ -1389,7 +1311,6 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
                     )}
                     <ItemRowContent
                       item={item}
-                      onToggleVisibility={(v) => handleToggleVisibility(item.id, v)}
                       onToggleSoldOut={(v) => handleToggleSoldOut(item.id, v)}
                       onEdit={() => {
                         setEditingItem(item);

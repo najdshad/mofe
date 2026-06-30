@@ -19,7 +19,7 @@ export async function GET(
     });
 
     const BOM = "\uFEFF";
-    const headers = "nameFa,nameEn,categoryNameFa,priceToman,station,description,calories,visibleOnPublicMenu,isSoldOut";
+    const headers = "nameFa,nameEn,categoryNameFa,priceToman,station,description,calories,isSoldOut";
     const rows = items.map((item) => {
       const row = [
         item.nameFa,
@@ -29,7 +29,6 @@ export async function GET(
         item.station,
         item.description ?? "",
         item.calories != null ? String(item.calories) : "",
-        item.visibleOnPublicMenu ? "true" : "false",
         item.isSoldOut ? "true" : "false",
       ];
       return row.map((cell) => {

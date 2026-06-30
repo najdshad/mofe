@@ -79,7 +79,6 @@ export async function seedTestData() {
       priceToman: 75000,
       station: "kitchen",
       displayOrder: 1,
-      visibleOnPublicMenu: true,
       isSoldOut: false,
     },
   });
@@ -93,7 +92,6 @@ export async function seedTestData() {
       priceToman: 85000,
       station: "kitchen",
       displayOrder: 2,
-      visibleOnPublicMenu: true,
       isSoldOut: true,
     },
   });
@@ -107,7 +105,6 @@ export async function seedTestData() {
       priceToman: 175000,
       station: "kitchen",
       displayOrder: 1,
-      visibleOnPublicMenu: true,
       isSoldOut: false,
       calories: 320,
     },
