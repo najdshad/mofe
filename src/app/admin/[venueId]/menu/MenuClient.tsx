@@ -163,10 +163,10 @@ function ItemRowContent({
       <div>
         <button
           onClick={() => onToggleSoldOut(!item.isSoldOut)}
-          className={`text-xs transition-colors ${
+          className={`w-full rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
             item.isSoldOut
-              ? "rounded px-2 py-0.5 bg-red-50 text-red-700 hover:bg-red-100"
-              : "text-ink-muted hover:text-ink"
+              ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+              : "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
           }`}
         >
           {item.isSoldOut ? "ناموجود" : "موجود"}
