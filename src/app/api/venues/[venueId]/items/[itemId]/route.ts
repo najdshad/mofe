@@ -3,6 +3,8 @@ import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import path from "path";
+import fs from "fs/promises";
 
 export async function GET(
   _request: Request,
@@ -82,6 +84,11 @@ export async function DELETE(
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId, venueId },
     });
+
+    if (item?.photoAssetId) {
+      const filePath = path.join(process.cwd(), "public", item.photoAssetId);
+      try { await fs.unlink(filePath); } catch { /* ok */ }
+    }
 
     await prisma.menuItem.update({
       where: { id: itemId, venueId },

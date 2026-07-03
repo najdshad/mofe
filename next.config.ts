@@ -34,6 +34,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  ...(isDev ? { allowedDevOrigins: ["172.25.156.163"] } : {}),
   async headers() {
     return [
       {

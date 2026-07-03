@@ -40,8 +40,9 @@ export function proxy(request: NextRequest) {
 
   const hostname = host.split(":")[0];
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  const isIpAddress = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
 
-  if (isLocalhost) {
+  if (isLocalhost || isIpAddress) {
     return authGuard(pathname, sessionCookie, request.nextUrl) ?? addSecurityHeaders(NextResponse.next());
   }
 

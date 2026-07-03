@@ -58,6 +58,12 @@ export async function POST(
       );
     }
 
+    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+    if (venue?.logoAssetId) {
+      const oldPath = path.join(process.cwd(), "public", venue.logoAssetId);
+      try { await fs.unlink(oldPath); } catch { /* ok */ }
+    }
+
     await fs.mkdir(UPLOADS_DIR, { recursive: true });
 
     const hash = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);

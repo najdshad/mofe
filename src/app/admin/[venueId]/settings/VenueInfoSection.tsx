@@ -3,19 +3,16 @@
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Toggle } from "@/components/ui/Toggle";
 import { TIMEZONE_LABELS } from "@/lib/constants";
 
 interface VenueInfoSectionProps {
   nameFa: string;
   nameEn: string;
   timezone: string;
-  menuPhotoMode: boolean;
   venueStatus: string;
   onNameFaChange: (v: string) => void;
   onNameEnChange: (v: string) => void;
   onTimezoneChange: (v: string) => void;
-  onMenuPhotoModeChange: (v: boolean) => void;
   onSave: () => void;
 }
 
@@ -23,12 +20,10 @@ export function VenueInfoSection({
   nameFa,
   nameEn,
   timezone,
-  menuPhotoMode,
   venueStatus,
   onNameFaChange,
   onNameEnChange,
   onTimezoneChange,
-  onMenuPhotoModeChange,
   onSave,
 }: VenueInfoSectionProps) {
   return (
@@ -59,16 +54,6 @@ export function VenueInfoSection({
               </option>
             ))}
           </select>
-        </div>
-        <div className="flex items-center gap-3 rounded-2xl border border-line px-4 py-3">
-          <Toggle
-            on={menuPhotoMode}
-            onChange={(v) => onMenuPhotoModeChange(v)}
-          />
-          <div>
-            <div className="text-sm text-ink">نمایش عکس آیتم‌ها در منوی عمومی</div>
-            <div className="text-xs text-ink-muted">با فعال‌سازی، عکس آیتم‌ها در منوی منتشر شده نمایش داده می‌شود</div>
-          </div>
         </div>
         <Button onClick={onSave}>ذخیره تغییرات</Button>
         {venueStatus && (

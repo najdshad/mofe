@@ -21,7 +21,6 @@ function makeSnapshot(overrides: SnapshotOverrides = {}): Snapshot {
       accentColor: null,
       logoUrl: null,
       slug: "noghteh",
-      menuPhotoMode: false,
       ...overrides.venue,
     },
     categories: overrides.categories ?? [],

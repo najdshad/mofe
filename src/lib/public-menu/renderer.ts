@@ -42,7 +42,6 @@ export interface Snapshot {
     accentColor: string | null;
     logoUrl: string | null;
     slug: string;
-    menuPhotoMode?: boolean;
   };
   categories: SnapshotCategory[];
   generatedAt: string;
@@ -95,12 +94,12 @@ function esc(s: string): string {
 
 export { formatPrice } from "@/lib/format";
 
-function renderItemCard(item: SnapshotCategoryItem, showPhotos: boolean): string {
+function renderItemCard(item: SnapshotCategoryItem): string {
   const variants = item.variants ?? [];
   const allergenCodes = item.allergenCodes ?? [];
   const photoUrl = item.photoUrl ?? null;
   const itemPrices = item.prices ?? [];
-  if (showPhotos && photoUrl) {
+  if (photoUrl) {
     return `
           <article class="item-card${item.soldOut ? " sold-out" : ""} photo-mode">
             <div class="item-photo-wrap">
@@ -194,7 +193,6 @@ export function renderPublicMenu(snapshot: Snapshot): string {
   const accent = venue.accentColor && venue.accentColor !== "#111111" ? venue.accentColor : null;
   const categoriesWithItems = categories.filter((cat) => cat.items.length > 0);
   const accentValue = accent ? esc(accent) : "#111111";
-  const showPhotos = !!venue.menuPhotoMode;
 
   const categoryNav =
     categoriesWithItems.length > 0
@@ -221,7 +219,7 @@ export function renderPublicMenu(snapshot: Snapshot): string {
         <div class="category-head">
           <h2 class="cat-title">${esc(cat.nameFa)}</h2>
         </div>
-        ${cat.items.map((item) => renderItemCard(item, showPhotos)).join("\n")}
+        ${cat.items.map((item) => renderItemCard(item)).join("\n")}
       </section>`
     )
     .join("\n");

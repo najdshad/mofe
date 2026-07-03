@@ -33,7 +33,7 @@ export async function PATCH(
 
     const ALLOWED_FIELDS = [
       "nameFa", "nameEn", "timezone", "accentColor",
-      "welcomeMessage", "menuPhotoMode",
+      "welcomeMessage",
     ] as const;
 
     const body = await request.json();

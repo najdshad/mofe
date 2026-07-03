@@ -37,7 +37,6 @@ export async function buildPublicSnapshot(venueId: string) {
       slug: venue.slug,
       publicUrl,
       publicStatus: venue.publicStatus,
-      menuPhotoMode: venue.menuPhotoMode,
     },
     categories: categories
       .filter((cat) => cat.menuItems.length > 0)
@@ -63,10 +62,7 @@ export async function buildPublicSnapshot(venueId: string) {
             priceToman: p.priceToman,
           })),
           allergenCodes: item.allergens.map((a) => a.allergenCode),
-          photoUrl:
-            venue.menuPhotoMode && item.photoAssetId
-              ? item.photoAssetId
-              : null,
+          photoUrl: item.photoAssetId ?? null,
         })),
       })),
     generatedAt: new Date().toISOString(),
@@ -79,6 +75,14 @@ export async function publishVenueMenu(venueId: string, userId: string) {
     return null;
   }
 
+  await prisma.venue.update({
+    where: { id: venueId },
+    data: {
+      publicStatus: "published",
+      publishedAt: new Date(),
+    },
+  });
+
   const publication = await prisma.menuPublication.create({
     data: {
       venueId,
@@ -87,14 +91,6 @@ export async function publishVenueMenu(venueId: string, userId: string) {
       snapshot: JSON.stringify(snapshot),
       createdByUserId: userId,
       completedAt: new Date(),
-    },
-  });
-
-  await prisma.venue.update({
-    where: { id: venueId },
-    data: {
-      publicStatus: "published",
-      publishedAt: new Date(),
     },
   });
 

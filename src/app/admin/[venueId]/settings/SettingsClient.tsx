@@ -22,7 +22,6 @@ interface SettingsClientProps {
   slug: string;
   timezone: string;
   plan: string;
-  menuPhotoMode: boolean;
   members: Member[];
   currentUserRole: string;
   currentUserId: string;
@@ -36,7 +35,6 @@ export function SettingsClient({
   slug,
   timezone: initialTimezone,
   plan,
-  menuPhotoMode: initialMenuPhotoMode,
   members: initialMembers,
   currentUserRole,
   currentUserId,
@@ -47,7 +45,6 @@ export function SettingsClient({
   const [nameEn, setNameEn] = useState(initialNameEn ?? "");
   const [timezone, setTimezone] = useState(initialTimezone);
   const [venueStatus, setVenueStatus] = useState("");
-  const [menuPhotoMode, setMenuPhotoMode] = useState(initialMenuPhotoMode);
   const [members, setMembers] = useState<Member[]>(initialMembers);
 
   const [schedules, setSchedules] = useState<{ station: string; dayOfWeek: number; startTime: string; endTime: string; isActive: boolean }[]>([]);
@@ -121,7 +118,6 @@ export function SettingsClient({
         nameFa,
         nameEn: nameEn || null,
         timezone,
-        menuPhotoMode,
       }),
     });
 
@@ -220,12 +216,10 @@ export function SettingsClient({
         nameFa={nameFa}
         nameEn={nameEn}
         timezone={timezone}
-        menuPhotoMode={menuPhotoMode}
         venueStatus={venueStatus}
         onNameFaChange={setNameFa}
         onNameEnChange={setNameEn}
         onTimezoneChange={setTimezone}
-        onMenuPhotoModeChange={setMenuPhotoMode}
         onSave={handleSaveVenue}
       />
 

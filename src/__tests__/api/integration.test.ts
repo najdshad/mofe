@@ -310,7 +310,6 @@ describe("Public Menu Rendering", () => {
           accentColor: venue.accentColor,
           logoUrl: null,
           slug: venue.slug,
-          menuPhotoMode: false,
         },
       categories: categories
         .filter((cat) => cat.menuItems.length > 0)
@@ -751,7 +750,7 @@ describe("HTTP-level integration (#13)", () => {
   });
 
   it("venue slug should not be changeable through PATCH whitelist", async () => {
-    const allowedFields = ["nameFa", "nameEn", "timezone", "accentColor", "welcomeMessage", "menuPhotoMode"];
+    const allowedFields = ["nameFa", "nameEn", "timezone", "accentColor", "welcomeMessage"];
     expect(allowedFields).not.toContain("slug");
     expect(allowedFields).not.toContain("plan");
   });
