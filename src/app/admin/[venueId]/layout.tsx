@@ -3,7 +3,7 @@ import { getVenueMembership } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { STATUS_LABELS } from "@/lib/constants";
+import { VenueStatusBadge } from "@/components/ui/VenueStatusBadge";
 
 export default async function AdminLayout({
   children,
@@ -36,9 +36,7 @@ export default async function AdminLayout({
               mofé
             </Link>
             <span className="text-sm text-ink-muted">{venue.nameFa}</span>
-            <span className="rounded-full border border-line px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-ink-muted">
-              {STATUS_LABELS[venue.publicStatus] || venue.publicStatus}
-            </span>
+            <VenueStatusBadge venueId={venueId} initialStatus={venue.publicStatus} />
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-ink-muted">{user.name}</span>
