@@ -310,7 +310,7 @@ export function QRMenuClient({
                 onClick={() => setShowHistory(!showHistory)}
                 className="flex w-full items-center justify-between text-sm text-ink-muted hover:text-ink transition-colors"
               >
-                <span>تاریخچه انتشارات</span>
+                <span>تاریخچه انتشار</span>
                 <span className={`transition-transform ${showHistory ? "rotate-180" : ""}`}>
                   ▼
                 </span>
@@ -324,7 +324,7 @@ export function QRMenuClient({
                   </div>
                   {publications.length === 0 ? (
                     <div className="px-3 py-6 text-center text-sm text-ink-muted">
-                      هیچ انتشاراتی یافت نشد
+                      هیچ انتشاری یافت نشد
                     </div>
                   ) : (
                     publications.map((pub, idx) => (
@@ -353,7 +353,7 @@ export function QRMenuClient({
                           </span>
                         </div>
                         <div className="text-sm text-ink-muted">
-                          {pub.trigger === "publish" ? "انتشار" : "لغو انتشار"}
+                          {pub.trigger === "manual_publish" ? "انتشار" : "لغو انتشار"}
                         </div>
                       </div>
                     ))

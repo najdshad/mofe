@@ -23,8 +23,8 @@ const statusVariants: Record<string, string> = {
 };
 
 const triggerLabels: Record<string, string> = {
-  publish: "انتشار",
-  unpublish: "لغو انتشار",
+  manual_publish: "انتشار",
+  manual_unpublish: "لغو انتشار",
 };
 
 export function PublicationsClient({
@@ -34,7 +34,7 @@ export function PublicationsClient({
 }) {
   return (
     <div className="max-w-xl">
-      <Panel title="تاریخچه انتشارات" subtitle="فهرست انتشارات قبلی منو">
+      <Panel title="تاریخچه انتشار" subtitle="فهرست انتشارهای قبلی منو">
         <div className="overflow-hidden rounded-[var(--radius-card)] border border-line">
           <div className="grid grid-cols-[1fr_100px_1fr] gap-2 border-b border-line bg-surface px-3 py-2.5 text-[11px] uppercase tracking-wider text-ink-muted">
             <div>تاریخ</div>
@@ -43,7 +43,7 @@ export function PublicationsClient({
           </div>
           {publications.length === 0 ? (
             <div className="px-3 py-6 text-center text-sm text-ink-muted">
-              هیچ انتشاراتی یافت نشد
+              هیچ انتشاری یافت نشد
             </div>
           ) : (
             publications.map((pub, idx) => (

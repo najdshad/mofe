@@ -17,8 +17,6 @@ const L = {
   nameLine: 22,
   dividerMargin: 16, // my-4
   qrSize: 200, // displayed size in web preview
-  urlMargin: 12, // mt-3
-  urlSize: 12, // text-xs
   fontSize: 10,
   footerMargin: 16,
   radius: 28,
@@ -33,10 +31,8 @@ const CARD_H_1X =
   1 +
   L.dividerMargin +
   L.qrSize +
-  L.urlMargin +
-  L.urlSize +
-  L.fontSize +
   L.footerMargin +
+  L.fontSize +
   L.pad;
 
 export function QRCodeExport({
@@ -101,14 +97,7 @@ export function QRCodeExport({
     img.onload = () => {
       ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
 
-      const urlY = qrY + qrSize + L.urlMargin * s;
-      ctx.fillStyle = "#5f5a52";
-      ctx.font = `${L.urlSize * s}px 'Times New Roman', serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      ctx.fillText(publicUrl, cardW / 2, urlY);
-
-      const footerY = urlY + L.urlSize * s + L.footerMargin * s;
+      const footerY = qrY + qrSize + L.footerMargin * s;
       ctx.fillStyle = "#5f5a52";
       ctx.font = `${L.fontSize * s}px 'Times New Roman', serif`;
       ctx.textAlign = "center";
@@ -155,7 +144,6 @@ export function QRCodeExport({
     .name { font-family: "EB Garamond", "Georgia", serif; color: #111; font-size: ${L.nameSize}px; font-weight: 400; margin-bottom: ${L.dividerMargin}px; }
     .divider { height: 1px; background: #d8d1c4; width: 60%; margin: ${L.dividerMargin}px auto; }
     .qr { width: ${L.qrSize}px; height: ${L.qrSize}px; display: block; margin: 0 auto; }
-    .url { color: #5f5a52; font-size: ${L.urlSize}px; margin-top: ${L.urlMargin}px; word-break: break-all; }
     .footer { color: #5f5a52; font-size: ${L.fontSize}px; margin-top: ${L.footerMargin}px; letter-spacing: 0.15em; text-transform: uppercase; }
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -167,7 +155,6 @@ export function QRCodeExport({
     <div class="name">${venueName}</div>
     <div class="divider"></div>
     <img class="qr" src="${qrDataUrl}" alt="QR Code" />
-    <div class="url">${publicUrl}</div>
     <div class="footer">Powered by mofé</div>
   </div>
   <script>window.onload=function(){setTimeout(function(){window.print();window.close()},500)}</script>
@@ -211,13 +198,6 @@ export function QRCodeExport({
               width={L.qrSize}
               height={L.qrSize}
             />
-            <div
-              className="text-xs text-ink-muted"
-              style={{ fontSize: L.urlSize, marginTop: L.urlMargin }}
-              dir="ltr"
-            >
-              {publicUrl}
-            </div>
           </div>
         ) : (
           <div className="py-8 text-sm text-ink-muted">در حال تولید QR...</div>
