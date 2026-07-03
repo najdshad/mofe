@@ -15,7 +15,7 @@ export async function GET(
     const publications = await prisma.menuPublication.findMany({
       where: { venueId },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 5,
     });
 
     return NextResponse.json(publications);

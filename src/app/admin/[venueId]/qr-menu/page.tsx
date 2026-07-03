@@ -59,7 +59,7 @@ export default async function QRMenuPage({
   const publicationsData = await prisma.menuPublication.findMany({
     where: { venueId },
     orderBy: { createdAt: "desc" },
-    take: 50,
+    take: 5,
   });
 
   const publications = publicationsData.map((pub) => ({

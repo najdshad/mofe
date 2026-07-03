@@ -27,7 +27,7 @@ export default async function PublicationsPage({
   const publications = await prisma.menuPublication.findMany({
     where: { venueId },
     orderBy: { createdAt: "desc" },
-    take: 50,
+    take: 5,
   });
 
   const data = publications.map((p) => ({

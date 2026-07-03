@@ -94,6 +94,8 @@ export async function publishVenueMenu(venueId: string, userId: string) {
     },
   });
 
+  await trimPublications(venueId);
+
   await logAudit({
     venueId,
     actorUserId: userId,
@@ -104,6 +106,20 @@ export async function publishVenueMenu(venueId: string, userId: string) {
   });
 
   return { publication, snapshot };
+}
+
+async function trimPublications(venueId: string) {
+  const ids = await prisma.menuPublication.findMany({
+    where: { venueId },
+    orderBy: { createdAt: "desc" },
+    skip: 5,
+    select: { id: true },
+  });
+  if (ids.length > 0) {
+    await prisma.menuPublication.deleteMany({
+      where: { id: { in: ids.map((r) => r.id) } },
+    });
+  }
 }
 
 export async function unpublishVenueMenu(venueId: string, userId: string) {
@@ -124,6 +140,8 @@ export async function unpublishVenueMenu(venueId: string, userId: string) {
       unpublishedAt: new Date(),
     },
   });
+
+  await trimPublications(venueId);
 
   await logAudit({
     venueId,
