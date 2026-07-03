@@ -56,12 +56,25 @@ export default async function QRMenuPage({
     },
   });
 
+  const publicationsData = await prisma.menuPublication.findMany({
+    where: { venueId },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+
+  const publications = publicationsData.map((pub) => ({
+    id: pub.id,
+    status: pub.status,
+    trigger: pub.trigger,
+    createdAt: pub.createdAt.toISOString(),
+    createdAtLabel: pub.createdAt.toLocaleDateString("fa-IR"),
+  }));
+
   const preview = {
     venue: {
       nameFa: venue.nameFa,
       nameEn: venue.nameEn,
       welcomeMessage: venue.welcomeMessage,
-      accentColor: venue.accentColor,
       publicStatus: venue.publicStatus,
     },
     categories: categories
@@ -88,7 +101,6 @@ export default async function QRMenuPage({
       venueNameFa={venue.nameFa}
       venueNameEn={venue.nameEn}
       venueWelcomeMessage={venue.welcomeMessage}
-      venueAccentColor={venue.accentColor}
       venueLogoUrl={venue.logoAssetId}
       venuePublicStatus={venue.publicStatus}
       venueSlug={venue.slug}
@@ -97,6 +109,7 @@ export default async function QRMenuPage({
       hasUnpublishedChanges={hasUnpublishedChanges}
       lastPublicationCompletedAt={lastPublication?.completedAt?.toISOString() ?? null}
       publicUrl={getPublicMenuUrl(venue.slug)}
+      publications={publications}
     />
   );
 }

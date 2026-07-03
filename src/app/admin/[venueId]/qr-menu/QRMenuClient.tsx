@@ -32,10 +32,17 @@ interface PreviewData {
     nameFa: string;
     nameEn: string | null;
     welcomeMessage: string | null;
-    accentColor: string | null;
     publicStatus: string;
   };
   categories: PreviewCategory[];
+}
+
+interface Publication {
+  id: string;
+  status: string;
+  trigger: string;
+  createdAt: string;
+  createdAtLabel: string;
 }
 
 interface QRMenuClientProps {
@@ -43,7 +50,6 @@ interface QRMenuClientProps {
   venueNameFa: string;
   venueNameEn: string | null;
   venueWelcomeMessage: string | null;
-  venueAccentColor: string | null;
   venueLogoUrl: string | null;
   venuePublicStatus: string;
   venueSlug: string;
@@ -52,6 +58,7 @@ interface QRMenuClientProps {
   hasUnpublishedChanges: boolean;
   lastPublicationCompletedAt: string | null;
   publicUrl: string;
+  publications: Publication[];
 }
 
 export function QRMenuClient({
@@ -59,7 +66,6 @@ export function QRMenuClient({
   venueNameFa: initialNameFa,
   venueNameEn: initialNameEn,
   venueWelcomeMessage: initialWelcomeMessage,
-  venueAccentColor: initialAccentColor,
   venueLogoUrl: initialLogoUrl,
   venuePublicStatus,
   canPublish,
@@ -67,18 +73,19 @@ export function QRMenuClient({
   hasUnpublishedChanges,
   lastPublicationCompletedAt,
   publicUrl,
+  publications,
 }: QRMenuClientProps) {
   const [nameFa, setNameFa] = useState(initialNameFa);
   const [nameEn, setNameEn] = useState(initialNameEn ?? "");
   const [welcomeMessage, setWelcomeMessage] = useState(
     initialWelcomeMessage ?? ""
   );
-  const [accentColor, setAccentColor] = useState(initialAccentColor ?? "");
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl ?? "");
   const [uploading, setUploading] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const { statusMessage: appearanceStatus, showStatus: showAppearanceStatus } = useStatusMessage();
   const { statusMessage: publishStatus, showStatus: showPublishStatus } = useStatusMessage();
   const router = useRouter();
@@ -91,7 +98,6 @@ export function QRMenuClient({
         nameFa,
         nameEn: nameEn || null,
         welcomeMessage: welcomeMessage || null,
-        accentColor: accentColor || null,
       }),
     });
 
@@ -199,12 +205,6 @@ export function QRMenuClient({
                 className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-ink resize-none focus:border-ink focus:outline-none"
               />
             </div>
-            <Input
-              label="رنگ تأکید (اختیاری)"
-              value={accentColor}
-              onChange={(e) => setAccentColor(e.target.value)}
-              placeholder="#111111"
-            />
             <div className="space-y-1.5">
               <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
                 لوگوی مجموعه
@@ -304,6 +304,63 @@ export function QRMenuClient({
             {publishStatus && (
               <p className="mt-2 text-sm text-ink-muted">{publishStatus}</p>
             )}
+
+            <div className="border-t border-line pt-3">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex w-full items-center justify-between text-sm text-ink-muted hover:text-ink transition-colors"
+              >
+                <span>تاریخچه انتشارات</span>
+                <span className={`transition-transform ${showHistory ? "rotate-180" : ""}`}>
+                  ▼
+                </span>
+              </button>
+              {showHistory && (
+                <div className="mt-3 overflow-hidden rounded-[var(--radius-card)] border border-line">
+                  <div className="grid grid-cols-[1fr_90px_1fr] gap-2 border-b border-line bg-surface px-3 py-2.5 text-[11px] uppercase tracking-wider text-ink-muted">
+                    <div>تاریخ</div>
+                    <div>وضعیت</div>
+                    <div>علت</div>
+                  </div>
+                  {publications.length === 0 ? (
+                    <div className="px-3 py-6 text-center text-sm text-ink-muted">
+                      هیچ انتشاراتی یافت نشد
+                    </div>
+                  ) : (
+                    publications.map((pub, idx) => (
+                      <div
+                        key={pub.id}
+                        className={`grid grid-cols-[1fr_90px_1fr] items-center gap-2 px-3 py-3 ${
+                          idx !== publications.length - 1 ? "border-b border-line/50" : ""
+                        }`}
+                      >
+                        <div className="text-sm text-ink">{pub.createdAtLabel}</div>
+                        <div>
+                          <span
+                            className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                              pub.status === "published"
+                                ? "bg-green-100 text-green-800"
+                                : pub.status === "unpublished"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {pub.status === "published"
+                              ? "منتشر شده"
+                              : pub.status === "unpublished"
+                                ? "منتشر نشده"
+                                : "در صف"}
+                          </span>
+                        </div>
+                        <div className="text-sm text-ink-muted">
+                          {pub.trigger === "publish" ? "انتشار" : "لغو انتشار"}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </Panel>
 
@@ -355,71 +412,87 @@ export function QRMenuClient({
                 </div>
               </div>
 
-              {preview.categories.length === 0 ? (
-                <div className="py-8 text-center text-sm text-ink-muted">
-                  منو خالی است
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {preview.categories.map((cat) => (
-                    <div key={cat.id} className="mb-4">
-                      <h4 className="mb-2 font-serif text-lg text-ink">
-                        {cat.nameFa}
-                      </h4>
-                      {cat.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className={`rounded-[var(--radius-card)] border p-4 mb-2 ${
-                            item.soldOut
-                              ? "border-line opacity-60"
-                              : "border-line"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <h5 className="font-serif text-xl text-ink">
-                                  {item.nameFa}
-                                </h5>
-                                {item.soldOut && (
-                                  <span className="rounded-full border border-ink px-2 py-0.5 text-[10px] uppercase tracking-wider">
-                                    ناموجود
+              {(() => {
+                const allItems = preview.categories.flatMap(cat =>
+                  cat.items.map(item => ({ ...item, categoryId: cat.id }))
+                );
+                const visibleItems = allItems.slice(0, 5);
+                const remaining = allItems.length - 5;
+                const visibleIds = new Set(visibleItems.map(i => i.id));
+
+                if (preview.categories.length === 0) {
+                  return <div className="py-8 text-center text-sm text-ink-muted">منو خالی است</div>;
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {preview.categories.map((cat) => {
+                      const catVisible = visibleItems.filter(i => i.categoryId === cat.id);
+                      if (catVisible.length === 0) return null;
+                      return (
+                        <div key={cat.id} className="mb-4">
+                          <h4 className="mb-2 font-serif text-lg text-ink">{cat.nameFa}</h4>
+                          {cat.items.filter(i => visibleIds.has(i.id)).map((item) => (
+                            <div
+                              key={item.id}
+                              className={`rounded-[var(--radius-card)] border p-4 mb-2 ${
+                                item.soldOut
+                                  ? "border-line opacity-60"
+                                  : "border-line"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h5 className="font-serif text-xl text-ink">
+                                      {item.nameFa}
+                                    </h5>
+                                    {item.soldOut && (
+                                      <span className="rounded-full border border-ink px-2 py-0.5 text-[10px] uppercase tracking-wider">
+                                        ناموجود
+                                      </span>
+                                    )}
+                                  </div>
+                                  {item.nameEn && (
+                                    <div className="mt-0.5 text-sm text-ink-muted">
+                                      {item.nameEn}
+                                    </div>
+                                  )}
+                                  {item.description && (
+                                    <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                                      {item.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="shrink-0 text-left">
+                                  <div className="font-serif text-lg text-ink">
+                                    {formatPrice(item.priceToman)}
+                                  </div>
+                                  <div className="text-xs text-ink-muted">
+                                    تومان
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="mt-3 flex items-center gap-2">
+                                {item.calories && (
+                                  <span className="inline-flex items-center rounded-full border border-line px-2 py-0.5 text-[10px] text-ink-muted">
+                                    {item.calories} kcal
                                   </span>
                                 )}
                               </div>
-                              {item.nameEn && (
-                                <div className="mt-0.5 text-sm text-ink-muted">
-                                  {item.nameEn}
-                                </div>
-                              )}
-                              {item.description && (
-                                <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-                                  {item.description}
-                                </p>
-                              )}
                             </div>
-                            <div className="shrink-0 text-left">
-                              <div className="font-serif text-lg text-ink">
-                                {formatPrice(item.priceToman)}
-                              </div>
-                              <div className="text-xs text-ink-muted">
-                                تومان
-                              </div>
-                            </div>
-                          </div>
-                          <div className="mt-3 flex items-center gap-2">
-                            {item.calories && (
-                              <span className="inline-flex items-center rounded-full border border-line px-2 py-0.5 text-[10px] text-ink-muted">
-                                {item.calories} kcal
-                              </span>
-                            )}
-                          </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              )}
+                      );
+                    })}
+                    {remaining > 0 && (
+                      <div className="text-center text-sm text-ink-muted py-1">
+                        + {remaining} آیتم بیشتر
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="mt-4 border-t border-line pt-4 text-center text-[11px] uppercase tracking-wider text-ink-muted">
                 Powered by mofé

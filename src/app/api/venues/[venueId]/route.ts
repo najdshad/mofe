@@ -32,7 +32,7 @@ export async function PATCH(
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const ALLOWED_FIELDS = [
-      "nameFa", "nameEn", "timezone", "accentColor",
+      "nameFa", "nameEn", "timezone",
       "welcomeMessage",
     ] as const;
 

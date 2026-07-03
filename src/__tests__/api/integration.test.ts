@@ -750,7 +750,7 @@ describe("HTTP-level integration (#13)", () => {
   });
 
   it("venue slug should not be changeable through PATCH whitelist", async () => {
-    const allowedFields = ["nameFa", "nameEn", "timezone", "accentColor", "welcomeMessage"];
+    const allowedFields = ["nameFa", "nameEn", "timezone", "welcomeMessage"];
     expect(allowedFields).not.toContain("slug");
     expect(allowedFields).not.toContain("plan");
   });
