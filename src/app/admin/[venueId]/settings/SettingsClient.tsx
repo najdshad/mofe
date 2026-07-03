@@ -70,7 +70,7 @@ export function SettingsClient({
             : s
         );
       }
-      return [...prev, { station, dayOfWeek, startTime: "08:00", endTime: "23:00", isActive: true }];
+      return [...prev, { station, dayOfWeek, startTime: "07:00", endTime: "23:30", isActive: true }];
     });
   };
 
@@ -82,7 +82,23 @@ export function SettingsClient({
           s.station === station && s.dayOfWeek === dayOfWeek ? { ...s, [field]: value } : s
         );
       }
-      return [...prev, { station, dayOfWeek, startTime: field === "startTime" ? value : "08:00", endTime: field === "endTime" ? value : "23:00", isActive: true }];
+      return [...prev, { station, dayOfWeek, startTime: field === "startTime" ? value : "07:00", endTime: field === "endTime" ? value : "23:30", isActive: true }];
+    });
+  };
+
+  const handleApplyAll = (station: string, startTime: string, endTime: string, isActive: boolean) => {
+    setSchedules((prev) => {
+      const days = [0, 1, 2, 3, 4, 5, 6];
+      const updated = [...prev];
+      for (const day of days) {
+        const idx = updated.findIndex((s) => s.station === station && s.dayOfWeek === day);
+        if (idx >= 0) {
+          updated[idx] = { ...updated[idx], startTime, endTime, isActive };
+        } else {
+          updated.push({ station, dayOfWeek: day, startTime, endTime, isActive });
+        }
+      }
+      return updated;
     });
   };
 
@@ -240,6 +256,7 @@ export function SettingsClient({
         status={scheduleStatus}
         onToggle={handleScheduleToggle}
         onTimeChange={handleScheduleTime}
+        onApplyAll={handleApplyAll}
         onSave={handleSaveSchedules}
       />
 
