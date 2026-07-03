@@ -149,7 +149,7 @@ User Browser → Next.js App Router → Server Components (data fetching)
 ### Ordering Service Flow (Go, port 8080)
 
 ```
-Flutter App / Admin UI → REST API /api/orders (auth via mofe_session cookie)
+Admin UI → REST API /api/orders (auth via mofe_session cookie)
                              ↓
                      chi router → rate limiter → auth middleware → metrics
                              ↓
