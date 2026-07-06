@@ -9,7 +9,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (151 tests; use --no-file-parallelism for reliable runs)
+npm test             # Vitest run (171 tests; use --no-file-parallelism for reliable runs)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -17,6 +17,7 @@ npm run db:push      # Push schema to DB (after prisma changes)
 npm run db:seed      # Seed demo data
 npm run db:reset     # Full reset + migrate + seed
 npm run db:studio    # Prisma Studio
+cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./cmd/server  # Start ordering service (required for orders)
 ```
 - for internet access, use proxy at 172.25.144.1:10808
 - after each successful implementation, commit to git
@@ -144,7 +145,7 @@ All use `forwardRef` where applicable. Variants:
 ```bash
 cd ordering-service
 go build ./cmd/server   # Build binary
-go test ./...           # Run tests (12 total: 8 order + 4 analytics)
+go test ./...           # Run tests (39 total: 27 order + 8 analytics + 4 lifecycle)
 go vet ./...            # Static analysis
 go mod tidy             # Sync dependencies
 ```

@@ -213,6 +213,21 @@ describe("ordering-proxy", () => {
     vi.unstubAllEnvs();
   });
 
+  it("returns 503 when ordering service is unreachable", async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+
+    const { proxyToOrdering } = await import("@/lib/ordering-proxy");
+
+    const result = await proxyToOrdering("/api/orders", {
+      method: "GET",
+      cookie: "session-c",
+      venueId: "venue-1",
+    });
+
+    expect(result.status).toBe(503);
+    expect(result.data).toHaveProperty("code", "ORDERING_SERVICE_UNAVAILABLE");
+  });
+
   it("defaults to localhost:8080", async () => {
     vi.stubEnv("ORDERING_SERVICE_URL", "");
 
