@@ -306,7 +306,12 @@ export function OrdersClient({
   async function handleSendToKitchen() {
     if (!activeOrderId) return;
     try {
-      await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/send`, { method: "POST" });
+      const res = await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/send`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "خطا در ارسال به آشپزخانه" }));
+        alert(err.error);
+        return;
+      }
       await refreshOrder();
     } catch {
       // silently fail
@@ -317,7 +322,11 @@ export function OrdersClient({
     if (!activeOrderId) return;
     try {
       const res = await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/complete`, { method: "POST" });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "خطا در تسویه حساب" }));
+        alert(err.error || "خطا در تسویه حساب");
+        return;
+      }
       const order = orders.get(activeOrderId);
       const tn = order?.tableNumber ? parseInt(order.tableNumber, 10) : null;
       if (tn && !isNaN(tn)) {
@@ -346,7 +355,11 @@ export function OrdersClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ menuItemId, variantId, quantity }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "خطا در افزودن آیتم" }));
+        alert(err.error);
+        return;
+      }
       setShowMenuBrowser(false);
       await refreshOrder();
     } catch {
@@ -393,11 +406,16 @@ export function OrdersClient({
   async function handleItemStatus(itemId: string, status: string) {
     if (!activeOrderId) return;
     try {
-      await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}/status`, {
+      const res = await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "خطا در تغییر وضعیت" }));
+        alert(err.error);
+        return;
+      }
       await refreshOrder();
     } catch {
       // silently fail
@@ -407,9 +425,14 @@ export function OrdersClient({
   async function handleCancelItem(itemId: string) {
     if (!activeOrderId) return;
     try {
-      await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}`, {
+      const res = await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}`, {
         method: "DELETE",
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "خطا در لغو آیتم" }));
+        alert(err.error);
+        return;
+      }
       await refreshOrder();
     } catch {
       // silently fail
