@@ -3,7 +3,7 @@
 export interface TableInfo {
   tableNumber: number;
   tableId: string;
-  status: "free" | "active" | "ready";
+  status: "free" | "active" | "ready" | "settled";
 }
 
 export function TableGrid({
@@ -21,6 +21,8 @@ export function TableGrid({
         return "bg-amber-400";
       case "ready":
         return "bg-blue-400";
+      case "settled":
+        return "bg-gray-400";
       default:
         return "bg-green-400";
     }

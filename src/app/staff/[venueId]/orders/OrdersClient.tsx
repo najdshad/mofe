@@ -60,7 +60,7 @@ interface Order {
   createdBy: string;
 }
 
-type TableStatus = "free" | "active" | "ready";
+type TableStatus = "free" | "active" | "ready" | "settled";
 
 export function OrdersClient({
   venueId,
@@ -145,7 +145,7 @@ export function OrdersClient({
       if (p.tableNumber) {
         setTableStatuses((prev) => {
           const next = new Map(prev);
-          next.set(Number(p.tableNumber), "free");
+          next.set(Number(p.tableNumber), "settled");
           return next;
         });
       }
