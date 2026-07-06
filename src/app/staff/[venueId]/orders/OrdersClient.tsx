@@ -144,6 +144,25 @@ export function OrdersClient({
     return null;
   }, [selectedTableNumber, orders]);
 
+  // Fetch full order details (with items) when a table is selected
+  useEffect(() => {
+    if (!activeOrderId) return;
+    let cancelled = false;
+    fetch(`/api/venues/${venueId}/orders/${activeOrderId}`)
+      .then((res) => res.json())
+      .then((order: Order) => {
+        if (!cancelled) {
+          setOrders((prev) => {
+            const next = new Map(prev);
+            next.set(activeOrderId, order);
+            return next;
+          });
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeOrderId, venueId]);
+
   // WebSocket event handler
   const onWSEvent = (event: { type: string; payload: unknown }) => {
     const p = event.payload as Record<string, unknown>;
