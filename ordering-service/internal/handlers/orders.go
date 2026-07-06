@@ -670,7 +670,7 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if currentStatus != "PENDING" && currentStatus != "SENT" {
+	if currentStatus != "PENDING" && currentStatus != "SENT" && currentStatus != "PREPARING" {
 		models.WriteError(w, http.StatusBadRequest, "Cannot cancel item in status: "+currentStatus, "INVALID_STATUS")
 		return
 	}
