@@ -22,7 +22,7 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | Image Processing | sharp |
 | Email | nodemailer (SMTP) |
 | Storage | Local filesystem / S3-compatible (configurable) |
-| Testing | Vitest v4 (155 tests) |
+| Testing | Vitest v4 (177 tests) |
 | Runtime | Node 22 |
 | **Ordering Service** | |
 | Framework | Go 1.23 (chi v5) |
@@ -63,7 +63,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint (Next.js core-web-vitals + TypeScript rules) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Run 155 tests (vitest run) |
+| `npm test` | Run 177 tests (vitest run) |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run db:studio` | Prisma Studio |
 | `npm run db:seed` | Seed demo data (upsert) |
@@ -100,6 +100,7 @@ Managed via `docker compose` alongside the Next.js app (port 8080).
 | `/internal` | Dynamic | Internal dashboard (mofé team) |
 | `/internal/users` | Dynamic | Internal user management: list users, create accounts |
 | `/internal/venues` | Dynamic | Internal venue management: list venues, create venues with owner |
+| `/staff/[venueId]/orders` | Dynamic | Staff ordering page (table grid + order panel, all roles) |
 
 ### API Endpoints (29 routes)
 
@@ -107,7 +108,7 @@ Managed via `docker compose` alongside the Next.js app (port 8080).
 
 **Internal (mofé team only):** `GET|POST /api/internal/users`, `GET|POST /api/internal/venues`
 
-**Auth:** `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me`, `POST /api/auth/password-reset/request`, `POST /api/auth/password-reset/confirm`
+**Auth:** `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me`, `POST /api/auth/password-reset/request`, `POST /api/auth/password-reset/confirm`
 
 **Venues:** `GET /api/venues`, `GET|PATCH /api/venues/[id]`
 
@@ -123,6 +124,17 @@ Managed via `docker compose` alongside the Next.js app (port 8080).
 
 **Schedules:** `GET|POST /api/venues/[id]/schedules`
 
+**Ordering (proxy to Go service):**
+`GET|POST /api/venues/[id]/orders`, `GET /api/venues/[id]/orders/[orderId]`,
+`POST /api/venues/[id]/orders/[orderId]/items`,
+`PATCH|DELETE /api/venues/[id]/orders/[orderId]/items/[itemId]`,
+`PATCH /api/venues/[id]/orders/[orderId]/items/[itemId]/status`,
+`POST /api/venues/[id]/orders/[orderId]/send`,
+`POST /api/venues/[id]/orders/[orderId]/complete`,
+`POST /api/venues/[id]/orders/release-table/[tableNumber]`
+
+**Tables:** `GET|POST /api/venues/[id]/tables`, `PUT|DELETE /api/venues/[id]/tables/[tableId]`
+
 ### Go Ordering Service (port 8080)
 
 **Endpoints:**
@@ -137,7 +149,10 @@ Managed via `docker compose` alongside the Next.js app (port 8080).
 | `POST` | `/api/orders/:id/items` | Add item to order |
 | `PATCH` | `/api/orders/:id/items/:itemId` | Update item quantity/notes |
 | `DELETE` | `/api/orders/:id/items/:itemId` | Cancel item |
+| `PATCH` | `/api/orders/:id/items/:itemId/status` | Update item preparation status |
 | `POST` | `/api/orders/:id/send` | Send order to kitchen |
+| `POST` | `/api/orders/:id/complete` | Complete order (payment finalized) |
+| `POST` | `/api/orders/release-table/:tableNumber` | Release table (broadcasts `table_released`) |
 | `GET` | `/api/admin/orders` | Admin list all orders (OWNER/MANAGER) |
 | `GET` | `/api/admin/analytics/daily-summary` | Daily analytics (OWNER/MANAGER) |
 | `GET` | `/ws` | WebSocket (venue-scoped real-time updates) |
@@ -152,6 +167,8 @@ Managed via `docker compose` alongside the Next.js app (port 8080).
 | `item_status_changed` | Server → Client | `{ orderId, itemId, status, timestamp }` |
 | `order_status_changed` | Server → Client | `{ orderId, status, sentToKitchenAt }` |
 | `item_cancelled` | Server → Client | `{ orderId, itemId, cancelledAt }` |
+| `order_completed` | Server → Client | `{ orderId, venueId, tableNumber }` |
+| `table_released` | Server → Client | `{ tableNumber, venueId }` |
 | `menu_item_unavailable` | Server → Client | _(reserved)_ |
 
 **Middleware:**
@@ -260,18 +277,19 @@ Full design system in [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md).
 
 ## Testing
 
-155 tests across 7 files with real PostgreSQL test DB:
+177 tests across 8 files with real PostgreSQL test DB:
 
 ```
-src/__tests__/api/integration.test.ts           — 62 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
+src/__tests__/api/integration.test.ts           — 72 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
 │                                                    permissions, CSV import, publication edge cases,
-│                                                    cross-venue isolation)
+│                                                    cross-venue isolation, table CRUD, table status validation)
 src/__tests__/lib/public-menu/renderer.test.ts  — 48 tests (HTML structure, Persian formatting, escaping, edge cases)
 src/__tests__/proxy/proxy.test.ts               —  9 tests (subdomain routing, auth guards, localhost bypass)
 src/__tests__/lib/api-helpers.test.ts           — 12 tests (ApiError, errorResponse, requireAuth)
 src/__tests__/lib/auth.test.ts                  —  8 tests (hashToken, generateToken, hashPassword, verifyPassword)
 src/__tests__/lib/config.test.ts                —  8 tests (getPublicMenuUrl)
 src/__tests__/lib/rate-limit.test.ts            —  8 tests (rateLimit helper — DB-backed)
+src/__tests__/lib/ordering-proxy.test.ts        — 12 tests (proxy forwarding, release-table, error handling)
 ```
 
 Run: `npm test` (pushes schema to test database, runs tests).
@@ -282,7 +300,6 @@ Run: `npm test` (pushes schema to test database, runs tests).
 | --- | --- |
 | [`NAVIGATION-GUIDE.md`](./NAVIGATION-GUIDE.md) | Project orientation: directory layout, conventions, architecture, dev tasks |
 | [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md) | Full design system specification (503 lines) |
-| [`DEV_PLAN.md`](./DEV_PLAN.md) | Development plan, milestones, API design tables |
 | [`PRD.md`](./PRD.md) | Product requirements, built vs. future features |
 | [`AGENTS.md`](./AGENTS.md) | AI-assisted development instructions |
 
@@ -291,31 +308,63 @@ Run: `npm test` (pushes schema to test database, runs tests).
 ```
 mofe-menu/
 ├── prisma/                     # Schema, migrations, seed
-│   ├── schema.prisma           # 15 models (User, Venue, VenueMember, Category,
+│   ├── schema.prisma           # 17 models (User, Venue, VenueMember, Category,
 │   │                           #   MenuItem, Asset, MenuPublication, Domain, AuditLog,
 │   │                           #   Session, PasswordResetToken, StationSchedule,
 │   │                           #   MenuItemVariant, MenuItemAllergen,
-│   │                           #   RateLimitEntry)
+│   │                           #   RateLimitEntry, VenueTable, MenuItemPhoto)
 │   └── seed.ts                 # Demo data seeder
 ├── public/
 │   ├── fonts/                  # Self-hosted fonts (5 files)
-│   └── uploads/                # Venue logo uploads
+│   └── uploads/                # Venue logo + item photo uploads
 ├── scripts/
 │   └── download-menus.ts       # CLI tool: export published menus as HTML
 ├── src/
-│   ├── __tests__/              # Vitest test suite
-│   │   ├── api/                # Integration tests
-│   │   ├── lib/                # Unit tests
+│   ├── __tests__/              # Vitest test suite (8 files, 177 tests)
+│   │   ├── api/                # Integration tests (72)
+│   │   ├── lib/                # Unit tests (auth, renderer, rate-limit, config, api-helpers, ordering-proxy)
+│   │   ├── proxy/              # Proxy routing tests (9)
 │   │   ├── helpers.ts          # Test data helpers
 │   │   ├── setup.ts            # Per-file setup
 │   │   └── global-setup.ts     # DB creation/teardown
 │   ├── app/
 │   │   ├── admin/
-│   │   │   ├── [venueId]/      # Admin pages (4 sections)
+│   │   │   ├── [venueId]/      # Admin pages (5 sections)
+│   │   │   │   ├── menu/       # Menu management
+│   │   │   │   ├── qr-menu/    # QR/publish editor
+│   │   │   │   ├── publications/ # Publication history
+│   │   │   │   ├── settings/   # Venue settings + members
+│   │   │   │   └── orders/     # Order management (admin order view + table management)
 │   │   │   └── venues/new/     # (reserved)
-│   │   ├── api/                # REST API routes (32 endpoints)  
+│   │   ├── _components/         # Landing page registration form
+│   │   ├── admin/
+│   │   │   ├── [venueId]/
+│   │   │   │   ├── menu/       # Menu management
+│   │   │   │   ├── qr-menu/    # QR/publish editor
+│   │   │   │   ├── publications/ # Publication history
+│   │   │   │   ├── settings/   # Venue settings + members
+│   │   │   │   └── orders/     # Order management (admin)
+│   │   │   └── venues/new/     # (reserved)
+│   │   ├── api/                # REST API routes (40+ endpoints)
 │   │   │   ├── health/         # Health check endpoint
+│   │   │   ├── auth/           # signup, login, logout, password-reset
+│   │   │   ├── me/             # Current user
 │   │   │   ├── internal/       # Internal mofé team endpoints
+│   │   │   └── venues/[venueId]/
+│   │   │       ├── categories/ # CRUD + reorder
+│   │   │       ├── items/      # CRUD + reorder + bulk-visibility + import/export CSV + photo + variants + allergens
+│   │   │       ├── members/    # List + create/delete members
+│   │   │       ├── publications/ # List publications
+│   │   │       ├── publish/    # Publish venue menu
+│   │   │       ├── unpublish/  # Unpublish venue menu
+│   │   │       ├── public-preview/ # Draft data for live preview
+│   │   │       ├── logo/       # Upload/delete venue logo
+│   │   │       ├── schedules/  # Station schedules CRUD
+│   │   │       ├── orders/     # Order proxy routes (list, create, get, items, send, complete, release-table)
+│   │   │       └── tables/     # Table CRUD
+│   │   ├── staff/
+│   │   │   └── [venueId]/
+│   │   │       └── orders/     # Staff ordering page (server + OrdersClient)
 │   │   ├── login/              # Login page
 │   │   ├── password-reset/     # Password reset flow (request + confirm pages)
 │   │   ├── m/[slug]/           # Public menu route
@@ -323,7 +372,7 @@ mofe-menu/
 │   │   ├── globals.css         # Tailwind v4 @theme + font-face + design tokens
 │   │   ├── layout.tsx          # Root RTL layout
 │   │   └── page.tsx            # Landing page
-│   ├── components/ui/          # 8 reusable components
+│   ├── components/ui/          # 8 reusable UI components
 │   │   ├── Badge.tsx           # Pills: default, soldOut, muted (via variant prop)
 │   │   ├── Button.tsx          # forwardRef, 4 variants, 3 sizes
 │   │   ├── Icons.tsx           # SVG icon components (GripIcon, EditIcon, DeleteIcon)
@@ -332,9 +381,14 @@ mofe-menu/
 │   │   ├── Panel.tsx           # Section container
 │   │   ├── QRCodeExport.tsx    # QR generation, PNG download, PDF print
 │   │   └── Toggle.tsx          # role="switch" pill
+│   ├── components/orders/      # 3 ordering components
+│   │   ├── TableGrid.tsx       # Interactive table grid
+│   │   ├── OrderPanel.tsx      # Order detail + item actions
+│   │   └── MenuItemBrowser.tsx # Modal item browser for adding to order
 │   ├── generated/prisma/       # Prisma client (auto-generated, custom output)
 │   ├── hooks/
-│   │   └── useStatusMessage.ts # Shared hook: set message + auto-dismiss + router.refresh()
+│   │   ├── useStatusMessage.ts  # Shared hook: set message + auto-dismiss + router.refresh()
+│   │   └── useOrderWebSocket.ts # WebSocket hook for real-time order updates
 │   ├── lib/
 │   │   ├── public-menu/        # HTML renderer + publication logic
 │   │   ├── allergens.ts        # Allergen code constants and Persian labels
@@ -347,6 +401,7 @@ mofe-menu/
 │   │   ├── fetch-api.ts        # fetchApi() — typed fetch wrapper with error handling
 │   │   ├── format.ts           # formatPrice() — Persian numeral formatting
 │   │   ├── mailer.ts           # Email delivery via SMTP (nodemailer)
+│   │   ├── ordering-proxy.ts   # Proxy helper: forward requests to Go ordering service
 │   │   ├── permissions.ts      # Role-based access (owner/manager/staff)
 │   │   ├── prisma.ts           # Prisma singleton (PrismaPg adapter)
 │   │   ├── rate-limit.ts       # DB-backed rate limiter (RateLimitEntry model)
@@ -359,15 +414,20 @@ mofe-menu/
 │   │   ├── database/           # pgx pool setup
 │   │   ├── models/             # domain types (Order, Session, ErrorResponse)
 │   │   ├── middleware/         # auth, cors, logging, recovery, metrics, ratelimit
-│   │   └── handlers/          # REST + WebSocket + analytics + Redis pub/sub
+│   │   ├── handlers/
+│   │   │   ├── orders.go      # REST endpoints: CRUD order/items, send/complete/release-table
+│   │   │   ├── orders_test.go # Integration tests (37+ tests)
+│   │   │   ├── ws.go          # WebSocket Hub with venue-scoped broadcast
+│   │   │   ├── redis.go       # Redis pub/sub for horizontal WS scaling (optional)
+│   │   │   ├── analytics.go   # Daily summary analytics endpoint
+│   │   │   ├── analytics_test.go # Analytics integration tests
+│   │   │   └── health.go      # GET /health endpoint
 │   ├── migrations/             # SQL migrations (golang-migrate)
 │   ├── scripts/                # Seed test data
 │   ├── go.mod / go.sum
 │   └── Dockerfile              # Multi-stage (golang:1.23-alpine → scratch)
 ├── AGENTS.md                   # AI development instructions
 ├── DESIGN-LANGUAGE.md           # Design system
-├── DEV_PLAN.md                 # Development plan
-├── GO_SERVER_DEV_PLAN.md       # Go ordering service dev plan
 ├── NAVIGATION-GUIDE.md          # Project navigation guide
 ├── PRD.md                      # Product requirements
 ├── sample-csv.csv              # CSV import template (66 items)

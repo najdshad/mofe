@@ -7,7 +7,6 @@ An orientation for developers working on this project. Covers directory layout, 
 | Document | Purpose |
 | --- | --- |
 | `README.md` | Quick start, routes, features, design tokens |
-| `DEV_PLAN.md` | Development plan, milestones, API design |
 | `PRD.md` | Product requirements, built vs. future features |
 | `DESIGN-LANGUAGE.md` | Full design system specification |
 | `AGENTS.md` | Agentic development instructions (for AI coding tools) |
@@ -19,8 +18,10 @@ An orientation for developers working on this project. Covers directory layout, 
 ```
 mofe-menu/
 ├── prisma/
-│   ├── schema.prisma      # 9 models (User, Venue, VenueMember, Category, MenuItem,
-│   │                      #   Asset, MenuPublication, Domain, AuditLog, Session)
+│   ├── schema.prisma      # 17 models (User, Venue, VenueMember, Category, MenuItem,
+│   │                      #   Asset, MenuPublication, Domain, AuditLog, Session,
+│   │                      #   PasswordResetToken, StationSchedule, MenuItemVariant,
+│   │                      #   MenuItemAllergen, RateLimitEntry, VenueTable, MenuItemPhoto)
 │   ├── migrations/         # Prisma migration history
 │   └── seed.ts            # Demo data seeder (uses src/lib/demo.ts helpers)
 ├── public/
@@ -29,8 +30,8 @@ mofe-menu/
 │   └── download-menus.ts  # CLI tool to export published menus as HTML files
 ├── src/
 │   ├── __tests__/
-│   │   ├── api/            # Integration tests (62 tests)
-│   │   ├── lib/            # Unit tests — auth (8) + renderer (48) + rate-limit (8)
+│   │   ├── api/            # Integration tests (72 tests — auth, CRUD, publish, permissions, table CRUD, table status)
+│   │   ├── lib/            # Unit tests — auth (8) + renderer (48) + rate-limit (8) + ordering-proxy (12)
 │   │   ├── proxy/          # Proxy routing tests (9 tests)
 │   │   ├── global-setup.ts # Creates test DB before all tests, cleans up after
 │   │   ├── setup.ts        # Per-file setup (NODE_ENV=test)
@@ -42,7 +43,8 @@ mofe-menu/
 │   │   │   │   ├── menu/          # Menu management (Server + MenuClient)
 │   │   │   │   ├── qr-menu/      # QR/publish editor (Server + QRMenuClient)
 │   │   │   │   ├── publications/  # Publication history (Server + PublicationsClient)
-│   │   │   │   └── settings/      # Venue settings + member management (Server + SettingsClient)
+│   │   │   │   ├── settings/      # Venue settings + member management (Server + SettingsClient)
+│   │   │   │   └── orders/       # Admin order management (Server + AdminOrdersClient)
 │   │   │   └── venues/
 │   │   │       └── new/           # (empty, reserved for venue creation)
 │   │   ├── internal/              # Internal mofé team tool
@@ -51,28 +53,35 @@ mofe-menu/
 │   │   │   ├── users/             # User management
 │   │   │   └── venues/            # Venue management
 │   │   ├── api/
-│   │   │   ├── internal/          # Internal API endpoints
-│   │   │   │   ├── users/         # GET|POST — list/create users
-│   │   │   │   └── venues/        # GET|POST — list/create venues
-│   │   │   ├── auth/              # login, logout
-│   │   │   ├── me/                # current user
+│   │   │   ├── health/             # Health check endpoint
+│   │   │   ├── auth/               # signup, login, logout, password-reset
+│   │   │   ├── me/                 # current user
+│   │   │   ├── internal/           # Internal API endpoints
+│   │   │   │   ├── users/          # GET|POST — list/create users
+│   │   │   │   └── venues/         # GET|POST — list/create venues
 │   │   │   └── venues/
 │   │   │       └── [venueId]/
-│   │   │           ├── categories/    # CRUD + reorder
-│   │   │           ├── items/         # CRUD + reorder + bulk-visibility + import-csv
-│   │   │           ├── members/       # List + create members
-│   │   │           ├── publications/  # List publications
-│   │   │           ├── publish/       # Publish venue menu
-│   │   │           ├── unpublish/     # Unpublish venue menu
+│   │   │           ├── categories/     # CRUD + reorder
+│   │   │           ├── items/          # CRUD + reorder + bulk-visibility + import/export CSV + photo + variants + allergens
+│   │   │           ├── members/        # List + create/delete members
+│   │   │           ├── publications/   # List publications
+│   │   │           ├── publish/        # Publish venue menu
+│   │   │           ├── unpublish/      # Unpublish venue menu
 │   │   │           ├── public-preview/ # Draft data for live preview
-│   │   │           └── logo/          # Upload/delete venue logo
+│   │   │           ├── logo/           # Upload/delete venue logo
+│   │   │           ├── schedules/      # Station schedules CRUD
+│   │   │           ├── orders/         # Order proxy routes (list, create, get, items, send, complete, release-table)
+│   │   │           └── tables/         # Table CRUD
+│   │   ├── staff/
+│   │   │   └── [venueId]/
+│   │   │       └── orders/    # Staff ordering page (Server + OrdersClient)
 │   │   ├── login/            # Login page (LoginForm client component)
 │   │   ├── m/[slug]/         # Static public menu route (server-rendered HTML)
 │   │   ├── venues/           # Venue picker page
 │   │   ├── globals.css       # Tailwind v4 @theme + font-face declarations + tokens
 │   │   ├── layout.tsx        # Root RTL layout (lang=fa, dir=rtl)
 │   │   └── page.tsx          # Full landing page with hero, nav, features, how-it-works, benefits, contact form, footer
-│   ├── components/ui/        # 8 reusable components
+│   ├── components/ui/        # 8 reusable UI components
 │   │   ├── Badge.tsx         # Inline pill (default, soldOut, muted via variant prop)
 │   │   ├── Button.tsx        # forwardRef, 4 variants (primary/secondary/tertiary/destructive), 3 sizes
 │   │   ├── Icons.tsx         # SVG icon components (GripIcon, EditIcon, DeleteIcon)
@@ -81,18 +90,24 @@ mofe-menu/
 │   │   ├── Panel.tsx         # Section container with title/subtitle
 │   │   ├── QRCodeExport.tsx  # Client-side QR generation, PNG download, PDF print
 │   │   └── Toggle.tsx        # role="switch" toggle pill
+│   ├── components/orders/    # 3 ordering components
+│   │   ├── TableGrid.tsx     # Interactive table grid
+│   │   ├── OrderPanel.tsx    # Order detail + item actions
+│   │   └── MenuItemBrowser.tsx # Modal item browser for adding to order
 │   ├── generated/prisma/     # Auto-generated Prisma client (custom output path)
 │   ├── hooks/
-│   │   └── useStatusMessage.ts  # Shared hook: set message + auto-dismiss + router.refresh()
+│   │   ├── useStatusMessage.ts  # Shared hook: set message + auto-dismiss + router.refresh()
+│   │   └── useOrderWebSocket.ts # WebSocket hook for real-time order updates
 │   ├── lib/
 │   │   ├── api-helpers.ts    # requireAuth(), errorResponse() — reduce route auth boilerplate
 │   │   ├── auth.ts           # Session management (createSession, getCurrentUser, destroySession)
 │   │   │                     #   Cookie: mofe_session, SHA-256 token hash, 7-day TTL
 │   │   │                     #   Password: bcryptjs, 12 rounds
 │   │   ├── config.ts         # Domain config (rootDomain, appDomain, menuDomain)
-│   │   ├── constants.ts      # TIMEZONE_LABELS, ROLE_LABELS, STATION_LABELS, STATUS_LABELS
+│   │   ├── constants.ts      # TIMEZONE_LABELS, ROLE_LABELS, STATION_LABELS, STATUS_LABELS, DAY_LABELS
 │   │   ├── demo.ts           # Demo data helpers (ensureDemoData)
 │   │   ├── fetch-api.ts      # fetchApi() — typed fetch wrapper with error handling
+│   │   ├── ordering-proxy.ts # Proxy helper: forward requests to Go ordering service
 │   │   ├── permissions.ts    # Role-based access (owner/manager/staff)
 │   │   ├── prisma.ts         # Prisma singleton (PrismaPg adapter)
 │   │   ├── public-menu/
@@ -100,24 +115,32 @@ mofe-menu/
 │   │   │   └── renderer.ts      # renderPublicMenu (~10KB static HTML), renderUnavailablePage
 │   │   │                        #   formatPrice re-exported from @/lib/format
 │   │   ├── rate-limit.ts    # DB-backed rate limiter (RateLimitEntry model), survives restarts
+│   │   ├── audit.ts         # Audit log helper
+│   │   ├── allergens.ts     # Allergen code constants and Persian labels
+│   │   ├── mailer.ts        # Email delivery via SMTP (nodemailer)
+│   │   ├── storage.ts       # File storage abstraction (local/S3-compatible)
 │   │   └── format.ts        # formatPrice() — Persian numeral formatting
 │   └── proxy.ts             # Next.js 16 auth proxy (export name: proxy, not middleware)
 ├── ordering-service/        # Go ordering service (port 8080)
-│   ├── cmd/server/         # Entry point (router, middleware, migrations, graceful shutdown)
+│   ├── cmd/server/         # Entry point (chi router, middleware, migrations, graceful shutdown)
 │   ├── internal/
 │   │   ├── config/         # Env-based config (DB, port, Redis)
 │   │   ├── database/       # pgx connection pool
 │   │   ├── models/         # Domain types (Order, Session, ErrorResponse)
 │   │   ├── middleware/     # Auth, CORS, logging, recovery, metrics, ratelimit
 │   │   └── handlers/       # REST endpoints + WebSocket hub + analytics + Redis pub/sub
+│   │       ├── orders.go      # CRUD order/items, send/complete/release-table
+│   │       ├── orders_test.go # Integration tests (37+ pass, 6 pre-existing failures)
+│   │       ├── ws.go          # WebSocket Hub with venue-scoped broadcast
+│   │       ├── redis.go       # Redis pub/sub for horizontal WS scaling (optional)
+│   │       ├── analytics.go   # Daily summary analytics endpoint
+│   │       ├── analytics_test.go # Analytics integration tests
+│   │       └── health.go      # GET /health endpoint
 │   ├── migrations/         # SQL migrations (golang-migrate, quoted camelCase for Prisma compat)
 │   ├── scripts/            # Seed test data
 │   ├── go.mod / go.sum
 │   └── Dockerfile          # Multi-stage (golang:1.23-alpine → scratch)
 ├── AGENTS.md               # AI-assisted development instructions
-│
-├── DEV_PLAN.md             # Development plan, milestones, API table
-├── GO_SERVER_DEV_PLAN.md   # Go ordering service development plan
 ├── PRD.md                  # Product requirements
 ├── sample-csv.csv          # CSV import template (66 sample items)
 ├── docker-compose.yml      # App + ordering-service + redis + nginx services
@@ -223,9 +246,9 @@ Every admin page follows this pattern:
 ### Venue Permissions
 
 3 roles: `owner > manager > staff`
-- `owner` — full access
-- `manager` — CRUD categories/items, publish/unpublish
-- `staff` — only toggle visibility and sold-out
+- `owner` — full access (admin + orders)
+- `manager` — CRUD categories/items, publish/unpublish, orders
+- `staff` — only toggle visibility and sold-out, orders (via `/staff/` route, any role)
 
 Enforced via `requireRole(userId, venueId, allowedRoles)` or `canManageCategories()`, `canManageItems()`, `canPublish()` helpers.
 
@@ -300,7 +323,7 @@ npx prisma migrate dev --name describe_change
 
 ### Running tests
 ```bash
-npm test                # Run all 155 tests
+npm test                # Run all 177 tests
 npm run test:watch      # Watch mode
 ```
 

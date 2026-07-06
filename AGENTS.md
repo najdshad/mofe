@@ -9,7 +9,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (171 tests; use --no-file-parallelism for reliable runs)
+npm test             # Vitest run (177 tests; use --no-file-parallelism for reliable runs)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -53,7 +53,7 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 151 tests pass
+3. `npm test` — all 177 tests pass
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas
@@ -145,7 +145,7 @@ All use `forwardRef` where applicable. Variants:
 ```bash
 cd ordering-service
 go build ./cmd/server   # Build binary
-go test ./...           # Run tests (39 total: 27 order + 8 analytics + 4 lifecycle)
+go test ./...           # Run tests (43 total: 37 pass, 6 pre-existing failures)
 go vet ./...            # Static analysis
 go mod tidy             # Sync dependencies
 ```
