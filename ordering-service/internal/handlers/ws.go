@@ -66,9 +66,10 @@ const (
 	EventItemAdded          = "item_added"
 	EventItemStatusChanged  = "item_status_changed"
 	EventOrderStatusChanged = "order_status_changed"
+	EventOrderCompleted     = "order_completed"
 	EventItemCancelled      = "item_cancelled"
-	EventItemUpdated         = "item_updated"
-	EventItemUnavailable     = "menu_item_unavailable"
+	EventItemUpdated        = "item_updated"
+	EventItemUnavailable    = "menu_item_unavailable"
 )
 
 func NewHub() *Hub {

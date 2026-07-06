@@ -185,6 +185,20 @@ async function main() {
     });
   }
 
+  // Seed demo tables (1–10)
+  for (let i = 1; i <= 10; i++) {
+    await prisma.venueTable.upsert({
+      where: { venueId_number: { venueId: venue.id, number: i } },
+      update: { isActive: true },
+      create: {
+        venueId: venue.id,
+        number: i,
+        label: i === 1 ? "ویژه" : undefined,
+        isActive: true,
+      },
+    });
+  }
+
   const internalPasswordHash = await bcrypt.hash("admin1234", 12);
   await prisma.user.upsert({
     where: { email: "admin@mofe.ir" },

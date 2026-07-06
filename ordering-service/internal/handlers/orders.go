@@ -799,3 +799,185 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "sent"})
 }
 
+func (h *OrderHandler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) {
+	session := middleware.GetSession(r.Context())
+	orderID := chi.URLParam(r, "id")
+	itemID := chi.URLParam(r, "itemId")
+
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		models.WriteError(w, http.StatusBadRequest, "Invalid request body", "INVALID_JSON")
+		return
+	}
+
+	validStatuses := map[string]bool{
+		"PREPARING": true,
+		"READY":     true,
+		"DELIVERED": true,
+	}
+	if !validStatuses[req.Status] {
+		models.WriteError(w, http.StatusBadRequest, "Invalid status: must be PREPARING, READY, or DELIVERED", "INVALID_STATUS")
+		return
+	}
+
+	legalTransitions := map[string]string{
+		"SENT":      "PREPARING",
+		"PREPARING": "READY",
+		"READY":     "DELIVERED",
+	}
+
+	var venueID, currentStatus string
+	err := h.db.QueryRowContext(r.Context(), `
+		SELECT o.venue_id, oi.status
+		FROM order_items oi
+		JOIN orders o ON oi.order_id = o.id
+		WHERE oi.id = $1 AND oi.order_id = $2
+	`, itemID, orderID).Scan(&venueID, &currentStatus)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			models.WriteError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
+		} else {
+			models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+		}
+		return
+	}
+
+	if venueID != session.VenueID {
+		models.WriteError(w, http.StatusNotFound, "Item not found", "NOT_FOUND")
+		return
+	}
+
+	expected, ok := legalTransitions[currentStatus]
+	if !ok || expected != req.Status {
+		models.WriteError(w, http.StatusBadRequest,
+			fmt.Sprintf("Cannot transition from %s to %s", currentStatus, req.Status),
+			"INVALID_TRANSITION")
+		return
+	}
+
+	timeField := ""
+	switch req.Status {
+	case "PREPARING":
+		timeField = "preparing_at = NOW()"
+	case "READY":
+		timeField = "ready_at = NOW()"
+	case "DELIVERED":
+		timeField = "delivered_at = NOW()"
+	}
+
+	_, err = h.execContext(r.Context(), fmt.Sprintf(`
+		UPDATE order_items
+		SET status = $1, %s
+		WHERE id = $2
+	`, timeField), req.Status, itemID)
+
+	if err != nil {
+		slog.Error("Failed to update item status", "error", err, "itemId", itemID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to update status", "UPDATE_FAILED")
+		return
+	}
+
+	h.hub.BroadcastToVenue(session.VenueID, EventItemStatusChanged, map[string]interface{}{
+		"orderId": orderID,
+		"itemId":  itemID,
+		"status":  req.Status,
+	})
+
+	slog.Info("Item status updated",
+		"itemId", itemID,
+		"orderId", orderID,
+		"status", req.Status,
+		"venueId", session.VenueID,
+	)
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "updated"})
+}
+
+func (h *OrderHandler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
+	session := middleware.GetSession(r.Context())
+	orderID := chi.URLParam(r, "id")
+
+	var venueID, currentStatus string
+	var tableNumber sql.NullString
+	err := h.db.QueryRowContext(r.Context(),
+		`SELECT venue_id, status, table_number FROM orders WHERE id = $1`, orderID,
+	).Scan(&venueID, &currentStatus, &tableNumber)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			models.WriteError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
+		} else {
+			models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+		}
+		return
+	}
+
+	if venueID != session.VenueID {
+		models.WriteError(w, http.StatusNotFound, "Order not found", "NOT_FOUND")
+		return
+	}
+
+	if currentStatus != "SENT" && currentStatus != "DELIVERED" {
+		models.WriteError(w, http.StatusBadRequest,
+			"Can only complete orders in SENT or DELIVERED status, got: "+currentStatus,
+			"INVALID_STATUS")
+		return
+	}
+
+	var undeliveredCount int
+	err = h.db.QueryRowContext(r.Context(), `
+		SELECT COUNT(*) FROM order_items
+		WHERE order_id = $1
+		  AND status != 'CANCELLED'
+		  AND status != 'DELIVERED'
+	`, orderID).Scan(&undeliveredCount)
+
+	if err != nil {
+		slog.Error("Failed to check undelivered items", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+		return
+	}
+
+	if undeliveredCount > 0 {
+		models.WriteError(w, http.StatusBadRequest,
+			"Cannot complete order: undelivered items remaining",
+			"UNDELIVERED_ITEMS")
+		return
+	}
+
+	_, err = h.execContext(r.Context(), `
+		UPDATE orders
+		SET status = 'COMPLETED', completed_at = NOW()
+		WHERE id = $1
+	`, orderID)
+
+	if err != nil {
+		slog.Error("Failed to complete order", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to complete order", "COMPLETE_FAILED")
+		return
+	}
+
+	var tn *string
+	if tableNumber.Valid {
+		tn = &tableNumber.String
+	}
+	h.hub.BroadcastToVenue(session.VenueID, EventOrderCompleted, map[string]interface{}{
+		"orderId":     orderID,
+		"venueId":     session.VenueID,
+		"tableNumber": tn,
+		"completedAt": time.Now(),
+	})
+
+	slog.Info("Order completed",
+		"orderId", orderID,
+		"venueId", session.VenueID,
+	)
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "completed"})
+}
+

@@ -11,6 +11,7 @@ const (
 	OrderStatusInProgress OrderStatus = "IN_PROGRESS"
 	OrderStatusReady     OrderStatus = "READY"
 	OrderStatusDelivered OrderStatus = "DELIVERED"
+	OrderStatusCompleted OrderStatus = "COMPLETED"
 	OrderStatusCancelled OrderStatus = "CANCELLED"
 )
 

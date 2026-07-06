@@ -92,6 +92,8 @@ func main() {
 		r.Post("/{id}/items", orderHandler.AddItem)
 		r.Patch("/{id}/items/{itemId}", orderHandler.UpdateItem)
 		r.Post("/{id}/send", orderHandler.SendToKitchen)
+		r.Patch("/{id}/items/{itemId}/status", orderHandler.UpdateItemStatus)
+		r.Post("/{id}/complete", orderHandler.CompleteOrder)
 		r.Delete("/{id}/items/{itemId}", orderHandler.CancelItem)
 	})
 
