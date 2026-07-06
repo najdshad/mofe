@@ -213,8 +213,27 @@ export function OrdersClient({
         fetch(`/api/venues/${venueId}/orders/${orderId}`)
           .then((res) => res.json())
           .then((order: Order) => {
-            // Don't re-add completed/cancelled orders
-            if (order.status === "COMPLETED" || order.status === "CANCELLED") return;
+            if (order.status === "COMPLETED") return;
+            if (order.status === "CANCELLED") {
+              // All items cancelled → settle the table
+              setOrders((prev) => {
+                const next = new Map(prev);
+                next.delete(orderId);
+                return next;
+              });
+              if (order.tableNumber) {
+                const tn = parseInt(order.tableNumber, 10);
+                if (!isNaN(tn)) {
+                  setTableStatuses((prev) => {
+                    const next = new Map(prev);
+                    next.set(tn, "settled");
+                    return next;
+                  });
+                  persistTableStatus(tn, "settled");
+                }
+              }
+              return;
+            }
             setOrders((prev) => {
               const next = new Map(prev);
               next.set(orderId, order);
@@ -223,12 +242,19 @@ export function OrdersClient({
             if (order.tableNumber) {
               const tn = parseInt(order.tableNumber, 10);
               if (!isNaN(tn)) {
+                const allCancelled = order.items.every((i) => i.status === "CANCELLED");
                 const allDelivered = order.items.length > 0 && order.items.every(
                   (i) => i.status === "DELIVERED" || i.status === "CANCELLED"
                 );
                 setTableStatuses((prev) => {
                   const next = new Map(prev);
-                  next.set(tn, allDelivered ? "ready" : "active");
+                  if (allCancelled) {
+                    next.set(tn, "settled");
+                  } else if (allDelivered) {
+                    next.set(tn, "ready");
+                  } else {
+                    next.set(tn, "active");
+                  }
                   return next;
                 });
               }
@@ -334,6 +360,25 @@ export function OrdersClient({
       const orderRes = await fetch(`/api/venues/${venueId}/orders/${activeOrderId}`);
       if (orderRes.ok) {
         const order = await orderRes.json();
+        if (order.status === "COMPLETED" || order.status === "CANCELLED") {
+          setOrders((prev) => {
+            const next = new Map(prev);
+            next.delete(activeOrderId);
+            return next;
+          });
+          if (order.tableNumber) {
+            const tn = parseInt(order.tableNumber, 10);
+            if (!isNaN(tn)) {
+              setTableStatuses((prev) => {
+                const next = new Map(prev);
+                next.set(tn, "settled");
+                return next;
+              });
+              persistTableStatus(tn, "settled");
+            }
+          }
+          return;
+        }
         setOrders((prev) => {
           const next = new Map(prev);
           next.set(activeOrderId, order);
