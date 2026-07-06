@@ -115,11 +115,11 @@ export function OrdersClient({
             if (isNaN(tn)) continue;
 
             if (order.status === "COMPLETED") {
-              // Don't override if table was explicitly released (DB FREE)
-              if (statusMap.get(tn) !== "free") {
+              // Don't override if already marked active by a non-completed order
+              if (statusMap.get(tn) !== "free" && statusMap.get(tn) !== "active") {
                 statusMap.set(tn, "settled");
               }
-            } else if (order.status !== "CANCELLED" && !["DRAFT", "PENDING"].includes(order.status)) {
+            } else if (order.status !== "CANCELLED") {
               orderMap.set(order.id, order);
               statusMap.set(tn, "active");
             }
