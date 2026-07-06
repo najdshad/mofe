@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { TableGrid, type TableInfo } from "@/components/orders/TableGrid";
 import { OrderPanel } from "@/components/orders/OrderPanel";
 import { MenuItemBrowser } from "@/components/orders/MenuItemBrowser";
@@ -77,6 +77,22 @@ export function OrdersClient({
   const [tableStatuses, setTableStatuses] = useState<Map<number, TableStatus>>(new Map());
   const [showMenuBrowser, setShowMenuBrowser] = useState(false);
   const fetchedRef = useRef(false);
+  const tablesRef = useRef(tables);
+  useEffect(() => { tablesRef.current = tables; }, [tables]);
+
+  async function persistTableStatus(tableNumber: number, status: TableStatus) {
+    const table = tablesRef.current.find((t) => t.number === tableNumber);
+    if (!table) return;
+    try {
+      await fetch(`/api/venues/${venueId}/tables/${table.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: status.toUpperCase() }),
+      });
+    } catch {
+      // silently fail
+    }
+  }
 
   // Fetch active orders on mount
   useEffect(() => {
@@ -85,31 +101,26 @@ export function OrdersClient({
 
     async function fetchInitialOrders() {
       try {
-        const [sentRes, completedRes] = await Promise.all([
-          fetch(`/api/venues/${venueId}/orders?status=SENT`),
-          fetch(`/api/venues/${venueId}/orders?status=COMPLETED`),
-        ]);
+        const res = await fetch(`/api/venues/${venueId}/orders`);
         const orderMap = new Map<string, Order>();
         const statusMap = new Map<number, TableStatus>(
           tables.map((t) => [t.number, (t.status?.toLowerCase() as TableStatus) || "free"]),
         );
 
-        if (sentRes?.ok) {
-          const data: Order[] = await sentRes.json();
-          for (const order of data) {
-            orderMap.set(order.id, order);
-            if (order.tableNumber) {
-              const tn = parseInt(order.tableNumber, 10);
-              if (!isNaN(tn)) statusMap.set(tn, "active");
-            }
-          }
-        }
-        if (completedRes?.ok) {
-          const data: Order[] = await completedRes.json();
+        if (res?.ok) {
+          const data: Order[] = await res.json();
+          // Active overrides: non-completed, non-cancelled orders
           for (const order of data) {
             if (order.tableNumber) {
               const tn = parseInt(order.tableNumber, 10);
-              if (!isNaN(tn)) statusMap.set(tn, "settled");
+              if (!isNaN(tn)) {
+                if (order.status === "COMPLETED") {
+                  statusMap.set(tn, "settled");
+                } else if (order.status !== "CANCELLED") {
+                  orderMap.set(order.id, order);
+                  statusMap.set(tn, "active");
+                }
+              }
             }
           }
         }
@@ -134,7 +145,7 @@ export function OrdersClient({
   }, [selectedTableNumber, orders]);
 
   // WebSocket event handler
-  const onWSEvent = useCallback((event: { type: string; payload: unknown }) => {
+  const onWSEvent = (event: { type: string; payload: unknown }) => {
     const p = event.payload as Record<string, unknown>;
 
     if (event.type === "order_created") {
@@ -145,6 +156,7 @@ export function OrdersClient({
           next.set(tn, "active");
           return next;
         });
+        persistTableStatus(tn, "active");
       }
     }
 
@@ -161,6 +173,7 @@ export function OrdersClient({
           next.set(tn, "settled");
           return next;
         });
+        persistTableStatus(tn, "settled");
       }
     }
 
@@ -192,7 +205,7 @@ export function OrdersClient({
           .catch(() => {});
       }
     }
-  }, [venueId]);
+  };
 
   useOrderWebSocket(venueId, onWSEvent);
 
@@ -201,20 +214,6 @@ export function OrdersClient({
     tableId: t.id,
     status: tableStatuses.get(t.number) || "free",
   }));
-
-  async function persistTableStatus(tableNumber: number, status: TableStatus) {
-    const table = tables.find((t) => t.number === tableNumber);
-    if (!table) return;
-    try {
-      await fetch(`/api/venues/${venueId}/tables/${table.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: status.toUpperCase() }),
-      });
-    } catch {
-      // silently fail
-    }
-  }
 
   async function handleCreateOrder() {
     if (selectedTableNumber === null) return;
