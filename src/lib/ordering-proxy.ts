@@ -18,7 +18,7 @@ export async function proxyToOrdering(
     headers: {
       "Content-Type": "application/json",
       "X-Venue-ID": options.venueId,
-      Cookie: `mofe_session=${options.cookie}`,
+      Cookie: options.cookie,
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
