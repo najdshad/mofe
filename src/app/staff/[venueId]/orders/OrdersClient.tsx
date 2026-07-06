@@ -231,8 +231,20 @@ export function OrdersClient({
   async function handleCompleteOrder() {
     if (!activeOrderId) return;
     try {
-      await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/complete`, { method: "POST" });
-      await refreshOrder();
+      const res = await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/complete`, { method: "POST" });
+      if (!res.ok) return;
+      const order = orders.get(activeOrderId);
+      setTableStatuses((prev) => {
+        const next = new Map(prev);
+        const tn = order?.tableNumber ? parseInt(order.tableNumber, 10) : null;
+        if (tn && !isNaN(tn)) next.set(tn, "settled");
+        return next;
+      });
+      setOrders((prev) => {
+        const next = new Map(prev);
+        next.delete(activeOrderId);
+        return next;
+      });
     } catch {
       // silently fail
     }
