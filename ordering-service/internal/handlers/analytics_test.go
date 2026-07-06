@@ -46,7 +46,7 @@ func setupAnalyticsTest(t *testing.T) (*AnalyticsHandler, func()) {
 func ensureTestSchema(db *sql.DB) error {
 	schema := `
 	DO $$ BEGIN
-		CREATE TYPE order_status AS ENUM ('DRAFT','PENDING','SENT','IN_PROGRESS','READY','DELIVERED','CANCELLED');
+		CREATE TYPE order_status AS ENUM ('DRAFT','PENDING','SENT','IN_PROGRESS','READY','DELIVERED','COMPLETED','CANCELLED');
 	EXCEPTION WHEN duplicate_object THEN NULL;
 	END $$;
 
@@ -77,6 +77,8 @@ func ensureTestSchema(db *sql.DB) error {
 		cancelled_at TIMESTAMPTZ,
 		created_by_name TEXT
 	);
+
+	ALTER TABLE orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
 
 	CREATE TABLE IF NOT EXISTS order_items (
 		id TEXT PRIMARY KEY,

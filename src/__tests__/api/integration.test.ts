@@ -755,3 +755,219 @@ describe("HTTP-level integration (#13)", () => {
     expect(allowedFields).not.toContain("plan");
   });
 });
+
+describe("Table CRUD", () => {
+  it("lists tables for a venue (empty)", async () => {
+    const tables = await prisma.venueTable.findMany({
+      where: { venueId: data.venue.id },
+      orderBy: { number: "asc" },
+    });
+    expect(tables).toHaveLength(0);
+  });
+
+  it("creates a table with unique number constraint", async () => {
+    const table = await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 1, label: "ویژه" },
+    });
+    expect(table.number).toBe(1);
+    expect(table.label).toBe("ویژه");
+    expect(table.isActive).toBe(true);
+
+    // Cleanup
+    await prisma.venueTable.delete({ where: { id: table.id } });
+  });
+
+  it("rejects duplicate table numbers within a venue", async () => {
+    await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 5 },
+    });
+
+    await expect(
+      prisma.venueTable.create({
+        data: { venueId: data.venue.id, number: 5 },
+      })
+    ).rejects.toThrow();
+
+    // Cleanup
+    await prisma.venueTable.deleteMany({ where: { venueId: data.venue.id, number: 5 } });
+  });
+
+  it("allows same table number in different venues", async () => {
+    const venue2 = await prisma.venue.create({
+      data: {
+        nameFa: "کافه دوم",
+        nameEn: "Second Cafe",
+        slug: "second-cafe-tables",
+      },
+    });
+
+    await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 10 },
+    });
+    await prisma.venueTable.create({
+      data: { venueId: venue2.id, number: 10 },
+    });
+
+    const table1 = await prisma.venueTable.findFirst({
+      where: { venueId: data.venue.id, number: 10 },
+    });
+    const table2 = await prisma.venueTable.findFirst({
+      where: { venueId: venue2.id, number: 10 },
+    });
+    expect(table1).not.toBeNull();
+    expect(table2).not.toBeNull();
+    expect(table1!.id).not.toBe(table2!.id);
+
+    // Cleanup
+    await prisma.venueTable.deleteMany({
+      where: { venueId: { in: [data.venue.id, venue2.id] }, number: 10 },
+    });
+    await prisma.venue.delete({ where: { id: venue2.id } });
+  });
+
+  it("soft-deletes a table by setting isActive to false", async () => {
+    const table = await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 15 },
+    });
+    expect(table.isActive).toBe(true);
+
+    await prisma.venueTable.update({
+      where: { id: table.id },
+      data: { isActive: false },
+    });
+
+    const deactivated = await prisma.venueTable.findUnique({
+      where: { id: table.id },
+    });
+    expect(deactivated?.isActive).toBe(false);
+
+    // Should not appear in active queries
+    const activeTables = await prisma.venueTable.findMany({
+      where: { venueId: data.venue.id, isActive: true },
+    });
+    expect(activeTables.find((t) => t.id === table.id)).toBeUndefined();
+
+    // Cleanup
+    await prisma.venueTable.delete({ where: { id: table.id } });
+  });
+
+  it("updates table number and label", async () => {
+    const table = await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 20, label: "تراس" },
+    });
+
+    await prisma.venueTable.update({
+      where: { id: table.id },
+      data: { number: 21, label: "بالکن" },
+    });
+
+    const updated = await prisma.venueTable.findUnique({
+      where: { id: table.id },
+    });
+    expect(updated?.number).toBe(21);
+    expect(updated?.label).toBe("بالکن");
+
+    // Cleanup
+    await prisma.venueTable.delete({ where: { id: table.id } });
+  });
+
+  it("enforces active table ordering by number", async () => {
+    await prisma.venueTable.createMany({
+      data: [
+        { venueId: data.venue.id, number: 3 },
+        { venueId: data.venue.id, number: 1 },
+        { venueId: data.venue.id, number: 2 },
+      ],
+    });
+
+    const tables = await prisma.venueTable.findMany({
+      where: { venueId: data.venue.id, isActive: true },
+      orderBy: { number: "asc" },
+    });
+    expect(tables).toHaveLength(3);
+    expect(tables[0].number).toBe(1);
+    expect(tables[1].number).toBe(2);
+    expect(tables[2].number).toBe(3);
+
+    // Cleanup
+    await prisma.venueTable.deleteMany({ where: { venueId: data.venue.id } });
+  });
+
+  it("owner can manage tables", async () => {
+    const owner = await canManage(data.user.id, data.venue.id);
+    expect(owner).toBe(true);
+  });
+
+  it("staff cannot manage tables", async () => {
+    // Create a staff member on a different venue to test role-based access
+    const staffVenue = await prisma.venue.create({
+      data: {
+        nameFa: "کافه کارمندی",
+        slug: "staff-cafe-tables",
+      },
+    });
+
+    const staffUser = await prisma.user.create({
+      data: {
+        email: "staff-tables@test.ir",
+        name: "Staff User Tables",
+        status: "active",
+      },
+    });
+
+    await prisma.venueMember.create({
+      data: {
+        venueId: staffVenue.id,
+        userId: staffUser.id,
+        role: "staff",
+      },
+    });
+
+    const staffCanManage = await canManage(staffUser.id, staffVenue.id);
+    expect(staffCanManage).toBe(false);
+
+    // Non-member should throw via requireVenueAccess
+    await expect(canManage(data.user.id, staffVenue.id)).rejects.toThrow();
+
+    // Cleanup
+    await prisma.venueMember.deleteMany({ where: { userId: staffUser.id } });
+    await prisma.user.delete({ where: { id: staffUser.id } });
+    await prisma.venue.delete({ where: { id: staffVenue.id } });
+  });
+
+  it("cross-venue table isolation", async () => {
+    const venueA = data.venue;
+
+    const venueB = await prisma.venue.create({
+      data: { nameFa: "کافه ایزوله", slug: "isolated-cafe-tables" },
+    });
+
+    await prisma.venueTable.create({
+      data: { venueId: venueA.id, number: 7 },
+    });
+    await prisma.venueTable.create({
+      data: { venueId: venueB.id, number: 7 },
+    });
+
+    const tablesA = await prisma.venueTable.findMany({
+      where: { venueId: venueA.id },
+    });
+    const tablesB = await prisma.venueTable.findMany({
+      where: { venueId: venueB.id },
+    });
+
+    expect(tablesA).toHaveLength(1);
+    expect(tablesB).toHaveLength(1);
+
+    // Deleting from venue B does not affect venue A
+    await prisma.venueTable.deleteMany({ where: { venueId: venueB.id } });
+    const tablesAAfter = await prisma.venueTable.findMany({
+      where: { venueId: venueA.id },
+    });
+    expect(tablesAAfter).toHaveLength(1);
+
+    // Cleanup
+    await prisma.venueTable.deleteMany({ where: { venueId: venueA.id } });
+    await prisma.venue.delete({ where: { id: venueB.id } });
+  });
+});
