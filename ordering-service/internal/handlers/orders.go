@@ -256,7 +256,11 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 			FROM order_items
 			WHERE order_id = $1
 		),
-		total = subtotal
+		total = (
+			SELECT COALESCE(SUM(total_price), 0)
+			FROM order_items
+			WHERE order_id = $1
+		)
 		WHERE id = $1
 	`, orderID)
 
@@ -611,7 +615,11 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 			FROM order_items
 			WHERE order_id = $1
 		),
-		total = subtotal
+		total = (
+			SELECT COALESCE(SUM(total_price), 0)
+			FROM order_items
+			WHERE order_id = $1
+		)
 		WHERE id = $1
 	`, orderID)
 	if err != nil {
@@ -685,7 +693,11 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 			FROM order_items
 			WHERE order_id = $1 AND status != 'CANCELLED'
 		),
-		total = subtotal
+		total = (
+			SELECT COALESCE(SUM(total_price), 0)
+			FROM order_items
+			WHERE order_id = $1 AND status != 'CANCELLED'
+		)
 		WHERE id = $1
 	`, orderID)
 	if err != nil {
@@ -774,7 +786,11 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 			FROM order_items
 			WHERE order_id = $1 AND status != 'CANCELLED'
 		),
-		total = subtotal
+		total = (
+			SELECT COALESCE(SUM(total_price), 0)
+			FROM order_items
+			WHERE order_id = $1 AND status != 'CANCELLED'
+		)
 		WHERE id = $1
 	`, orderID)
 	if err != nil {
