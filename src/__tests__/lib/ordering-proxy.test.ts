@@ -44,6 +44,7 @@ describe("ordering-proxy", () => {
     expect(options.headers["Content-Type"]).toBe("application/json");
     expect(options.headers["X-Venue-ID"]).toBe("test-venue-id");
     expect(options.headers["Cookie"]).toBe("test-session-cookie");
+    expect(options.headers["Origin"]).toBe("http://localhost:3000");
     expect(options.body).toBeUndefined();
 
     expect(result.status).toBe(200);

@@ -21,6 +21,7 @@ export async function proxyToOrdering(
         "Content-Type": "application/json",
         "X-Venue-ID": options.venueId,
         Cookie: options.cookie,
+        Origin: "http://localhost:3000",
       },
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
