@@ -85,13 +85,10 @@ export function OrdersClient({
 
     async function fetchInitialOrders() {
       try {
-        const [ordersRes, tablesRes] = await Promise.all([
-          fetch(`/api/venues/${venueId}/orders?status=SENT`),
-          tables.length > 0 ? null : null,
-        ]);
+        const ordersRes = await fetch(`/api/venues/${venueId}/orders?status=SENT`);
         const orderMap = new Map<string, Order>();
         const statusMap = new Map<number, TableStatus>(
-          tables.map((t) => [t.number, (t.status as TableStatus) || "free"]),
+          tables.map((t) => [t.number, (t.status?.toLowerCase() as TableStatus) || "free"]),
         );
 
         if (ordersRes?.ok) {
@@ -202,7 +199,7 @@ export function OrdersClient({
       await fetch(`/api/venues/${venueId}/tables/${table.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: status.toUpperCase() }),
       });
     } catch {
       // silently fail
