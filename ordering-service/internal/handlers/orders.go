@@ -762,6 +762,19 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if currentStatus == "DRAFT" || currentStatus == "PENDING" {
+		var pendingCount int
+		h.db.QueryRowContext(r.Context(), `
+			SELECT COUNT(*) FROM order_items
+			WHERE order_id = $1 AND status = 'PENDING'
+		`, orderID).Scan(&pendingCount)
+
+		if pendingCount == 0 {
+			models.WriteError(w, http.StatusBadRequest,
+				"Order has no items to send",
+				"NO_ITEMS")
+			return
+		}
+
 		_, err = h.execContext(r.Context(), `
 			UPDATE orders SET status = 'SENT', sent_to_kitchen_at = NOW()
 			WHERE id = $1

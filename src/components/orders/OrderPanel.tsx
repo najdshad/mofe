@@ -50,7 +50,7 @@ export function OrderPanel({
   const badge = statusBadge[order.status] || statusBadge.PENDING;
   const items = order.items || [];
   const hasPendingItems = items.some((i) => i.status === "PENDING");
-  const canSend = (order.status === "DRAFT" || order.status === "PENDING") || hasPendingItems;
+  const canSend = items.length > 0 && ((order.status === "DRAFT" || order.status === "PENDING") || hasPendingItems);
   const allDelivered = items.length > 0 && items.every(
     (i) => i.status === "DELIVERED" || i.status === "CANCELLED"
   );
