@@ -10,6 +10,7 @@ interface TableData {
   id: string;
   number: number;
   label?: string;
+  status: string;
 }
 
 interface VariantData {
@@ -84,21 +85,24 @@ export function OrdersClient({
 
     async function fetchInitialOrders() {
       try {
-        const res = await fetch(`/api/venues/${venueId}/orders?status=SENT`);
-        if (!res.ok) return;
-        const data: Order[] = await res.json();
+        const [ordersRes, tablesRes] = await Promise.all([
+          fetch(`/api/venues/${venueId}/orders?status=SENT`),
+          tables.length > 0 ? null : null,
+        ]);
         const orderMap = new Map<string, Order>();
-        const statusMap = new Map<number, TableStatus>(tables.map((t) => [t.number, "free"]));
+        const statusMap = new Map<number, TableStatus>(
+          tables.map((t) => [t.number, (t.status as TableStatus) || "free"]),
+        );
 
-        for (const order of data) {
-          orderMap.set(order.id, order);
-          if (order.tableNumber) {
-            const tn = parseInt(order.tableNumber, 10);
-            if (!isNaN(tn)) {
-              const allDelivered = order.items.length > 0 && order.items.every(
-                (i) => i.status === "DELIVERED" || i.status === "CANCELLED"
-              );
-              statusMap.set(tn, allDelivered ? "ready" : "active");
+        if (ordersRes?.ok) {
+          const data: Order[] = await ordersRes.json();
+          for (const order of data) {
+            orderMap.set(order.id, order);
+            if (order.tableNumber) {
+              const tn = parseInt(order.tableNumber, 10);
+              if (!isNaN(tn) && order.items.some((i) => i.status !== "DELIVERED" && i.status !== "CANCELLED")) {
+                statusMap.set(tn, "active");
+              }
             }
           }
         }
@@ -128,9 +132,10 @@ export function OrdersClient({
 
     if (event.type === "order_created") {
       if (p.tableNumber) {
+        const tn = Number(p.tableNumber);
         setTableStatuses((prev) => {
           const next = new Map(prev);
-          next.set(Number(p.tableNumber), "active");
+          next.set(tn, "active");
           return next;
         });
       }
@@ -143,9 +148,10 @@ export function OrdersClient({
         return next;
       });
       if (p.tableNumber) {
+        const tn = Number(p.tableNumber);
         setTableStatuses((prev) => {
           const next = new Map(prev);
-          next.set(Number(p.tableNumber), "settled");
+          next.set(tn, "settled");
           return next;
         });
       }
@@ -189,6 +195,20 @@ export function OrdersClient({
     status: tableStatuses.get(t.number) || "free",
   }));
 
+  async function persistTableStatus(tableNumber: number, status: TableStatus) {
+    const table = tables.find((t) => t.number === tableNumber);
+    if (!table) return;
+    try {
+      await fetch(`/api/venues/${venueId}/tables/${table.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+    } catch {
+      // silently fail
+    }
+  }
+
   async function handleCreateOrder() {
     if (selectedTableNumber === null) return;
     try {
@@ -204,6 +224,7 @@ export function OrdersClient({
         next.set(selectedTableNumber, "active");
         return next;
       });
+      persistTableStatus(selectedTableNumber, "active");
       const orderRes = await fetch(`/api/venues/${venueId}/orders/${data.orderId}`);
       if (orderRes.ok) {
         const order = await orderRes.json();
@@ -234,12 +255,15 @@ export function OrdersClient({
       const res = await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/complete`, { method: "POST" });
       if (!res.ok) return;
       const order = orders.get(activeOrderId);
-      setTableStatuses((prev) => {
-        const next = new Map(prev);
-        const tn = order?.tableNumber ? parseInt(order.tableNumber, 10) : null;
-        if (tn && !isNaN(tn)) next.set(tn, "settled");
-        return next;
-      });
+      const tn = order?.tableNumber ? parseInt(order.tableNumber, 10) : null;
+      if (tn && !isNaN(tn)) {
+        setTableStatuses((prev) => {
+          const next = new Map(prev);
+          next.set(tn, "settled");
+          return next;
+        });
+        persistTableStatus(tn, "settled");
+      }
       setOrders((prev) => {
         const next = new Map(prev);
         next.delete(activeOrderId);
@@ -320,6 +344,7 @@ export function OrdersClient({
       next.set(selectedTableNumber, "free");
       return next;
     });
+    persistTableStatus(selectedTableNumber, "free");
   }
 
   return (

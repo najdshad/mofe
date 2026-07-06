@@ -225,19 +225,74 @@ model MenuItemAllergen {
   @@index([allergenCode])
 }
 
+enum VenueTableStatus {
+  FREE
+  ACTIVE
+  READY
+  SETTLED
+}
+
 model VenueTable {
-  id        String   @id @default(uuid())
+  id        String           @id @default(uuid())
   venueId   String
   number    Int
   label     String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    VenueTableStatus @default(FREE)
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
   @@unique([venueId, number])
   @@index([venueId, isActive])
+}
+
+/// Managed by Go ordering-service — Prisma should not alter
+model orders {
+  id           String   @id @default("")
+  venue_id     String?
+  waiter_id    String?
+  table_number String?
+  guest_count  Int?
+  status       String?
+  subtotal     Int?
+  total        Int?
+  notes        String?
+  created_at   DateTime?
+  sent_to_kitchen_at DateTime?
+  ready_at     DateTime?
+  delivered_at DateTime?
+  cancelled_at DateTime?
+  completed_at DateTime?
+  created_by_name String?
+
+  @@ignore
+}
+
+/// Managed by Go ordering-service — Prisma should not alter
+model order_items {
+  id           String   @id @default("")
+  order_id     String?
+  menu_item_id String?
+  menu_item_name String?
+  variant_id   String?
+  variant_name String?
+  quantity     Int?
+  unit_price   Int?
+  total_price  Int?
+  station      String?
+  status       String?
+  notes        String?
+  sent_at      DateTime?
+  preparing_at DateTime?
+  ready_at     DateTime?
+  delivered_at DateTime?
+  cancelled_at DateTime?
+  course_number Int?
+  created_at   DateTime?
+
+  @@ignore
 }
 
 model AuditLog {

@@ -4,8 +4,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("next/server", () => ({
   NextResponse: {
     json: vi.fn((data: unknown, init?: { status?: number }) => ({
-      data,
       status: init?.status ?? 200,
+      data,
+      json: () => Promise.resolve(data),
     })),
   },
 }));

@@ -1,7 +1,40 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManage } from "@/lib/permissions";
+import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ venueId: string; tableId: string }> }
+) {
+  try {
+    const user = await requireAuth();
+    const { venueId, tableId } = await params;
+    await requireVenueAccess(user.id, venueId);
+
+    const body = await request.json();
+    const table = await prisma.venueTable.findFirst({
+      where: { id: tableId, venueId },
+    });
+    if (!table) return NextResponse.json({ error: "میز یافت نشد" }, { status: 404 });
+
+    if (body.status !== undefined) {
+      const valid = ["FREE", "ACTIVE", "READY", "SETTLED"];
+      if (!valid.includes(body.status)) {
+        return NextResponse.json({ error: "وضعیت نامعتبر" }, { status: 400 });
+      }
+      const updated = await prisma.venueTable.update({
+        where: { id: tableId },
+        data: { status: body.status },
+      });
+      return NextResponse.json(updated);
+    }
+
+    return NextResponse.json({ error: "هیچ فیلدی برای به‌روزرسانی مشخص نشده" }, { status: 400 });
+  } catch (e) {
+    return errorResponse(e);
+  }
+}
 
 export async function PUT(
   request: Request,

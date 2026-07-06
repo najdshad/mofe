@@ -8,6 +8,7 @@ interface TableData {
   number: number;
   label?: string;
   isActive: boolean;
+  status: string;
 }
 
 interface VariantData {
@@ -60,7 +61,7 @@ export function AdminOrdersClient({
       });
       if (!res.ok) return;
       const table = await res.json();
-      setTables((prev) => [...prev, { id: table.id, number: table.number, label: table.label || undefined, isActive: true }].sort((a, b) => a.number - b.number));
+      setTables((prev) => [...prev, { id: table.id, number: table.number, label: table.label || undefined, isActive: true, status: table.status }].sort((a, b) => a.number - b.number));
       setShowAddModal(false);
       setEditNumber("");
       setEditLabel("");
@@ -246,7 +247,7 @@ export function AdminOrdersClient({
       <div className="mt-6">
         <OrdersClient
           venueId={venueId}
-          tables={tables.map((t) => ({ id: t.id, number: t.number, label: t.label }))}
+          tables={tables.map((t) => ({ id: t.id, number: t.number, label: t.label, status: t.status }))}
           categories={categories}
         />
       </div>

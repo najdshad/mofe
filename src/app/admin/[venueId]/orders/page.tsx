@@ -43,6 +43,7 @@ export default async function AdminOrdersPage({
         number: t.number,
         label: t.label || undefined,
         isActive: t.isActive,
+        status: t.status,
       }))}
       categories={categories.map((c) => ({
         id: c.id,
