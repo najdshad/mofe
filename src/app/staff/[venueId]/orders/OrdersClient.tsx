@@ -115,7 +115,10 @@ export function OrdersClient({
             if (isNaN(tn)) continue;
 
             if (order.status === "COMPLETED") {
-              statusMap.set(tn, "settled");
+              // Don't override if table was explicitly released (DB FREE)
+              if (statusMap.get(tn) !== "free") {
+                statusMap.set(tn, "settled");
+              }
             } else if (order.status !== "CANCELLED" && !["DRAFT", "PENDING"].includes(order.status)) {
               orderMap.set(order.id, order);
               statusMap.set(tn, "active");
