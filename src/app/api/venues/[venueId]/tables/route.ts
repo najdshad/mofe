@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { cleanStaleTableStatuses } from "@/lib/tables";
 
 export async function GET(
   request: Request,
@@ -11,6 +12,8 @@ export async function GET(
     const user = await requireAuth();
     const { venueId } = await params;
     await requireVenueAccess(user.id, venueId);
+
+    await cleanStaleTableStatuses(venueId);
 
     const tables = await prisma.venueTable.findMany({
       where: { venueId, isActive: true },
