@@ -310,6 +310,17 @@ export function OrdersClient({
   }
 
   const activeOrder = activeOrderId ? orders.get(activeOrderId) : undefined;
+  const selectedTableStatus = selectedTableNumber !== null ? tableStatuses.get(selectedTableNumber) : null;
+  const isSettled = selectedTableStatus === "settled";
+
+  function handleReleaseTable() {
+    if (selectedTableNumber === null) return;
+    setTableStatuses((prev) => {
+      const next = new Map(prev);
+      next.set(selectedTableNumber, "free");
+      return next;
+    });
+  }
 
   return (
     <div className="flex gap-6 h-[calc(100vh-8rem)]">
@@ -328,12 +339,29 @@ export function OrdersClient({
         ) : !activeOrder ? (
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <p className="text-lg text-ink-muted">میز {selectedTableNumber}</p>
-            <button
-              onClick={handleCreateOrder}
-              className="rounded-[var(--radius-control)] bg-ink px-6 py-3 text-sm text-paper transition-opacity hover:opacity-90"
-            >
-              شروع سفارش
-            </button>
+            {isSettled ? (
+              <div className="flex flex-col gap-3 w-full max-w-xs">
+                <button
+                  onClick={handleCreateOrder}
+                  className="w-full rounded-[var(--radius-control)] bg-ink px-6 py-3 text-sm text-paper transition-opacity hover:opacity-90"
+                >
+                  افزودن آیتم
+                </button>
+                <button
+                  onClick={handleReleaseTable}
+                  className="w-full rounded-[var(--radius-control)] border border-line bg-paper px-6 py-3 text-sm text-ink transition-colors hover:bg-surface"
+                >
+                  آزاد سازی میز
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleCreateOrder}
+                className="rounded-[var(--radius-control)] bg-ink px-6 py-3 text-sm text-paper transition-opacity hover:opacity-90"
+              >
+                شروع سفارش
+              </button>
+            )}
           </div>
         ) : (
           <OrderPanel
