@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -27,6 +28,20 @@ type OrderHandler struct {
 
 func NewOrderHandler(db *sql.DB, hub *Hub) *OrderHandler {
 	return &OrderHandler{db: db, hub: hub}
+}
+
+func (h *OrderHandler) execContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	start := time.Now()
+	result, err := h.db.ExecContext(ctx, query, args...)
+	middleware.ObserveDBQuery(time.Since(start))
+	return result, err
+}
+
+func (h *OrderHandler) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	start := time.Now()
+	rows, err := h.db.QueryContext(ctx, query, args...)
+	middleware.ObserveDBQuery(time.Since(start))
+	return rows, err
 }
 
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +91,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		tableNumber = &req.TableNumber
 	}
 
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = h.execContext(r.Context(), `
 		INSERT INTO orders (
 			id, venue_id, waiter_id, table_number,
 			guest_count, notes, created_by_name
@@ -93,6 +108,8 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		models.WriteError(w, http.StatusInternalServerError, "Failed to create order", "CREATE_FAILED")
 		return
 	}
+
+	middleware.RecordOrderCreated()
 
 	slog.Info("Order created",
 		"orderId", orderID,
@@ -208,7 +225,7 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		notes = &req.Notes
 	}
 
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = h.execContext(r.Context(), `
 		INSERT INTO order_items (
 			id, order_id, menu_item_id, menu_item_name,
 			variant_id, variant_name, quantity, unit_price,
@@ -228,7 +245,9 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.ExecContext(r.Context(), `
+	middleware.RecordItemsOrdered(req.Quantity)
+
+	_, err = h.execContext(r.Context(), `
 		UPDATE orders
 		SET subtotal = (
 			SELECT COALESCE(SUM(total_price), 0)
@@ -289,7 +308,7 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 
 	query += " ORDER BY created_at DESC LIMIT 50"
 
-	rows, err := h.db.QueryContext(r.Context(), query, args...)
+	rows, err := h.queryContext(r.Context(), query, args...)
 	if err != nil {
 		slog.Error("Failed to fetch orders", "error", err, "venueId", session.VenueID)
 		models.WriteError(w, http.StatusInternalServerError, "Failed to fetch orders", "DB_ERROR")
@@ -383,7 +402,7 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.db.QueryContext(r.Context(), `
+	rows, err := h.queryContext(r.Context(), `
 		SELECT id, order_id, menu_item_id, menu_item_name,
 		       variant_id, variant_name, quantity, unit_price,
 		       total_price, station, status, notes,
@@ -576,14 +595,14 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	`, strings.Join(updates, ", "), argCount)
 	args = append(args, itemID)
 
-	_, err = h.db.ExecContext(r.Context(), query, args...)
+	_, err = h.execContext(r.Context(), query, args...)
 	if err != nil {
 		slog.Error("Failed to update item", "error", err, "itemId", itemID)
 		models.WriteError(w, http.StatusInternalServerError, "Failed to update item", "UPDATE_FAILED")
 		return
 	}
 
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = h.execContext(r.Context(), `
 		UPDATE orders
 		SET subtotal = (
 			SELECT COALESCE(SUM(total_price), 0)
@@ -646,7 +665,7 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = h.execContext(r.Context(), `
 		UPDATE order_items
 		SET status = 'CANCELLED', cancelled_at = NOW()
 		WHERE id = $1 AND status != 'CANCELLED'
@@ -657,7 +676,7 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = h.execContext(r.Context(), `
 		UPDATE orders
 		SET subtotal = (
 			SELECT COALESCE(SUM(total_price), 0)
@@ -678,7 +697,7 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 	`, orderID).Scan(&activeItems)
 
 	if activeItems == 0 {
-		h.db.ExecContext(r.Context(), `
+		h.execContext(r.Context(), `
 			UPDATE orders SET status = 'CANCELLED', cancelled_at = NOW() WHERE id = $1
 		`, orderID)
 		slog.Info("Order cancelled (all items cancelled)", "orderId", orderID)
@@ -728,7 +747,7 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = h.execContext(r.Context(), `
 		UPDATE orders SET status = 'SENT', sent_to_kitchen_at = NOW()
 		WHERE id = $1
 	`, orderID)
@@ -738,7 +757,7 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = h.execContext(r.Context(), `
 		UPDATE order_items SET status = 'SENT', sent_at = NOW()
 		WHERE order_id = $1 AND status = 'PENDING'
 	`, orderID)
@@ -746,7 +765,7 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Failed to update item statuses", "error", err, "orderId", orderID)
 	}
 
-	_, err = h.db.ExecContext(r.Context(), `
+	_, err = h.execContext(r.Context(), `
 		UPDATE orders
 		SET subtotal = (
 			SELECT COALESCE(SUM(total_price), 0)

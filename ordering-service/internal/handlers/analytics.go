@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log/slog"
@@ -17,6 +18,20 @@ type AnalyticsHandler struct {
 
 func NewAnalyticsHandler(db *sql.DB) *AnalyticsHandler {
 	return &AnalyticsHandler{db: db}
+}
+
+func (h *AnalyticsHandler) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	start := time.Now()
+	rows, err := h.db.QueryContext(ctx, query, args...)
+	middleware.ObserveDBQuery(time.Since(start))
+	return rows, err
+}
+
+func (h *AnalyticsHandler) queryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	start := time.Now()
+	row := h.db.QueryRowContext(ctx, query, args...)
+	middleware.ObserveDBQuery(time.Since(start))
+	return row
 }
 
 type DailySummary struct {
@@ -62,7 +77,7 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 	var summary DailySummary
 	summary.Date = dateStr
 
-	err = h.db.QueryRowContext(r.Context(), `
+	err = h.queryRowContext(r.Context(), `
 		SELECT
 			COUNT(*) AS total_orders,
 			COALESCE(SUM(total), 0) AS total_revenue,
@@ -91,7 +106,7 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.db.QueryRowContext(r.Context(), `
+	err = h.queryRowContext(r.Context(), `
 		SELECT COALESCE(SUM(quantity), 0)
 		FROM order_items oi
 		JOIN orders o ON oi.order_id = o.id
@@ -106,7 +121,7 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var topItems []TopItem
-	rows, err := h.db.QueryContext(r.Context(), `
+	rows, err := h.queryContext(r.Context(), `
 		SELECT
 			oi.menu_item_id,
 			oi.menu_item_name,

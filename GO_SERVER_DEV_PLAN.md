@@ -143,7 +143,9 @@ EventItemCancelled      = "item_cancelled"
 - [x] `RequireRole` middleware in `internal/middleware/auth.go`
 
 #### 4.2 Analytics Export
-Not yet implemented — placeholder for future Phase 2 work.
+- [x] `GET /api/admin/analytics/daily-summary` — returns daily stats (totalOrders, totalRevenue, avgOrderValue, top 10 items)
+- [x] Role-gated (OWNER/MANAGER) with inline check + `RequireRole` middleware
+- [x] Integration tests in `analytics_test.go`
 
 ---
 
@@ -311,6 +313,16 @@ github.com/redis/go-redis/v9 v9.21.0               # Redis pub/sub for WS scalin
 - [x] Integration tests for analytics endpoint (`analytics_test.go`) — 4 tests: empty data, invalid date, seeded data, date param
 - [x] Redis-backed WebSocket pub/sub for horizontal scaling — optional via `REDIS_URL` env var, Hub auto-subscribes/unsubscribes per venue
 
-### Phase 3+ Future Work (Remaining)
+### Phase 3+ Future Work (Complete)
+- [x] Metrics instrumentation wired into handlers:
+  - `RecordOrderCreated()` called in `CreateOrder` handler
+  - `RecordItemsOrdered()` called in `AddItem` handler
+  - `ObserveDBQuery()` timing wraps `ExecContext`, `QueryContext`, and `QueryRowContext` calls in both `orders.go` and `analytics.go`
+  - Helper methods `execContext`, `queryContext`, `queryRowContext` added on `OrderHandler` and `AnalyticsHandler`
+- [x] Dockerfile updated to `golang:1.25-alpine` (matching go.mod's `go 1.25.0`)
+- [x] `context` import added to orders.go and analytics.go
+- [x] `ordering-service/.gitignore` added for `/server` binary
+
+### Phase 3+ Future Work (Not Implemented — Optional)
 - [ ] SQLC for type-safe queries (optional)
 - [ ] Alerting rules for Prometheus metrics
