@@ -48,9 +48,10 @@ export function OrderPanel({
 }) {
   const tableLabel = order.tableNumber ? `میز ${order.tableNumber}` : "";
   const badge = statusBadge[order.status] || statusBadge.PENDING;
-  const hasPendingItems = order.items.some((i) => i.status === "PENDING");
+  const items = order.items || [];
+  const hasPendingItems = items.some((i) => i.status === "PENDING");
   const canSend = (order.status === "DRAFT" || order.status === "PENDING") || hasPendingItems;
-  const allDelivered = order.items.length > 0 && order.items.every(
+  const allDelivered = items.length > 0 && items.every(
     (i) => i.status === "DELIVERED" || i.status === "CANCELLED"
   );
   const canComplete = allDelivered && order.status !== "COMPLETED" && order.status !== "CANCELLED";
@@ -87,11 +88,11 @@ export function OrderPanel({
 
       {/* Items list */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        {order.items.length === 0 ? (
+        {items.length === 0 ? (
           <p className="text-sm text-ink-muted">هیچ آیتمی اضافه نشده است</p>
         ) : (
           <div className="flex flex-col gap-3">
-            {order.items.map((item) => {
+            {items.map((item) => {
               const next = nextStatus(item.status);
               const itemBadge = statusBadge[item.status] || statusBadge.PENDING;
               return (
