@@ -95,6 +95,7 @@ func main() {
 		r.Patch("/{id}/items/{itemId}/status", orderHandler.UpdateItemStatus)
 		r.Post("/{id}/complete", orderHandler.CompleteOrder)
 		r.Delete("/{id}/items/{itemId}", orderHandler.CancelItem)
+		r.Post("/release-table/{tableNumber}", orderHandler.ReleaseTable)
 	})
 
 	r.Route("/api/admin", func(r chi.Router) {

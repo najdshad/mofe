@@ -178,6 +178,18 @@ export function OrdersClient({
       }
     }
 
+    if (event.type === "table_released") {
+      if (p.tableNumber) {
+        const tn = Number(p.tableNumber);
+        setTableStatuses((prev) => {
+          const next = new Map(prev);
+          next.set(tn, "free");
+          return next;
+        });
+        persistTableStatus(tn, "free");
+      }
+    }
+
     if (event.type === "order_completed") {
       setOrders((prev) => {
         const next = new Map(prev);
@@ -363,7 +375,7 @@ export function OrdersClient({
   const selectedTableStatus = selectedTableNumber !== null ? tableStatuses.get(selectedTableNumber) : null;
   const isSettled = selectedTableStatus === "settled";
 
-  function handleReleaseTable() {
+  async function handleReleaseTable() {
     if (selectedTableNumber === null) return;
     setTableStatuses((prev) => {
       const next = new Map(prev);
@@ -371,6 +383,20 @@ export function OrdersClient({
       return next;
     });
     persistTableStatus(selectedTableNumber, "free");
+    // Broadcast event so other clients sync
+    try {
+      await fetch(`/api/venues/${venueId}/orders/release-table/${selectedTableNumber}`, { method: "POST" });
+    } catch {}
+    // Clean up any stale orders for this table
+    setOrders((prev) => {
+      const next = new Map(prev);
+      for (const [id, order] of next) {
+        if (order.tableNumber === String(selectedTableNumber)) {
+          next.delete(id);
+        }
+      }
+      return next;
+    });
   }
 
   return (

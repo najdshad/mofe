@@ -70,6 +70,7 @@ const (
 	EventItemCancelled      = "item_cancelled"
 	EventItemUpdated        = "item_updated"
 	EventItemUnavailable    = "menu_item_unavailable"
+	EventTableReleased      = "table_released"
 )
 
 func NewHub() *Hub {

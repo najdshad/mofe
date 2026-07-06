@@ -1001,3 +1001,21 @@ func (h *OrderHandler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "completed"})
 }
 
+func (h *OrderHandler) ReleaseTable(w http.ResponseWriter, r *http.Request) {
+	session := middleware.GetSession(r.Context())
+	tableNumber := chi.URLParam(r, "tableNumber")
+
+	h.hub.BroadcastToVenue(session.VenueID, EventTableReleased, map[string]interface{}{
+		"venueId":     session.VenueID,
+		"tableNumber": tableNumber,
+	})
+
+	slog.Info("Table released",
+		"tableNumber", tableNumber,
+		"venueId", session.VenueID,
+	)
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "released"})
+}
+
