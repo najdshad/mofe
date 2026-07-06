@@ -1425,6 +1425,7 @@ func TestOrderLifecycle_CannotSendAlreadySentOrder(t *testing.T) {
 	r := chi.NewRouter()
 	r.Post("/api/orders", handler.CreateOrder)
 	r.Post("/api/orders/{id}/send", handler.SendToKitchen)
+	r.Post("/api/orders/{id}/items", handler.AddItem)
 
 	body := `{}`
 	req := httptest.NewRequest("POST", "/api/orders", strings.NewReader(body))
@@ -1446,13 +1447,13 @@ func TestOrderLifecycle_CannotSendAlreadySentOrder(t *testing.T) {
 		t.Errorf("first send expected 200, got %d", w.Code)
 	}
 
-	// Second send — should fail (already SENT)
+	// Second send — should succeed (idempotent, no PENDING items to send)
 	req = httptest.NewRequest("POST", "/api/orders/"+orderID+"/send", nil)
 	req = req.WithContext(lifecycleContext(req.Context()))
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("second send expected 400, got %d", w.Code)
+	if w.Code != http.StatusOK {
+		t.Errorf("second send expected 200, got %d", w.Code)
 	}
 }
 

@@ -48,7 +48,8 @@ export function OrderPanel({
 }) {
   const tableLabel = order.tableNumber ? `میز ${order.tableNumber}` : "";
   const badge = statusBadge[order.status] || statusBadge.PENDING;
-  const canSend = order.status === "DRAFT" || order.status === "PENDING";
+  const hasPendingItems = order.items.some((i) => i.status === "PENDING");
+  const canSend = (order.status === "DRAFT" || order.status === "PENDING") || hasPendingItems;
   const allDelivered = order.items.length > 0 && order.items.every(
     (i) => i.status === "DELIVERED" || i.status === "CANCELLED"
   );

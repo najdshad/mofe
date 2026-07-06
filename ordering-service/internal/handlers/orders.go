@@ -756,19 +756,21 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if currentStatus != "DRAFT" && currentStatus != "PENDING" {
-		models.WriteError(w, http.StatusBadRequest, "Order already sent or in invalid status: "+currentStatus, "INVALID_STATUS")
+	if currentStatus != "DRAFT" && currentStatus != "PENDING" && currentStatus != "SENT" && currentStatus != "IN_PROGRESS" && currentStatus != "READY" {
+		models.WriteError(w, http.StatusBadRequest, "Cannot send in status: "+currentStatus, "INVALID_STATUS")
 		return
 	}
 
-	_, err = h.execContext(r.Context(), `
-		UPDATE orders SET status = 'SENT', sent_to_kitchen_at = NOW()
-		WHERE id = $1
-	`, orderID)
-	if err != nil {
-		slog.Error("Failed to send order to kitchen", "error", err, "orderId", orderID)
-		models.WriteError(w, http.StatusInternalServerError, "Failed to send order", "SEND_FAILED")
-		return
+	if currentStatus == "DRAFT" || currentStatus == "PENDING" {
+		_, err = h.execContext(r.Context(), `
+			UPDATE orders SET status = 'SENT', sent_to_kitchen_at = NOW()
+			WHERE id = $1
+		`, orderID)
+		if err != nil {
+			slog.Error("Failed to send order to kitchen", "error", err, "orderId", orderID)
+			models.WriteError(w, http.StatusInternalServerError, "Failed to send order", "SEND_FAILED")
+			return
+		}
 	}
 
 	_, err = h.execContext(r.Context(), `
