@@ -85,21 +85,31 @@ export function OrdersClient({
 
     async function fetchInitialOrders() {
       try {
-        const ordersRes = await fetch(`/api/venues/${venueId}/orders?status=SENT`);
+        const [sentRes, completedRes] = await Promise.all([
+          fetch(`/api/venues/${venueId}/orders?status=SENT`),
+          fetch(`/api/venues/${venueId}/orders?status=COMPLETED`),
+        ]);
         const orderMap = new Map<string, Order>();
         const statusMap = new Map<number, TableStatus>(
           tables.map((t) => [t.number, (t.status?.toLowerCase() as TableStatus) || "free"]),
         );
 
-        if (ordersRes?.ok) {
-          const data: Order[] = await ordersRes.json();
+        if (sentRes?.ok) {
+          const data: Order[] = await sentRes.json();
           for (const order of data) {
             orderMap.set(order.id, order);
             if (order.tableNumber) {
               const tn = parseInt(order.tableNumber, 10);
-              if (!isNaN(tn) && order.items.some((i) => i.status !== "DELIVERED" && i.status !== "CANCELLED")) {
-                statusMap.set(tn, "active");
-              }
+              if (!isNaN(tn)) statusMap.set(tn, "active");
+            }
+          }
+        }
+        if (completedRes?.ok) {
+          const data: Order[] = await completedRes.json();
+          for (const order of data) {
+            if (order.tableNumber) {
+              const tn = parseInt(order.tableNumber, 10);
+              if (!isNaN(tn)) statusMap.set(tn, "settled");
             }
           }
         }
