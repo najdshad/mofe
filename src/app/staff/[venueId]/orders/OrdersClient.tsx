@@ -109,18 +109,16 @@ export function OrdersClient({
 
         if (res?.ok) {
           const data: Order[] = await res.json();
-          // Active overrides: non-completed, non-cancelled orders
           for (const order of data) {
-            if (order.tableNumber) {
-              const tn = parseInt(order.tableNumber, 10);
-              if (!isNaN(tn)) {
-                if (order.status === "COMPLETED") {
-                  statusMap.set(tn, "settled");
-                } else if (order.status !== "CANCELLED") {
-                  orderMap.set(order.id, order);
-                  statusMap.set(tn, "active");
-                }
-              }
+            if (!order.tableNumber) continue;
+            const tn = parseInt(order.tableNumber, 10);
+            if (isNaN(tn)) continue;
+
+            if (order.status === "COMPLETED") {
+              statusMap.set(tn, "settled");
+            } else if (order.status !== "CANCELLED" && !["DRAFT", "PENDING"].includes(order.status)) {
+              orderMap.set(order.id, order);
+              statusMap.set(tn, "active");
             }
           }
         }
@@ -151,13 +149,14 @@ export function OrdersClient({
     fetch(`/api/venues/${venueId}/orders/${activeOrderId}`)
       .then((res) => res.json())
       .then((order: Order) => {
-        if (!cancelled) {
-          setOrders((prev) => {
-            const next = new Map(prev);
-            next.set(activeOrderId, order);
-            return next;
-          });
-        }
+        if (cancelled) return;
+        // Don't re-add completed/cancelled orders (race with handleCompleteOrder)
+        if (order.status === "COMPLETED" || order.status === "CANCELLED") return;
+        setOrders((prev) => {
+          const next = new Map(prev);
+          next.set(activeOrderId, order);
+          return next;
+        });
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -202,6 +201,8 @@ export function OrdersClient({
         fetch(`/api/venues/${venueId}/orders/${orderId}`)
           .then((res) => res.json())
           .then((order: Order) => {
+            // Don't re-add completed/cancelled orders
+            if (order.status === "COMPLETED" || order.status === "CANCELLED") return;
             setOrders((prev) => {
               const next = new Map(prev);
               next.set(orderId, order);
