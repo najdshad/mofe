@@ -49,7 +49,7 @@ describe("ordering-proxy", () => {
     expect(options.body).toBeUndefined();
 
     expect(result.status).toBe(200);
-    expect(result.data).toEqual({ orders: [] });
+    expect(await result.json()).toEqual({ orders: [] });
   });
 
   it("forwards POST requests with JSON body", async () => {
@@ -73,7 +73,7 @@ describe("ordering-proxy", () => {
     expect(JSON.parse(options.body)).toEqual(body);
 
     expect(result.status).toBe(201);
-    expect(result.data).toEqual({ orderId: "new-order-id" });
+    expect(await result.json()).toEqual({ orderId: "new-order-id" });
   });
 
   it("forwards PATCH requests", async () => {
@@ -95,7 +95,7 @@ describe("ordering-proxy", () => {
     expect(options.method).toBe("PATCH");
 
     expect(result.status).toBe(200);
-    expect(result.data).toEqual({ status: "updated" });
+    expect(await result.json()).toEqual({ status: "updated" });
   });
 
   it("forwards DELETE requests", async () => {
@@ -117,7 +117,7 @@ describe("ordering-proxy", () => {
     expect(options.body).toBeUndefined();
 
     expect(result.status).toBe(200);
-    expect(result.data).toEqual({ status: "cancelled" });
+    expect(await result.json()).toEqual({ status: "cancelled" });
   });
 
   it("includes query parameters in the URL", async () => {
@@ -153,7 +153,7 @@ describe("ordering-proxy", () => {
     });
 
     expect(result.status).toBe(404);
-    expect(result.data).toEqual({ error: "Not found", code: "NOT_FOUND" });
+    expect(await result.json()).toEqual({ error: "Not found", code: "NOT_FOUND" });
   });
 
   it("handles 400 validation errors", async () => {
@@ -172,7 +172,7 @@ describe("ordering-proxy", () => {
     });
 
     expect(result.status).toBe(400);
-    expect(result.data).toHaveProperty("code", "INVALID_JSON");
+    expect(await result.json()).toHaveProperty("code", "INVALID_JSON");
   });
 
   it("handles 401 unauthorized from upstream", async () => {
@@ -227,7 +227,30 @@ describe("ordering-proxy", () => {
     });
 
     expect(result.status).toBe(503);
-    expect(result.data).toHaveProperty("code", "ORDERING_SERVICE_UNAVAILABLE");
+    expect(await result.json()).toHaveProperty("code", "ORDERING_SERVICE_UNAVAILABLE");
+  });
+
+  it("forwards release-table POST requests", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ status: "released" }),
+      status: 200,
+    });
+
+    const { proxyToOrdering } = await import("@/lib/ordering-proxy");
+
+    const result = await proxyToOrdering("/api/orders/release-table/42", {
+      method: "POST",
+      cookie: "session-c",
+      venueId: "venue-1",
+    });
+
+    const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toContain("/api/orders/release-table/42");
+    expect(options.method).toBe("POST");
+    expect(options.body).toBeUndefined();
+
+    expect(result.status).toBe(200);
+    expect(await result.json()).toEqual({ status: "released" });
   });
 
   it("defaults to localhost:8080", async () => {

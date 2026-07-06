@@ -1479,3 +1479,126 @@ func TestHealthCheck(t *testing.T) {
 		t.Errorf("expected healthy, got %v", resp)
 	}
 }
+
+func TestOrderLifecycle_ReleaseTableDifferentTables(t *testing.T) {
+	handler, _, clean := setupLifecycleTest(t)
+	defer clean()
+
+	r := chi.NewRouter()
+	r.Post("/api/orders/release-table/{tableNumber}", handler.ReleaseTable)
+
+	// Release two different tables (verifies no shared state)
+	for _, tn := range []string{"1", "99"} {
+		req := httptest.NewRequest("POST", "/api/orders/release-table/"+tn, nil)
+		req = req.WithContext(lifecycleContext(req.Context()))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Errorf("release table %s expected 200, got %d", tn, w.Code)
+		}
+	}
+}
+
+func TestOrderLifecycle_SendEmptyOrderPreventsSend(t *testing.T) {
+	handler, _, clean := setupLifecycleTest(t)
+	defer clean()
+
+	// Use context.Background() for direct DB queries to avoid any Chi context issues
+	ctx := context.Background()
+	session := lifecycleSession()
+
+	// Insert order directly into DB
+	var orderID string
+	if err := handler.db.QueryRowContext(ctx, `SELECT gen_random_uuid()::text`).Scan(&orderID); err != nil {
+		t.Fatalf("failed to generate order ID: %v", err)
+	}
+	_, err := handler.db.ExecContext(ctx, `
+		INSERT INTO orders (id, venue_id, waiter_id, guest_count, status)
+		VALUES ($1, $2, $3, 1, 'PENDING')
+	`, orderID, session.VenueID, session.UserID)
+	if err != nil {
+		t.Fatalf("failed to create test order: %v", err)
+	}
+
+	// Call SendToKitchen handler via router
+	r := chi.NewRouter()
+	r.Post("/api/orders/{id}/send", handler.SendToKitchen)
+
+	req := httptest.NewRequest("POST", "/api/orders/"+orderID+"/send", nil)
+	req = req.WithContext(context.WithValue(context.Background(), middleware.SessionContextKey, session))
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	// Should fail with 400 (no items)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for empty order send, got %d", w.Code)
+	} else {
+		var errResp models.ErrorResponse
+		json.NewDecoder(w.Body).Decode(&errResp)
+		if errResp.Code != "NO_ITEMS" {
+			t.Errorf("expected NO_ITEMS error code, got %s", errResp.Code)
+		}
+
+		// Verify order is still PENDING, not SENT
+		var orderStatus string
+		handler.db.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, orderID).Scan(&orderStatus)
+		if orderStatus != "PENDING" {
+			t.Errorf("expected PENDING (not SENT), got %s", orderStatus)
+		}
+	}
+}
+
+func TestOrderLifecycle_SendOrderWithDirectItemsWorks(t *testing.T) {
+	handler, _, clean := setupLifecycleTest(t)
+	defer clean()
+
+	ctx := context.Background()
+	session := lifecycleSession()
+
+	// Insert order directly
+	var orderID string
+	if err := handler.db.QueryRowContext(ctx, `SELECT gen_random_uuid()::text`).Scan(&orderID); err != nil {
+		t.Fatalf("failed to generate order ID: %v", err)
+	}
+	_, err := handler.db.ExecContext(ctx, `
+		INSERT INTO orders (id, venue_id, waiter_id, guest_count, status)
+		VALUES ($1, $2, $3, 1, 'PENDING')
+	`, orderID, session.VenueID, session.UserID)
+	if err != nil {
+		t.Fatalf("failed to create test order: %v", err)
+	}
+
+	// Insert PENDING item
+	_, err = handler.db.ExecContext(ctx, `
+		INSERT INTO order_items (id, order_id, menu_item_id, menu_item_name, quantity, unit_price, total_price, station, status)
+		VALUES ($1, $2, 'test-mi-direct', 'Direct Item', 1, 25000, 25000, 'KITCHEN', 'PENDING')
+	`, "test-oi-send-"+orderID, orderID)
+	if err != nil {
+		t.Fatalf("failed to insert test item: %v", err)
+	}
+
+	// Call SendToKitchen handler via router
+	r := chi.NewRouter()
+	r.Post("/api/orders/{id}/send", handler.SendToKitchen)
+
+	req := httptest.NewRequest("POST", "/api/orders/"+orderID+"/send", nil)
+	req = req.WithContext(context.WithValue(context.Background(), middleware.SessionContextKey, session))
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("send with items expected 200, got %d", w.Code)
+	} else {
+		var orderStatus string
+		handler.db.QueryRowContext(ctx, `SELECT status FROM orders WHERE id = $1`, orderID).Scan(&orderStatus)
+		if orderStatus != "SENT" {
+			t.Errorf("expected SENT, got %s", orderStatus)
+		}
+
+		var itemStatus string
+		handler.db.QueryRowContext(ctx, `SELECT status FROM order_items WHERE id = $1`, "test-oi-send-"+orderID).Scan(&itemStatus)
+		if itemStatus != "SENT" {
+			t.Errorf("expected item status SENT, got %s", itemStatus)
+		}
+	}
+}

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { cleanTestData, seedTestData } from "../helpers";
+import { $Enums } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { renderPublicMenu } from "@/lib/public-menu/renderer";
 import { publishVenueMenu, unpublishVenueMenu, buildPublicSnapshot } from "@/lib/public-menu/publication";
@@ -896,6 +897,72 @@ describe("Table CRUD", () => {
   it("owner can manage tables", async () => {
     const owner = await canManage(data.user.id, data.venue.id);
     expect(owner).toBe(true);
+  });
+
+  it("defaults table status to FREE", async () => {
+    const table = await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 50 },
+    });
+    expect(table.status).toBe("FREE");
+    await prisma.venueTable.delete({ where: { id: table.id } });
+  });
+
+  it("updates table status through all valid states", async () => {
+    const table = await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 60 },
+    });
+
+    const testFlow = async (status: string) => {
+      const updated = await prisma.venueTable.update({
+        where: { id: table.id },
+        data: { status: status as $Enums.VenueTableStatus },
+      });
+      expect(updated.status).toBe(status);
+    };
+
+    await testFlow("ACTIVE");
+    await testFlow("READY");
+    await testFlow("SETTLED");
+    await testFlow("FREE");
+
+    await prisma.venueTable.delete({ where: { id: table.id } });
+  });
+
+  it("rejects invalid table status", async () => {
+    const table = await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 70 },
+    });
+
+    await expect(
+      prisma.venueTable.update({
+        where: { id: table.id },
+        data: { status: "INVALID" as $Enums.VenueTableStatus },
+      })
+    ).rejects.toThrow();
+
+    await prisma.venueTable.delete({ where: { id: table.id } });
+  });
+
+  it("isolates table status per table", async () => {
+    const t1 = await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 80, status: "ACTIVE" },
+    });
+    const t2 = await prisma.venueTable.create({
+      data: { venueId: data.venue.id, number: 81, status: "FREE" },
+    });
+
+    expect(t1.status).toBe("ACTIVE");
+    expect(t2.status).toBe("FREE");
+
+    // Change t2 without affecting t1
+    await prisma.venueTable.update({
+      where: { id: t2.id },
+      data: { status: "SETTLED" },
+    });
+    const t1b = await prisma.venueTable.findUnique({ where: { id: t1.id } });
+    expect(t1b?.status).toBe("ACTIVE");
+
+    await prisma.venueTable.deleteMany({ where: { venueId: data.venue.id, number: { in: [80, 81] } } });
   });
 
   it("staff cannot manage tables", async () => {
