@@ -11,9 +11,10 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app/server ./cmd/server
 
-FROM scratch
+FROM alpine:3.21
 
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+RUN apk add --no-cache ca-certificates wget
+
 COPY --from=builder /app/server /server
 COPY --from=builder /app/migrations /migrations
 
