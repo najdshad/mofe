@@ -222,6 +222,7 @@ export function OrdersClient({
     if (!activeOrderId) return;
     try {
       await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/send`, { method: "POST" });
+      await refreshOrder();
     } catch {
       // silently fail
     }
@@ -231,6 +232,7 @@ export function OrdersClient({
     if (!activeOrderId) return;
     try {
       await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/complete`, { method: "POST" });
+      await refreshOrder();
     } catch {
       // silently fail
     }
@@ -239,11 +241,31 @@ export function OrdersClient({
   async function handleAddItem(menuItemId: string, variantId?: string, quantity: number = 1) {
     if (!activeOrderId) return;
     try {
-      await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/items`, {
+      const res = await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ menuItemId, variantId, quantity }),
       });
+      if (!res.ok) return;
+      setShowMenuBrowser(false);
+      await refreshOrder();
+    } catch {
+      // silently fail
+    }
+  }
+
+  async function refreshOrder() {
+    if (!activeOrderId) return;
+    try {
+      const orderRes = await fetch(`/api/venues/${venueId}/orders/${activeOrderId}`);
+      if (orderRes.ok) {
+        const order = await orderRes.json();
+        setOrders((prev) => {
+          const next = new Map(prev);
+          next.set(activeOrderId, order);
+          return next;
+        });
+      }
     } catch {
       // silently fail
     }
@@ -257,6 +279,7 @@ export function OrdersClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
+      await refreshOrder();
     } catch {
       // silently fail
     }
@@ -268,6 +291,7 @@ export function OrdersClient({
       await fetch(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}`, {
         method: "DELETE",
       });
+      await refreshOrder();
     } catch {
       // silently fail
     }
