@@ -189,7 +189,7 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var itemName string
-	var station string
+	var stationRaw string
 	var unitPrice int
 	var variantName sql.NullString
 
@@ -206,7 +206,7 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.QueryRowContext(r.Context(), query,
 		req.MenuItemID, req.VariantID, session.VenueID,
-	).Scan(&itemName, &station, &unitPrice, &variantName)
+	).Scan(&itemName, &stationRaw, &unitPrice, &variantName)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -216,6 +216,8 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	station := strings.ToUpper(stationRaw)
 
 	itemID := uuid.New().String()
 	totalPrice := req.Quantity * unitPrice
