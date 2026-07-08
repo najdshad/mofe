@@ -193,20 +193,20 @@ export function SalesClient({
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-line bg-surface p-4 text-center">
-          <div className="font-serif text-3xl text-ink-strong">
+        <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 text-center">
+          <div className="mx-auto max-w-full truncate font-serif text-xl text-ink-strong">
             {formatCurrency(summary.totalOrders)}
           </div>
           <div className="mt-1 text-xs text-ink-muted">سفارش</div>
         </div>
-        <div className="rounded-2xl border border-line bg-surface p-4 text-center">
-          <div className="font-serif text-3xl text-ink-strong">
+        <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 text-center">
+          <div className="mx-auto max-w-full truncate font-serif text-xl text-ink-strong">
             {formatCurrency(summary.totalRevenue)}
           </div>
           <div className="mt-1 text-xs text-ink-muted">درآمد (تومان)</div>
         </div>
-        <div className="rounded-2xl border border-line bg-surface p-4 text-center">
-          <div className="font-serif text-3xl text-ink-strong">
+        <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 text-center">
+          <div className="mx-auto max-w-full truncate font-serif text-xl text-ink-strong">
             {formatCurrency(summary.avgOrderValue)}
           </div>
           <div className="mt-1 text-xs text-ink-muted">میانگین هر سفارش</div>
@@ -223,7 +223,7 @@ export function SalesClient({
         <div className="rounded-2xl border border-line bg-surface p-4" style={{ overflow: "visible" }}>
           <style>{`.sales-chart svg { overflow: visible !important; }`}</style>
           <ResponsiveContainer width="100%" height={320} className="sales-chart">
-            <BarChart data={data} margin={{ top: 8, right: 8, left: 80, bottom: 0 }}>
+            <BarChart data={data} margin={{ top: 8, right: 32, left: 32, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#d8d1c4" />
               <XAxis
                 dataKey="persianDate"
@@ -233,10 +233,10 @@ export function SalesClient({
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "#5f5a52" }}
+                tick={{ fontSize: 11, fill: "#5f5a52", dx: -4 }}
                 axisLine={{ stroke: "#d8d1c4" }}
                 tickLine={false}
-                tickFormatter={(v: number) => (v / 1_000_000).toFixed(3) + "M"}
+                tickFormatter={(v: number) => (v / 1_000_000).toFixed(1) + "M"}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="revenue" fill="#111111" radius={[4, 4, 0, 0]} name="درآمد" />
