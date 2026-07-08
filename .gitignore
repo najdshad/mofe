@@ -39,11 +39,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# production
-/build
-
 # misc
-.DS_Store
 *.pem
 
 # debug
@@ -57,6 +53,8 @@ yarn-error.log*
 
 # local db
 *.db
+*.db-shm
+*.db-wal
 *.sqlite
 *.sqlite3
 
