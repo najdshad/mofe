@@ -10,14 +10,22 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { toJalaali } from "jalaali-js";
 
 type RangeKey = "daily" | "weekly" | "monthly" | "yearly" | "custom";
 
 interface DataPoint {
   date: string;
+  persianDate: string;
   orders: number;
   revenue: number;
   avgOrderValue: number;
+}
+
+function toPersianDate(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const j = toJalaali(y, m, d);
+  return `${j.jy}/${String(j.jm).padStart(2, "0")}/${String(j.jd).padStart(2, "0")}`;
 }
 
 interface Summary {
@@ -100,7 +108,7 @@ export function SalesClient({
           return res.json();
         })
         .then((json: SalesResponse) => {
-          setData(json.data);
+          setData(json.data.map((d) => ({ ...d, persianDate: toPersianDate(d.date) })));
           setSummary(json.summary);
         })
         .catch((e) => {
@@ -217,10 +225,11 @@ export function SalesClient({
             <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#d8d1c4" />
               <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11, fill: "#5f5a52" }}
+                dataKey="persianDate"
+                tick={{ fontSize: 10, fill: "#5f5a52" }}
                 axisLine={{ stroke: "#d8d1c4" }}
                 tickLine={false}
+                interval="preserveStartEnd"
               />
               <YAxis
                 tick={{ fontSize: 11, fill: "#5f5a52" }}
@@ -250,7 +259,7 @@ export function SalesClient({
             <tbody className="divide-y divide-line">
               {data.map((point) => (
                 <tr key={point.date} className="hover:bg-surface/50">
-                  <td className="px-4 py-2 text-ink">{point.date}</td>
+                  <td className="px-4 py-2 text-ink" dir="ltr">{point.persianDate}</td>
                   <td className="px-4 py-2 text-ink" dir="ltr">
                     {point.orders.toLocaleString("fa-IR")}
                   </td>
