@@ -220,9 +220,10 @@ export function SalesClient({
         <div className="py-12 text-center text-sm text-ink-muted">داده‌ای برای نمایش وجود ندارد</div>
       )}
       {!loading && !error && data.length > 0 && (
-        <div className="rounded-2xl border border-line bg-surface p-4">
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <div className="rounded-2xl border border-line bg-surface p-4" style={{ overflow: "visible" }}>
+          <style>{`.sales-chart svg { overflow: visible !important; }`}</style>
+          <ResponsiveContainer width="100%" height={320} className="sales-chart">
+            <BarChart data={data} margin={{ top: 8, right: 8, left: 80, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#d8d1c4" />
               <XAxis
                 dataKey="persianDate"
@@ -235,7 +236,7 @@ export function SalesClient({
                 tick={{ fontSize: 11, fill: "#5f5a52" }}
                 axisLine={{ stroke: "#d8d1c4" }}
                 tickLine={false}
-                tickFormatter={(v: number) => (v / 1000).toFixed(0) + "k"}
+                tickFormatter={(v: number) => (v / 1_000_000).toFixed(3) + "M"}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="revenue" fill="#111111" radius={[4, 4, 0, 0]} name="درآمد" />
