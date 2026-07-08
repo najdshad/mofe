@@ -53,6 +53,7 @@ model Venue {
   publications MenuPublication[]
   domains      Domain[]
   auditLogs    AuditLog[]
+  sales            Sale[]
   stationSchedules StationSchedule[]
   tables           VenueTable[]
 }
@@ -293,6 +294,21 @@ model order_items {
   created_at   DateTime?
 
   @@ignore
+}
+
+model Sale {
+  id          String   @id @default(uuid())
+  venueId     String   @map("venue_id")
+  orderId     String   @unique @map("order_id")
+  total       Int      @default(0)
+  itemCount   Int      @default(0) @map("item_count")
+  completedAt DateTime @default(now()) @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId, completedAt])
+  @@map("Sale")
 }
 
 model AuditLog {

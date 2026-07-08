@@ -264,6 +264,7 @@ func setupLifecycleTest(t *testing.T) (*OrderHandler, *sql.DB, func()) {
 	handler := NewOrderHandler(db, hub)
 
 	clean := func() {
+		db.Exec(`DELETE FROM "Sale"`)
 		db.Exec("DELETE FROM order_items")
 		db.Exec("DELETE FROM orders")
 		db.Exec(`DELETE FROM "MenuItemVariant"`)
@@ -739,6 +740,21 @@ func TestCompleteOrder_Successful(t *testing.T) {
 	}
 	if !completedAt.Valid {
 		t.Error("expected completed_at to be set")
+	}
+
+	// Verify Sale record was created
+	var saleTotal int
+	var saleItemCount int
+	var saleOrderID string
+	err = db.QueryRow(`SELECT total, item_count, order_id FROM "Sale" WHERE order_id = $1`, orderID).Scan(&saleTotal, &saleItemCount, &saleOrderID)
+	if err != nil {
+		t.Fatalf("failed to query Sale: %v", err)
+	}
+	if saleTotal != 50000 {
+		t.Errorf("expected sale total 50000, got %d", saleTotal)
+	}
+	if saleItemCount != 1 {
+		t.Errorf("expected sale item_count 1, got %d", saleItemCount)
 	}
 }
 

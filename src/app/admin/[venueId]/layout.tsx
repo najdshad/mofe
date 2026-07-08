@@ -67,6 +67,12 @@ export default async function AdminLayout({
             سفارشات
           </Link>
           <Link
+            href={`/admin/${venueId}/sales`}
+            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
+          >
+            فروش
+          </Link>
+          <Link
             href={`/admin/${venueId}/qr-menu`}
             className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
           >

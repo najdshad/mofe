@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { cleanTestData, seedTestData } from "../helpers";
+import { cleanTestData, seedTestData, seedTestSale } from "../helpers";
 import { $Enums } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { renderPublicMenu } from "@/lib/public-menu/renderer";
@@ -1036,5 +1036,104 @@ describe("Table CRUD", () => {
     // Cleanup
     await prisma.venueTable.deleteMany({ where: { venueId: venueA.id } });
     await prisma.venue.delete({ where: { id: venueB.id } });
+  });
+});
+
+describe("Sales data model", () => {
+  it("creates and reads sale records", async () => {
+    const sale1 = await seedTestSale(data.venue.id, {
+      total: 100000,
+      itemCount: 2,
+      completedAt: new Date("2026-07-01T10:00:00Z"),
+      orderId: "test-sale-db-1",
+    });
+    const sale2 = await seedTestSale(data.venue.id, {
+      total: 200000,
+      itemCount: 3,
+      completedAt: new Date("2026-07-01T14:00:00Z"),
+      orderId: "test-sale-db-2",
+    });
+
+    const sales = await prisma.sale.findMany({
+      where: { venueId: data.venue.id },
+      orderBy: { completedAt: "asc" },
+    });
+    expect(sales).toHaveLength(2);
+    expect(sales[0].total).toBe(100000);
+    expect(sales[0].itemCount).toBe(2);
+    expect(sales[1].total).toBe(200000);
+    expect(sales[1].itemCount).toBe(3);
+
+    await prisma.sale.deleteMany({ where: { venueId: data.venue.id } });
+  });
+
+  it("prevents duplicate order_id", async () => {
+    const orderId = "test-sale-unique-order";
+    await seedTestSale(data.venue.id, {
+      total: 50000,
+      itemCount: 1,
+      orderId,
+    });
+
+    await expect(
+      seedTestSale(data.venue.id, { total: 99999, itemCount: 2, orderId })
+    ).rejects.toThrow();
+
+    await prisma.sale.deleteMany({ where: { venueId: data.venue.id } });
+  });
+
+  it("aggregates sales by date", async () => {
+    await seedTestSale(data.venue.id, {
+      total: 100000,
+      itemCount: 2,
+      completedAt: new Date("2026-07-01T10:00:00Z"),
+      orderId: "test-sale-agg-1",
+    });
+    await seedTestSale(data.venue.id, {
+      total: 200000,
+      itemCount: 3,
+      completedAt: new Date("2026-07-01T14:00:00Z"),
+      orderId: "test-sale-agg-2",
+    });
+    await seedTestSale(data.venue.id, {
+      total: 150000,
+      itemCount: 1,
+      completedAt: new Date("2026-07-02T12:00:00Z"),
+      orderId: "test-sale-agg-3",
+    });
+
+    const rows: Array<{
+      date: string;
+      order_count: bigint;
+      revenue: bigint;
+      avg_value: bigint;
+    }> = await prisma.$queryRawUnsafe(
+      `
+      SELECT
+        completed_at::date AS date,
+        COUNT(*)::bigint AS order_count,
+        COALESCE(SUM(total), 0)::bigint AS revenue,
+        COALESCE(ROUND(AVG(total)), 0)::bigint AS avg_value
+      FROM "Sale"
+      WHERE venue_id = $1
+        AND completed_at >= $2
+        AND completed_at < $3
+      GROUP BY completed_at::date
+      ORDER BY date ASC
+    `,
+      data.venue.id,
+      new Date("2026-07-01T00:00:00Z"),
+      new Date("2026-07-03T00:00:00Z")
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(Number(rows[0].order_count)).toBe(2);
+    expect(Number(rows[0].revenue)).toBe(300000);
+    expect(Number(rows[0].avg_value)).toBe(150000);
+    expect(Number(rows[1].order_count)).toBe(1);
+    expect(Number(rows[1].revenue)).toBe(150000);
+    expect(Number(rows[1].avg_value)).toBe(150000);
+
+    await prisma.sale.deleteMany({ where: { venueId: data.venue.id } });
   });
 });

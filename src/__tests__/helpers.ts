@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 
 export async function cleanTestData() {
   await prisma.rateLimitEntry.deleteMany();
+  await prisma.sale.deleteMany();
   await prisma.menuPublication.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.category.deleteMany();
@@ -10,6 +11,26 @@ export async function cleanTestData() {
   await prisma.session.deleteMany();
   await prisma.venue.deleteMany();
   await prisma.user.deleteMany();
+}
+
+export async function seedTestSale(
+  venueId: string,
+  overrides?: Partial<{
+    total: number;
+    itemCount: number;
+    completedAt: Date;
+    orderId: string;
+  }>
+) {
+  return prisma.sale.create({
+    data: {
+      venueId,
+      orderId: overrides?.orderId ?? `test-order-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      total: overrides?.total ?? 150000,
+      itemCount: overrides?.itemCount ?? 2,
+      completedAt: overrides?.completedAt ?? new Date(),
+    },
+  });
 }
 
 export async function seedTestData() {

@@ -994,6 +994,30 @@ func (h *OrderHandler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Record sale
+	var orderTotal int
+	var itemCount int
+	err = h.db.QueryRowContext(r.Context(), `
+		SELECT o.total, COUNT(oi.id)
+		FROM orders o
+		JOIN order_items oi ON oi.order_id = o.id
+		WHERE o.id = $1 AND oi.status != 'CANCELLED'
+		GROUP BY o.id
+	`, orderID).Scan(&orderTotal, &itemCount)
+
+	if err != nil {
+		slog.Error("Failed to read order for sale record", "error", err, "orderId", orderID)
+	} else {
+		_, err = h.execContext(r.Context(), `
+			INSERT INTO "Sale" (id, venue_id, order_id, total, item_count, completed_at)
+			VALUES ($1, $2, $3, $4, $5, NOW())
+			ON CONFLICT (order_id) DO NOTHING
+		`, uuid.New().String(), session.VenueID, orderID, orderTotal, itemCount)
+		if err != nil {
+			slog.Error("Failed to insert sale record", "error", err, "orderId", orderID)
+		}
+	}
+
 	var tn *string
 	if tableNumber.Valid {
 		tn = &tableNumber.String
