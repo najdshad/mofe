@@ -25,6 +25,7 @@ import { Modal } from "@/components/ui/Modal";
 import { GripIcon, EditIcon, DeleteIcon } from "@/components/ui/Icons";
 import { fetchApi } from "@/lib/fetch-api";
 import { ALLERGEN_LABELS } from "@/lib/allergens";
+import { useRouter } from "next/navigation";
 
 interface Category {
   id: string;
@@ -50,10 +51,23 @@ interface Item {
   photoAssetId: string | null;
 }
 
+interface Publication {
+  id: string;
+  status: string;
+  trigger: string;
+  createdAt: string;
+  createdAtLabel: string;
+}
+
 interface MenuClientProps {
   venueId: string;
   categories: Category[];
   items: Item[];
+  canPublish: boolean;
+  venuePublicStatus: string;
+  hasUnpublishedChanges: boolean;
+  publicUrl: string;
+  publications: Publication[];
 }
 
 function SortableCategoryRow({
@@ -146,7 +160,7 @@ function ItemRowContent({
             <div className="truncate mt-0.5 text-sm text-ink-muted">{item.nameEn}</div>
           )}
           {item.description && (
-            <div className="mt-1 max-w-xs truncate text-xs leading-relaxed text-ink-muted">
+            <div className="mt-1 truncate text-xs leading-relaxed text-ink-muted">
               {item.description}
             </div>
           )}
@@ -762,7 +776,16 @@ function DeleteConfirmModal({
   );
 }
 
-export function MenuClient({ venueId, categories: initialCategories, items: initialItems }: MenuClientProps) {
+export function MenuClient({
+  venueId,
+  categories: initialCategories,
+  items: initialItems,
+  canPublish,
+  venuePublicStatus,
+  hasUnpublishedChanges,
+  publicUrl,
+  publications,
+}: MenuClientProps) {
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [items, setItems] = useState<Item[]>(initialItems);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
@@ -789,6 +812,13 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     summary: { total: number; created: number; skipped: number; errors: number };
     details: { row: number; status: string; nameFa: string; message?: string }[];
   } | null>(null);
+
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showUnpublishModal, setShowUnpublishModal] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [publishStatus, setPublishStatus] = useState("");
+  const router = useRouter();
 
   const filteredItems = items
     .filter((item) => {
@@ -1114,6 +1144,32 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
     }
   };
 
+  const handlePublish = async () => {
+    setPublishing(true);
+    const res = await fetch(`/api/venues/${venueId}/publish`, { method: "POST" });
+    if (res.ok) {
+      setShowPublishModal(false);
+      setPublishStatus("منو با موفقیت منتشر شد");
+      router.refresh();
+    } else {
+      setPublishStatus("خطا در انتشار منو");
+    }
+    setPublishing(false);
+  };
+
+  const handleUnpublish = async () => {
+    setPublishing(true);
+    const res = await fetch(`/api/venues/${venueId}/unpublish`, { method: "POST" });
+    if (res.ok) {
+      setShowUnpublishModal(false);
+      setPublishStatus("منو از دسترس خارج شد");
+      router.refresh();
+    } else {
+      setPublishStatus("خطا در لغو انتشار");
+    }
+    setPublishing(false);
+  };
+
   const handleNewItem = (categoryId?: string) => {
     setEditingItem(null);
     setNewItemCategoryId(categoryId);
@@ -1124,6 +1180,120 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
 
   return (
     <>
+      <div className="mb-4 rounded-2xl border border-line bg-surface px-4 py-2.5">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`inline-block h-2 w-2 rounded-full ${
+              venuePublicStatus === "published"
+                ? hasUnpublishedChanges ? "bg-amber-500" : "bg-green-500"
+                : venuePublicStatus === "unpublished"
+                  ? "bg-red-400"
+                  : "bg-gray-400"
+            }`} />
+            <span className="text-sm text-ink whitespace-nowrap">
+              {venuePublicStatus === "published" ? "منتشر شده" : venuePublicStatus === "unpublished" ? "منتشر نشده" : "پیش‌نویس"}
+            </span>
+          </div>
+
+          <span className="hidden sm:inline text-xs text-ink-muted truncate min-w-0" dir="ltr">
+            {publicUrl}
+          </span>
+
+          {hasUnpublishedChanges && (
+            <span className="text-xs text-amber-600 shrink-0 whitespace-nowrap">⚠️ تغییرات منتشرنشده</span>
+          )}
+
+          {publishStatus && (
+            <span className="text-xs text-ink-muted shrink-0">{publishStatus}</span>
+          )}
+
+          <div className="mr-auto flex items-center gap-2 shrink-0">
+            {venuePublicStatus === "published" ? (
+              <>
+                <button
+                  onClick={() => setShowPublishModal(true)}
+                  disabled={!canPublish}
+                  className="rounded-full border border-line px-3 py-1 text-xs text-ink hover:border-ink transition-colors disabled:opacity-40"
+                >
+                  انتشار مجدد
+                </button>
+                <button
+                  onClick={() => setShowUnpublishModal(true)}
+                  disabled={!canPublish}
+                  className="rounded-full border border-line px-3 py-1 text-xs text-ink-muted hover:text-ink hover:border-ink transition-colors disabled:opacity-40"
+                >
+                  لغو انتشار
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowPublishModal(true)}
+                disabled={!canPublish}
+                className="rounded-full border border-ink bg-ink px-3 py-1 text-xs text-paper hover:opacity-90 transition-colors disabled:opacity-40"
+              >
+                انتشار منو
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`p-1 text-ink-muted hover:text-ink transition-colors ${showHistory ? "rotate-180" : ""}`}
+              title="تاریخچه انتشار"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        {showHistory && (
+          <div className="mt-3 border-t border-line pt-3">
+            <div className="overflow-hidden rounded-[var(--radius-card)] border border-line">
+              <div className="grid grid-cols-[1fr_80px_1fr] gap-2 border-b border-line bg-paper px-3 py-2 text-[11px] uppercase tracking-wider text-ink-muted">
+                <div>تاریخ</div>
+                <div>وضعیت</div>
+                <div>علت</div>
+              </div>
+              {publications.length === 0 ? (
+                <div className="px-3 py-4 text-center text-sm text-ink-muted">
+                  هیچ انتشاری یافت نشد
+                </div>
+              ) : (
+                publications.map((pub, idx) => (
+                  <div
+                    key={pub.id}
+                    className={`grid grid-cols-[1fr_80px_1fr] items-center gap-2 px-3 py-2.5 ${
+                      idx !== publications.length - 1 ? "border-b border-line/50" : ""
+                    }`}
+                  >
+                    <div className="text-sm text-ink">{pub.createdAtLabel}</div>
+                    <div>
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          pub.status === "published"
+                            ? "bg-green-100 text-green-800"
+                            : pub.status === "unpublished"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {pub.status === "published"
+                          ? "منتشر شده"
+                          : pub.status === "unpublished"
+                            ? "منتشر نشده"
+                            : "در صف"}
+                      </span>
+                    </div>
+                    <div className="text-sm text-ink-muted">
+                      {pub.trigger === "manual_publish" ? "انتشار" : "لغو انتشار"}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-4 xl:grid-cols-[240px_1fr]">
         <Panel title="دسته‌ها" subtitle="مدیریت دسته‌بندی آیتم‌ها">
           <div className="space-y-2">
@@ -1416,6 +1586,35 @@ export function MenuClient({ venueId, categories: initialCategories, items: init
             )}
           </div>
         )}
+      </Modal>
+
+      <Modal
+        open={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        onConfirm={handlePublish}
+        title="انتشار منو"
+        confirmLabel="انتشار"
+        loading={publishing}
+      >
+        <p>
+          با انتشار منو، نسخه جدید در آدرس عمومی قابل مشاهده خواهد بود.
+          این تغییر بلافاصله اعمال می‌شود.
+        </p>
+      </Modal>
+
+      <Modal
+        open={showUnpublishModal}
+        onClose={() => setShowUnpublishModal(false)}
+        onConfirm={handleUnpublish}
+        title="لغو انتشار"
+        confirmLabel="لغو انتشار"
+        confirmVariant="destructive"
+        loading={publishing}
+      >
+        <p>
+          با لغو انتشار، بازدیدکنندگان QR صفحه «منو در دسترس نیست» را
+          مشاهده خواهند کرد.
+        </p>
       </Modal>
     </>
   );

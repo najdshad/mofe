@@ -32,6 +32,8 @@ export default async function SettingsPage({
       slug={venue.slug}
       timezone={venue.timezone}
       plan={venue.plan}
+      welcomeMessage={venue.welcomeMessage}
+      logoUrl={venue.logoAssetId}
       members={members.map((m) => ({
         id: m.id,
         userId: m.userId,

@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Panel } from "@/components/ui/Panel";
+import { Button } from "@/components/ui/Button";
 import { VenueInfoSection } from "./VenueInfoSection";
 import { MembersSection } from "./MembersSection";
 import { ScheduleSection } from "./ScheduleSection";
+import { useStatusMessage } from "@/hooks/useStatusMessage";
 
 interface Member {
   id: string;
@@ -22,6 +24,8 @@ interface SettingsClientProps {
   slug: string;
   timezone: string;
   plan: string;
+  welcomeMessage: string | null;
+  logoUrl: string | null;
   members: Member[];
   currentUserRole: string;
   currentUserId: string;
@@ -35,6 +39,8 @@ export function SettingsClient({
   slug,
   timezone: initialTimezone,
   plan,
+  welcomeMessage: initialWelcomeMessage,
+  logoUrl: initialLogoUrl,
   members: initialMembers,
   currentUserRole,
   currentUserId,
@@ -46,6 +52,11 @@ export function SettingsClient({
   const [timezone, setTimezone] = useState(initialTimezone);
   const [venueStatus, setVenueStatus] = useState("");
   const [members, setMembers] = useState<Member[]>(initialMembers);
+
+  const [welcomeMessage, setWelcomeMessage] = useState(initialWelcomeMessage ?? "");
+  const [logoUrl, setLogoUrl] = useState(initialLogoUrl ?? "");
+  const [uploading, setUploading] = useState(false);
+  const { statusMessage: appearanceStatus, showStatus: showAppearanceStatus } = useStatusMessage();
 
   const [schedules, setSchedules] = useState<{ station: string; dayOfWeek: number; startTime: string; endTime: string; isActive: boolean }[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
@@ -147,6 +158,60 @@ export function SettingsClient({
     }
   };
 
+  const handleSaveAppearance = async () => {
+    const res = await fetch(`/api/venues/${venueId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        welcomeMessage: welcomeMessage || null,
+      }),
+    });
+
+    if (res.ok) {
+      showAppearanceStatus("تغییرات ذخیره شد");
+      router.refresh();
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("logo", file);
+
+    const res = await fetch(`/api/venues/${venueId}/logo`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setLogoUrl(data.logoUrl);
+      showAppearanceStatus("لوگو با موفقیت آپلود شد");
+      router.refresh();
+    } else {
+      const data = await res.json();
+      showAppearanceStatus(data.error || "خطا در آپلود لوگو");
+    }
+    setUploading(false);
+  };
+
+  const handleLogoRemove = async () => {
+    const res = await fetch(`/api/venues/${venueId}/logo`, {
+      method: "DELETE",
+    });
+
+    if (res.ok) {
+      setLogoUrl("");
+      showAppearanceStatus("لوگو حذف شد");
+      router.refresh();
+    } else {
+      showAppearanceStatus("خطا در حذف لوگو");
+    }
+  };
+
   const handleAddMember = async (data: { name: string; username: string; password: string; role: string }) => {
     const res = await fetch(`/api/venues/${venueId}/members`, {
       method: "POST",
@@ -238,6 +303,60 @@ export function SettingsClient({
         onTimezoneChange={setTimezone}
         onSave={handleSaveVenue}
       />
+
+      <Panel title="تنظیمات ظاهری" subtitle="پیام خوش‌آمدگویی و لوگو">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+              پیام خوش‌آمدگویی
+            </label>
+            <textarea
+              value={welcomeMessage}
+              onChange={(e) => setWelcomeMessage(e.target.value)}
+              maxLength={220}
+              rows={3}
+              className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-ink resize-none focus:border-ink focus:outline-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+              لوگوی مجموعه
+            </label>
+            {logoUrl && (
+              <div className="flex items-center gap-3 mb-2">
+                <img
+                  src={logoUrl}
+                  alt="لوگو"
+                  className="h-14 w-14 rounded-xl border border-line object-cover"
+                />
+                <button
+                  onClick={handleLogoRemove}
+                  className="text-xs text-ink-muted hover:text-ink transition-colors"
+                >
+                  حذف لوگو
+                </button>
+              </div>
+            )}
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border border-line bg-surface px-4 py-2.5 text-sm text-ink-muted hover:text-ink transition-colors">
+              {uploading ? "در حال آپلود..." : "انتخاب تصویر"}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+            </label>
+            <p className="text-xs text-ink-muted">
+              تصویر به 500×500 پیکسل و زیر 50KB فشرده می‌شود
+            </p>
+          </div>
+          <Button onClick={handleSaveAppearance}>ذخیره تغییرات</Button>
+          {appearanceStatus && (
+            <p className="text-sm text-ink-muted">{appearanceStatus}</p>
+          )}
+        </div>
+      </Panel>
 
       <MembersSection
         members={members}

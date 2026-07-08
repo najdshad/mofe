@@ -1,7 +1,8 @@
 import { getCurrentUser } from "@/lib/auth";
-import { requireVenueAccess } from "@/lib/permissions";
+import { requireVenueAccess, canManage } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getPublicMenuUrl } from "@/lib/config";
 import { MenuClient } from "./MenuClient";
 
 export default async function MenuPage({
@@ -14,6 +15,11 @@ export default async function MenuPage({
 
   const { venueId } = await params;
   await requireVenueAccess(user.id, venueId);
+
+  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+  if (!venue) redirect("/venues");
+
+  const canUserPublish = await canManage(user.id, venueId);
 
   const categories = await prisma.category.findMany({
     where: { venueId, deletedAt: null },
@@ -53,11 +59,54 @@ export default async function MenuPage({
     photoAssetId: i.photoAssetId,
   }));
 
+  const lastPublication = await prisma.menuPublication.findFirst({
+    where: { venueId, status: "published" },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const hasUnpublishedChanges = !lastPublication ? true : await (async () => {
+    const dates = [new Date(venue.updatedAt)];
+
+    const catAgg = await prisma.category.aggregate({
+      where: { venueId, deletedAt: null },
+      _max: { updatedAt: true },
+    });
+    if (catAgg._max.updatedAt) dates.push(new Date(catAgg._max.updatedAt));
+
+    const itemAgg = await prisma.menuItem.aggregate({
+      where: { venueId, deletedAt: null },
+      _max: { updatedAt: true },
+    });
+    if (itemAgg._max.updatedAt) dates.push(new Date(itemAgg._max.updatedAt));
+
+    const maxDate = dates.reduce((a, b) => (a > b ? a : b));
+    return maxDate > new Date(lastPublication.createdAt);
+  })();
+
+  const publicationsData = await prisma.menuPublication.findMany({
+    where: { venueId },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  });
+
+  const publications = publicationsData.map((pub) => ({
+    id: pub.id,
+    status: pub.status,
+    trigger: pub.trigger,
+    createdAt: pub.createdAt.toISOString(),
+    createdAtLabel: pub.createdAt.toLocaleDateString("fa-IR"),
+  }));
+
   return (
     <MenuClient
       venueId={venueId}
       categories={categoriesData}
       items={itemsData}
+      canPublish={canUserPublish}
+      venuePublicStatus={venue.publicStatus}
+      hasUnpublishedChanges={hasUnpublishedChanges}
+      publicUrl={getPublicMenuUrl(venue.slug)}
+      publications={publications}
     />
   );
 }

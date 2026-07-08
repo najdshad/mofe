@@ -3,7 +3,8 @@ import { getVenueMembership } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { VenueStatusBadge } from "@/components/ui/VenueStatusBadge";
+import { getPublicMenuUrl } from "@/lib/config";
+import { QRIconButton } from "./QRIconButton";
 
 export default async function AdminLayout({
   children,
@@ -36,9 +37,13 @@ export default async function AdminLayout({
               mofé
             </Link>
             <span className="text-sm text-ink-muted">{venue.nameFa}</span>
-            <VenueStatusBadge venueId={venueId} initialStatus={venue.publicStatus} />
           </div>
           <div className="flex items-center gap-4">
+            <QRIconButton
+              venueName={venue.nameFa}
+              publicUrl={getPublicMenuUrl(venue.slug)}
+              isUnpublished={venue.publicStatus !== "published"}
+            />
             <span className="text-sm text-ink-muted">{user.name}</span>
             <form action="/api/auth/logout" method="POST">
               <button
@@ -71,12 +76,6 @@ export default async function AdminLayout({
             className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
           >
             فروش
-          </Link>
-          <Link
-            href={`/admin/${venueId}/qr-menu`}
-            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
-          >
-            انتشار و QR
           </Link>
           <Link
             href={`/admin/${venueId}/settings`}
