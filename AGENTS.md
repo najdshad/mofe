@@ -9,7 +9,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (177 tests; use --no-file-parallelism for reliable runs)
+npm test             # Vitest run (180 tests; use --no-file-parallelism for reliable runs)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -33,6 +33,14 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 - Auth: every handler calls `requireInternalAuth()`; page layout checks `role === "internal"`
 - Seed: `admin@mofe.ir` / `admin1234`
 
+### Sales Dashboard (`/admin/[venueId]/sales`)
+- `Sale` model stores completed order data (venueId, orderId, total, itemCount, completedAt)
+- Go ordering service inserts into `"Sale"` table on order completion
+- API: `GET /api/venues/[venueId]/sales?range=7d|30d|90d&start=&end=` — aggregates via `date_trunc`
+- Returns `{ data: [{ date, orders, revenue, avgOrderValue }], summary: { totalOrders, totalRevenue, avgOrderValue } }`
+- Sales page at `/admin/[venueId]/sales/` with revenue chart (Shamsi dates, recharts) + table
+- Seed script: `scripts/seed-sales.ts` generates 60 days of synthetic data
+
 ### Menu Photo Display Toggle
 - `menuPhotoMode` boolean on Venue model (default: `false`)
 - Toggle in venue settings page: "نمایش عکس آیتم‌ها در منوی عمومی"
@@ -53,7 +61,7 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 177 tests pass
+3. `npm test` — all 180 tests pass
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas
@@ -163,6 +171,7 @@ go mod tidy             # Sync dependencies
 - **Rate limiting:** Per-user token bucket (100 req/s, burst 200) applied globally via middleware. Keys by `UserID` when authenticated, falls back to `RemoteAddr`.
 - **WebSocket broadcasts:** All 5 mutation handlers broadcast typed events via the Hub. Redis pub/sub enabled when `REDIS_URL` is configured.
 - **Analytics:** `GET /api/admin/analytics/daily-summary` returns daily stats (totalOrders, totalRevenue, avgOrderValue, top 10 items). Role-gated (OWNER/MANAGER).
+- **Sale recording:** Order completion handler inserts a `Sale` record (venueId, orderId, total, itemCount).
 
 ### Key File Locations
 

@@ -22,7 +22,7 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | Image Processing | sharp |
 | Email | nodemailer (SMTP) |
 | Storage | Local filesystem / S3-compatible (configurable) |
-| Testing | Vitest v4 (177 tests) |
+| Testing | Vitest v4 (180 tests) |
 | Runtime | Node 22 |
 | **Ordering Service** | |
 | Framework | Go 1.23 (chi v5) |
@@ -63,7 +63,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint (Next.js core-web-vitals + TypeScript rules) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Run 177 tests (vitest run) |
+| `npm test` | Run 180 tests (vitest run) |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run db:studio` | Prisma Studio |
 | `npm run db:seed` | Seed demo data (upsert) |
@@ -94,8 +94,9 @@ Managed via `docker compose` alongside the Next.js app (port 8080).
 | `/venues` | Dynamic | Venue picker (auto-redirects if 1 membership) |
 | `/m/[slug]` | Dynamic | Static public menu (~10KB inline HTML, no client JS) |
 | `/admin/[venueId]/menu` | Dynamic | Menu management (categories + items CRUD, drag-and-drop, filters) |
-| `/admin/[venueId]/qr-menu` | Dynamic | Publish/preview/QR editor with live mobile preview |
+| `/admin/[venueId]/qr-menu` | Dynamic | Publish/preview/QR editor with live mobile preview (merged into `/menu`) |
 | `/admin/[venueId]/publications` | Dynamic | Publication history (last 50, Persian dates) |
+| `/admin/[venueId]/sales` | Dynamic | Sales dashboard: revenue chart (Shamsi dates), order history, summary stats |
 | `/admin/[venueId]/settings` | Dynamic | Venue settings, logo upload, member management, station schedules, photo display toggle |
 | `/internal` | Dynamic | Internal dashboard (mofé team) |
 | `/internal/users` | Dynamic | Internal user management: list users, create accounts |
@@ -121,6 +122,8 @@ Managed via `docker compose` alongside the Next.js app (port 8080).
 **Publishing:** `GET /api/venues/[id]/public-preview`, `POST .../publish`, `POST .../unpublish`, `GET .../publications`
 
 **Assets:** `POST|DELETE /api/venues/[id]/logo`
+
+**Sales:** `GET /api/venues/[venueId]/sales?range=7d|30d|90d&start=&end=`
 
 **Schedules:** `GET|POST /api/venues/[id]/schedules`
 
@@ -277,12 +280,13 @@ Full design system in [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md).
 
 ## Testing
 
-177 tests across 8 files with real PostgreSQL test DB:
+180 tests across 8 files with real PostgreSQL test DB:
 
 ```
-src/__tests__/api/integration.test.ts           — 72 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
+src/__tests__/api/integration.test.ts           — 75 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
 │                                                    permissions, CSV import, publication edge cases,
-│                                                    cross-venue isolation, table CRUD, table status validation)
+│                                                    cross-venue isolation, table CRUD, table status validation,
+│                                                    sales aggregation)
 src/__tests__/lib/public-menu/renderer.test.ts  — 48 tests (HTML structure, Persian formatting, escaping, edge cases)
 src/__tests__/proxy/proxy.test.ts               —  9 tests (subdomain routing, auth guards, localhost bypass)
 src/__tests__/lib/api-helpers.test.ts           — 12 tests (ApiError, errorResponse, requireAuth)
@@ -302,26 +306,30 @@ Run: `npm test` (pushes schema to test database, runs tests).
 | [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md) | Full design system specification (503 lines) |
 | [`PRD.md`](./PRD.md) | Product requirements, built vs. future features |
 | [`AGENTS.md`](./AGENTS.md) | AI-assisted development instructions |
+| [`SALES_DASHBOARD.md`](./SALES_DASHBOARD.md) | Sales dashboard development plan |
 
 ## Project Structure
 
 ```
 mofe-menu/
 ├── prisma/                     # Schema, migrations, seed
-│   ├── schema.prisma           # 17 models (User, Venue, VenueMember, Category,
-│   │                           #   MenuItem, Asset, MenuPublication, Domain, AuditLog,
-│   │                           #   Session, PasswordResetToken, StationSchedule,
-│   │                           #   MenuItemVariant, MenuItemAllergen,
-│   │                           #   RateLimitEntry, VenueTable, MenuItemPhoto)
+│   ├── schema.prisma           # 20 models (18 Prisma-managed + 2 Go-managed @@ignore):
+│   │                           #   User, Venue, VenueMember, Category, MenuItem,
+│   │                           #   Asset, MenuPublication, Domain, StationSchedule,
+│   │                           #   MenuItemVariant, MenuItemPrice, MenuItemAllergen,
+│   │                           #   VenueTable, Sale, AuditLog, PasswordResetToken,
+│   │                           #   RateLimitEntry, Session
 │   └── seed.ts                 # Demo data seeder
 ├── public/
 │   ├── fonts/                  # Self-hosted fonts (5 files)
 │   └── uploads/                # Venue logo + item photo uploads
 ├── scripts/
-│   └── download-menus.ts       # CLI tool: export published menus as HTML
+│   ├── download-menus.ts       # CLI tool: export published menus as HTML
+│   ├── import-csv.ts           # CLI tool: import items from CSV file
+│   └── seed-sales.ts           # Seed 60 days of synthetic sales data
 ├── src/
-│   ├── __tests__/              # Vitest test suite (8 files, 177 tests)
-│   │   ├── api/                # Integration tests (72)
+│   ├── __tests__/              # Vitest test suite (8 files, 180 tests)
+│   │   ├── api/                # Integration tests (75)
 │   │   ├── lib/                # Unit tests (auth, renderer, rate-limit, config, api-helpers, ordering-proxy)
 │   │   ├── proxy/              # Proxy routing tests (9)
 │   │   ├── helpers.ts          # Test data helpers
@@ -334,6 +342,7 @@ mofe-menu/
 │   │   │   │   ├── qr-menu/    # QR/publish editor
 │   │   │   │   ├── publications/ # Publication history
 │   │   │   │   ├── settings/   # Venue settings + members
+│   │   │   │   ├── sales/      # Sales dashboard with revenue chart (Shamsi dates)
 │   │   │   │   └── orders/     # Order management (admin order view + table management)
 │   │   │   └── venues/new/     # (reserved)
 │   │   ├── _components/         # Landing page registration form
@@ -360,6 +369,7 @@ mofe-menu/
 │   │   │       ├── public-preview/ # Draft data for live preview
 │   │   │       ├── logo/       # Upload/delete venue logo
 │   │   │       ├── schedules/  # Station schedules CRUD
+│   │   │       ├── sales/      # Sales aggregation API
 │   │   │       ├── orders/     # Order proxy routes (list, create, get, items, send, complete, release-table)
 │   │   │       └── tables/     # Table CRUD
 │   │   ├── staff/
@@ -372,7 +382,7 @@ mofe-menu/
 │   │   ├── globals.css         # Tailwind v4 @theme + font-face + design tokens
 │   │   ├── layout.tsx          # Root RTL layout
 │   │   └── page.tsx            # Landing page
-│   ├── components/ui/          # 8 reusable UI components
+│   ├── components/ui/          # 9 reusable UI components
 │   │   ├── Badge.tsx           # Pills: default, soldOut, muted (via variant prop)
 │   │   ├── Button.tsx          # forwardRef, 4 variants, 3 sizes
 │   │   ├── Icons.tsx           # SVG icon components (GripIcon, EditIcon, DeleteIcon)
@@ -380,6 +390,7 @@ mofe-menu/
 │   │   ├── Modal.tsx           # Overlay + Escape + body scroll lock
 │   │   ├── Panel.tsx           # Section container
 │   │   ├── QRCodeExport.tsx    # QR generation, PNG download, PDF print
+│   │   ├── TimePicker.tsx      # Time selection input
 │   │   └── Toggle.tsx          # role="switch" pill
 │   ├── components/orders/      # 3 ordering components
 │   │   ├── TableGrid.tsx       # Interactive table grid
@@ -404,6 +415,7 @@ mofe-menu/
 │   │   ├── ordering-proxy.ts   # Proxy helper: forward requests to Go ordering service
 │   │   ├── permissions.ts      # Role-based access (owner/manager/staff)
 │   │   ├── prisma.ts           # Prisma singleton (PrismaPg adapter)
+│   │   ├── tables.ts           # Table status management helpers
 │   │   ├── rate-limit.ts       # DB-backed rate limiter (RateLimitEntry model)
 │   │   └── storage.ts          # File storage abstraction (local/S3-compatible)
 │   └── proxy.ts                # Auth proxy (export: proxy, not middleware)

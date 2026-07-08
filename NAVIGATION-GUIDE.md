@@ -18,20 +18,23 @@ An orientation for developers working on this project. Covers directory layout, 
 ```
 mofe-menu/
 ├── prisma/
-│   ├── schema.prisma      # 17 models (User, Venue, VenueMember, Category, MenuItem,
-│   │                      #   Asset, MenuPublication, Domain, AuditLog, Session,
-│   │                      #   PasswordResetToken, StationSchedule, MenuItemVariant,
-│   │                      #   MenuItemAllergen, RateLimitEntry, VenueTable, MenuItemPhoto)
+│   ├── schema.prisma      # 20 models (18 Prisma-managed + 2 Go-managed @@ignore):
+│   │                      #   User, Venue, VenueMember, Category, MenuItem, Asset,
+│   │                      #   MenuPublication, Domain, StationSchedule, MenuItemVariant,
+│   │                      #   MenuItemPrice, MenuItemAllergen, VenueTable, Sale,
+│   │                      #   AuditLog, PasswordResetToken, RateLimitEntry, Session
 │   ├── migrations/         # Prisma migration history
 │   └── seed.ts            # Demo data seeder (uses src/lib/demo.ts helpers)
 ├── public/
 │   └── fonts/             # 5 self-hosted font files (Parastoo, Vazirmatn, EB Garamond)
 ├── scripts/
-│   └── download-menus.ts  # CLI tool to export published menus as HTML files
+│   ├── download-menus.ts  # CLI tool to export published menus as HTML files
+│   ├── import-csv.ts      # CLI tool to import items from CSV
+│   └── seed-sales.ts      # Seed 60 days of synthetic sales data
 ├── src/
 │   ├── __tests__/
-│   │   ├── api/            # Integration tests (72 tests — auth, CRUD, publish, permissions, table CRUD, table status)
-│   │   ├── lib/            # Unit tests — auth (8) + renderer (48) + rate-limit (8) + ordering-proxy (12)
+│   │   ├── api/            # Integration tests (75 tests — auth, CRUD, publish, permissions, table CRUD, table status, sales aggregation)
+│   │   ├── lib/            # Unit tests — auth (8) + renderer (48) + rate-limit (8) + ordering-proxy (12) + api-helpers (12) + config (8)
 │   │   ├── proxy/          # Proxy routing tests (9 tests)
 │   │   ├── global-setup.ts # Creates test DB before all tests, cleans up after
 │   │   ├── setup.ts        # Per-file setup (NODE_ENV=test)
@@ -40,10 +43,10 @@ mofe-menu/
 │   │   ├── admin/
 │   │   │   ├── [venueId]/
 │   │   │   │   ├── layout.tsx     # Admin shell (header, nav, auth check)
-│   │   │   │   ├── menu/          # Menu management (Server + MenuClient)
-│   │   │   │   ├── qr-menu/      # QR/publish editor (Server + QRMenuClient)
+│   │   │   │   ├── menu/          # Menu management + QR/publish editor (Server + MenuClient)
 │   │   │   │   ├── publications/  # Publication history (Server + PublicationsClient)
 │   │   │   │   ├── settings/      # Venue settings + member management (Server + SettingsClient)
+│   │   │   │   ├── sales/         # Sales dashboard (Server + SalesClient)
 │   │   │   │   └── orders/       # Admin order management (Server + AdminOrdersClient)
 │   │   │   └── venues/
 │   │   │       └── new/           # (empty, reserved for venue creation)
@@ -70,6 +73,7 @@ mofe-menu/
 │   │   │           ├── public-preview/ # Draft data for live preview
 │   │   │           ├── logo/           # Upload/delete venue logo
 │   │   │           ├── schedules/      # Station schedules CRUD
+│   │   │           ├── sales/          # Sales aggregation API
 │   │   │           ├── orders/         # Order proxy routes (list, create, get, items, send, complete, release-table)
 │   │   │           └── tables/         # Table CRUD
 │   │   ├── staff/
@@ -81,7 +85,7 @@ mofe-menu/
 │   │   ├── globals.css       # Tailwind v4 @theme + font-face declarations + tokens
 │   │   ├── layout.tsx        # Root RTL layout (lang=fa, dir=rtl)
 │   │   └── page.tsx          # Full landing page with hero, nav, features, how-it-works, benefits, contact form, footer
-│   ├── components/ui/        # 8 reusable UI components
+│   ├── components/ui/        # 9 reusable UI components
 │   │   ├── Badge.tsx         # Inline pill (default, soldOut, muted via variant prop)
 │   │   ├── Button.tsx        # forwardRef, 4 variants (primary/secondary/tertiary/destructive), 3 sizes
 │   │   ├── Icons.tsx         # SVG icon components (GripIcon, EditIcon, DeleteIcon)
@@ -89,6 +93,7 @@ mofe-menu/
 │   │   ├── Modal.tsx         # "use client" modal with overlay, Escape, body scroll lock
 │   │   ├── Panel.tsx         # Section container with title/subtitle
 │   │   ├── QRCodeExport.tsx  # Client-side QR generation, PNG download, PDF print
+│   │   ├── TimePicker.tsx    # Time selection input
 │   │   └── Toggle.tsx        # role="switch" toggle pill
 │   ├── components/orders/    # 3 ordering components
 │   │   ├── TableGrid.tsx     # Interactive table grid
@@ -110,6 +115,7 @@ mofe-menu/
 │   │   ├── ordering-proxy.ts # Proxy helper: forward requests to Go ordering service
 │   │   ├── permissions.ts    # Role-based access (owner/manager/staff)
 │   │   ├── prisma.ts         # Prisma singleton (PrismaPg adapter)
+│   │   ├── tables.ts         # Table status management helpers
 │   │   ├── public-menu/
 │   │   │   ├── publication.ts   # buildPublicSnapshot, publishVenueMenu, unpublishVenueMenu
 │   │   │   └── renderer.ts      # renderPublicMenu (~10KB static HTML), renderUnavailablePage
@@ -323,7 +329,7 @@ npx prisma migrate dev --name describe_change
 
 ### Running tests
 ```bash
-npm test                # Run all 177 tests
+npm test                # Run all 180 tests
 npm run test:watch      # Watch mode
 ```
 
