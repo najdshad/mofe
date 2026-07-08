@@ -22,7 +22,7 @@ interface DataPoint {
   avgOrderValue: number;
 }
 
-function toPersianDate(isoDate: string): string {
+export function toPersianDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-").map(Number);
   const j = toJalaali(y, m, d);
   return `${j.jy}/${String(j.jm).padStart(2, "0")}/${String(j.jd).padStart(2, "0")}`;
@@ -53,7 +53,7 @@ const RANGE_LABELS: Record<RangeKey, string> = {
 
 const RANGE_KEYS: RangeKey[] = ["daily", "weekly", "monthly", "yearly", "custom"];
 
-function formatCurrency(n: number): string {
+export function formatCurrency(n: number): string {
   return n.toLocaleString("fa-IR");
 }
 

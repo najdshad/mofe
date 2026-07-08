@@ -359,7 +359,7 @@ function ItemModal({
   const [station, setStation] = useState(initial?.station ?? "kitchen");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [calories, setCalories] = useState(String(initial?.calories ?? ""));
-  const [isSoldOut, setIsSoldOut] = useState(initial?.isSoldOut ?? false);
+  const [isSoldOut] = useState(initial?.isSoldOut ?? false);
   const [photoAssetId, setPhotoAssetId] = useState(initial?.photoAssetId ?? null);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [variants, setVariants] = useState<{ nameFa: string; nameEn: string; priceModifier: number }[] | null>(null);
@@ -600,6 +600,7 @@ function ItemModal({
             </label>
             <div className="flex items-center gap-3">
               {photoAssetId && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={photoAssetId}
                   alt=""

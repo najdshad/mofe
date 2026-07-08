@@ -191,6 +191,7 @@ export function QRCodeExport({
               {venueName}
             </div>
             <div className="mx-auto h-px w-3/5 bg-line" style={{ margin: `${L.dividerMargin}px auto` }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrDataUrl}
               alt={`QR Code for ${venueName}`}

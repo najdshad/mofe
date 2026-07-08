@@ -9,7 +9,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (180 tests; use --no-file-parallelism for reliable runs)
+npm test             # Vitest run (212 tests; use --no-file-parallelism for reliable runs)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -36,10 +36,12 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 ### Sales Dashboard (`/admin/[venueId]/sales`)
 - `Sale` model stores completed order data (venueId, orderId, total, itemCount, completedAt)
 - Go ordering service inserts into `"Sale"` table on order completion
-- API: `GET /api/venues/[venueId]/sales?range=7d|30d|90d&start=&end=` — aggregates via `date_trunc`
+- API: `GET /api/venues/[venueId]/sales?range=daily|weekly|monthly|yearly|custom&start=&end=` — aggregates via `date_trunc`
 - Returns `{ data: [{ date, orders, revenue, avgOrderValue }], summary: { totalOrders, totalRevenue, avgOrderValue } }`
 - Sales page at `/admin/[venueId]/sales/` with revenue chart (Shamsi dates, recharts) + table
 - Seed script: `scripts/seed-sales.ts` generates 60 days of synthetic data
+- Tests: `src/__tests__/api/sales.test.ts` (19 tests covering auth, aggregation, isolation, response format)
+- Client helpers: `toPersianDate()`, `formatCurrency()` exported from `SalesClient.tsx`, tested in `src/__tests__/components/SalesClient.test.ts`
 
 ### Menu Photo Display Toggle
 - `menuPhotoMode` boolean on Venue model (default: `false`)
@@ -61,7 +63,7 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 180 tests pass
+3. `npm test` — all 212 tests pass
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas
@@ -142,8 +144,10 @@ All use `forwardRef` where applicable. Variants:
 - **Config:** `vitest.config.ts` — `@/` path alias, `environment: "node"`, `globals: true`
 - **Global setup:** `src/__tests__/global-setup.ts` — pushes schema with `prisma db push --accept-data-loss` before all tests
 - **Per-file setup:** `src/__tests__/setup.ts` — sets `NODE_ENV=test`
-- **Helpers:** `cleanTestData()` truncates all tables, `seedTestData()` creates test user + venue + 3 categories + 3 items
+- **Helpers:** `cleanTestData()` truncates all tables, `seedTestData()` creates test user + venue + 3 categories + 3 items, `seedTestSale()` creates a Sale record
 - **Integration tests:** Use dynamic `import()` for prisma to avoid hoisting issues
+- **API route tests:** Mock `requireAuth`/`requireVenueAccess` via `vi.mock`, call handlers directly with `new Request()`. See `src/__tests__/api/sales.test.ts`
+- **Client helper tests:** Pure functions tested without DOM. See `src/__tests__/components/SalesClient.test.ts`
 - Run: `npm test` (non-interactive) or `npm run test:watch` (watch mode)
 
 ## Go Ordering Service (`ordering-service/`)
@@ -249,6 +253,8 @@ go mod tidy             # Sync dependencies
 | Auth proxy | `src/proxy.ts` |
 | Rate limiter | `src/lib/rate-limit.ts` |
 | Mailer | `src/lib/mailer.ts` |
+| Sales API tests | `src/__tests__/api/sales.test.ts` |
+| SalesClient helper tests | `src/__tests__/components/SalesClient.test.ts` |
 | Photo upload API | `src/app/api/venues/[venueId]/items/[itemId]/photo/route.ts` |
 | Storage | `src/lib/storage.ts` |
 | Design tokens + fonts | `src/app/globals.css` |
@@ -268,7 +274,7 @@ go mod tidy             # Sync dependencies
 4. Wrap handler body in `try { ... } catch (e) { return errorResponse(e); }`
 5. Use `const user = await requireAuth()` for auth, then permission helpers for access control
 6. Return `NextResponse.json(...)` with appropriate status
-7. Add tests in `src/__tests__/api/integration.test.ts`
+7. Add tests — data model tests in `src/__tests__/api/integration.test.ts`, API route tests in `src/__tests__/api/<entity>.test.ts` with mocked auth
 8. Build + typecheck + test
 
 ### Adding a new admin page

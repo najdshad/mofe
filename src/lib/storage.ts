@@ -22,7 +22,8 @@ export function isS3Configured(): boolean {
 }
 
 const localBackend: StorageBackend = {
-  async save(key: string, buffer: Buffer, contentType: string) {
+  async save(key: string, buffer: Buffer, _contentType: string) {
+    void _contentType;
     const filePath = join(UPLOADS_DIR, key);
     await writeFile(filePath, buffer);
     return { url: `/uploads/${key}`, byteSize: buffer.length };
@@ -59,7 +60,7 @@ async function getS3Backend(): Promise<StorageBackend> {
   });
 
   s3Backend = {
-    async save(key: string, buffer: Buffer, contentType: string) {
+  async save(key: string, buffer: Buffer, contentType: string) {
       await client.send(
         new PutObjectCommand({
           Bucket: s3Config.bucket,

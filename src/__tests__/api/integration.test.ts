@@ -1041,13 +1041,13 @@ describe("Table CRUD", () => {
 
 describe("Sales data model", () => {
   it("creates and reads sale records", async () => {
-    const sale1 = await seedTestSale(data.venue.id, {
+    await seedTestSale(data.venue.id, {
       total: 100000,
       itemCount: 2,
       completedAt: new Date("2026-07-01T10:00:00Z"),
       orderId: "test-sale-db-1",
     });
-    const sale2 = await seedTestSale(data.venue.id, {
+    await seedTestSale(data.venue.id, {
       total: 200000,
       itemCount: 3,
       completedAt: new Date("2026-07-01T14:00:00Z"),

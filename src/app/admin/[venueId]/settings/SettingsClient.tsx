@@ -324,6 +324,7 @@ export function SettingsClient({
             </label>
             {logoUrl && (
               <div className="flex items-center gap-3 mb-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={logoUrl}
                   alt="لوگو"
