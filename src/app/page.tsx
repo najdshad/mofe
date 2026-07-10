@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { Check, ChevronLeft, Mail, MessageCircle, Phone, QrCode, Sparkles } from "lucide-react";
-import RegistrationForm from "./_components/RegistrationForm";
+import { Check, ChevronLeft, QrCode, Sparkles } from "lucide-react";
 
 const navItems = [
   { label: "چیست؟", href: "#what" },
   { label: "چگونه کار می‌کند", href: "#how" },
   { label: "مزایا", href: "#why" },
-  { label: "ثبت‌نام", href: "#contact" },
 ];
 
 const benefits = [
@@ -15,12 +13,6 @@ const benefits = [
   "بدون نصب اپلیکیشن",
   "مناسب کافه‌ها و رستوران‌های فارسی‌زبان",
   "مدیریت ساده برای استفاده روزانه",
-];
-
-const contactMethods = [
-  { icon: MessageCircle, label: "Telegram", value: "@mofe" },
-  { icon: Phone, label: "WhatsApp", value: "+98 900 000 0000" },
-  { icon: Mail, label: "Email", value: "hello@mofe.ir" },
 ];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -74,13 +66,13 @@ export default function MofeLandingPage() {
               </a>
             ))}
           </nav>
-          <a
-            href="#contact"
+          <Link
+            href="/signup"
             className="inline-flex items-center gap-2 rounded-full border border-ink px-4 py-2 text-[14px] text-ink transition hover:bg-[#eee7d8] md:hidden"
           >
             ثبت‌نام
             <ChevronLeft className="h-4 w-4" />
-          </a>
+          </Link>
         </header>
 
         {/* Hero */}
@@ -106,11 +98,11 @@ export default function MofeLandingPage() {
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a href="#contact">
+              <Link href="/signup">
                 <Button>
                   ثبت‌نام کافه
                 </Button>
-              </a>
+              </Link>
               <Link href="/login">
                 <Button secondary>
                   ورود به سیستم
@@ -213,46 +205,6 @@ export default function MofeLandingPage() {
                   <span className="text-[16px] leading-7 [font-family:Parastoo,serif]">{item}</span>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Contact */}
-        <section id="contact" className="border-t border-line py-20 md:py-28">
-          <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-            <div>
-              <SectionLabel>Contact / registration</SectionLabel>
-              <h2 className="text-[34px] leading-[1.15] md:text-[44px] font-serif">
-                حساب خود را بسازید یا اطلاعات بیشتر بگیرید.
-              </h2>
-              <p className="mt-6 max-w-2xl text-[18px] leading-9 text-ink-muted [font-family:Parastoo,serif]">
-                فرم را تکمیل کنید تا تیم mofé با شما تماس بگیرد. همچنین می‌توانید از راه‌های تماس مستقیم استفاده کنید.
-              </p>
-
-              <div className="mt-8 space-y-3">
-                {contactMethods.map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="flex items-center justify-between rounded-[22px] border border-line bg-[#f7f2e9] px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-paper">
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      <div>
-                        <div className="text-[12px] uppercase tracking-[0.22em] text-ink-muted">{label}</div>
-                        <div className="mt-1 text-[15px]">{value}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[28px] border border-line bg-[#f7f2e9] p-6 md:p-8">
-              <div className="mb-6 border-b border-line pb-4">
-                <div className="text-[13px] uppercase tracking-[0.25em] text-ink-muted">فرم ثبت‌نام</div>
-                <div className="mt-2 text-[22px] [font-family:Parastoo,serif]">حساب کافه خود را بسازید</div>
-              </div>
-
-              <RegistrationForm />
             </div>
           </div>
         </section>
