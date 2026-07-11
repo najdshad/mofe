@@ -20,6 +20,8 @@ export async function GET(
     const station = searchParams.get("station");
     const soldOut = searchParams.get("soldOut");
     const search = searchParams.get("search");
+    const take = Math.min(Math.max(parseInt(searchParams.get("take") ?? "100", 10) || 100, 1), 500);
+    const skip = Math.max(parseInt(searchParams.get("skip") ?? "0", 10) || 0, 0);
 
     const where: Prisma.MenuItemWhereInput = { venueId, deletedAt: null };
     if (categoryId) where.categoryId = categoryId;
@@ -32,13 +34,18 @@ export async function GET(
       ];
     }
 
-    const items = await prisma.menuItem.findMany({
-      where,
-      orderBy: [{ categoryId: "asc" }, { displayOrder: "asc" }],
-      include: { category: true },
-    });
+    const [items, total] = await Promise.all([
+      prisma.menuItem.findMany({
+        where,
+        orderBy: [{ categoryId: "asc" }, { displayOrder: "asc" }],
+        include: { category: true },
+        take,
+        skip,
+      }),
+      prisma.menuItem.count({ where }),
+    ]);
 
-    return NextResponse.json(items);
+    return NextResponse.json({ items, total, take, skip });
   } catch (e) {
     return errorResponse(e);
   }

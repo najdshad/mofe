@@ -10,6 +10,9 @@ function createPrismaClient() {
   const pool = new Pool({
     connectionString:
       process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe",
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
   });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });

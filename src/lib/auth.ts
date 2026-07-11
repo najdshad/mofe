@@ -84,7 +84,7 @@ export async function getCurrentUser() {
     }
   }
 
-  await prisma.session.update({
+  prisma.session.update({
     where: { id: session.id },
     data: { lastActivityAt: new Date() },
   }).catch(() => {

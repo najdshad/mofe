@@ -24,15 +24,15 @@ function generateSlug(nameFa: string): string {
 }
 
 async function uniqueSlug(base: string): Promise<string> {
-  let slug = base;
-  let attempt = 0;
-  while (attempt < 100) {
-    const exists = await prisma.venue.findUnique({ where: { slug } });
-    if (!exists) return slug;
-    attempt++;
-    slug = `${base}-${attempt}`;
-  }
-  return `${base}-${Date.now()}`;
+  const existing = await prisma.venue.findFirst({
+    where: { slug: { startsWith: base } },
+    select: { slug: true },
+    orderBy: { slug: "desc" },
+  });
+  if (!existing) return base;
+  const match = existing.slug.match(new RegExp(`^${base}-(\\d+)$`));
+  const next = match ? parseInt(match[1], 10) + 1 : 1;
+  return `${base}-${next}`;
 }
 
 export async function POST(request: Request) {
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({ where: { email }, select: { id: true } });
     if (existingUser) {
       return NextResponse.json(
         { error: "این ایمیل قبلاً ثبت شده است" },

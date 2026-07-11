@@ -35,6 +35,12 @@ func setupTestHandler(t *testing.T) (*OrderHandler, func()) {
 	hub := NewHub()
 	go hub.Run()
 
+	origClean := clean
+	clean = func() {
+		hub.Shutdown()
+		origClean()
+	}
+
 	return NewOrderHandler(db, hub), clean
 }
 
@@ -264,6 +270,7 @@ func setupLifecycleTest(t *testing.T) (*OrderHandler, *sql.DB, func()) {
 	handler := NewOrderHandler(db, hub)
 
 	clean := func() {
+		hub.Shutdown()
 		db.Exec(`DELETE FROM "Sale"`)
 		db.Exec("DELETE FROM order_items")
 		db.Exec("DELETE FROM orders")

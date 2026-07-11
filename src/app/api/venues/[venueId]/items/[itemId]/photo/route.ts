@@ -3,45 +3,12 @@ import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import sharp from "sharp";
 import path from "path";
 import fs from "fs/promises";
 import crypto from "crypto";
+import { compressToTarget, MAX_SIZE_BYTES } from "@/lib/compress-image";
 
 const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
-const MAX_SIZE_BYTES = 50 * 1024;
-const QUALITY_MIN = 30;
-
-async function compressToTarget(
-  buffer: Buffer,
-  maxDim: number,
-  maxBytes: number
-): Promise<Buffer> {
-  for (let dim = maxDim; dim >= 200; dim -= 100) {
-    let low = QUALITY_MIN;
-    let high = 95;
-    let best: Buffer | null = null;
-
-    while (low <= high) {
-      const mid = Math.round((low + high) / 2);
-      const compressed = await sharp(buffer)
-        .resize(dim, dim, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: mid })
-        .toBuffer();
-
-      if (compressed.length <= maxBytes) {
-        best = compressed;
-        low = mid + 1;
-      } else {
-        high = mid - 1;
-      }
-    }
-
-    if (best) return best;
-  }
-
-  throw new Error("Could not compress image to under 50KB");
-}
 
 export async function POST(
   request: Request,
@@ -55,6 +22,7 @@ export async function POST(
 
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId, venueId },
+      select: { photoAssetId: true },
     });
     if (!item) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
@@ -129,6 +97,7 @@ export async function DELETE(
 
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId, venueId },
+      select: { photoAssetId: true },
     });
     if (!item) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });

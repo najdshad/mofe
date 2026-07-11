@@ -1,25 +1,7 @@
 "use client";
 
-interface OrderItem {
-  id: string;
-  menuItemName: string;
-  variantName?: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  status: string;
-  notes?: string;
-}
-
-interface Order {
-  id: string;
-  tableNumber?: string;
-  status: string;
-  subtotal: number;
-  total: number;
-  items: OrderItem[];
-  createdBy: string;
-}
+import { Button } from "@/components/ui/Button";
+import type { OrderData } from "./types";
 
 const statusBadge: Record<string, { label: string; className: string }> = {
   DRAFT: { label: "پیش‌نویس", className: "bg-gray-100 text-gray-600" },
@@ -38,13 +20,17 @@ export function OrderPanel({
   onCompleteOrder,
   onItemStatus,
   onCancelItem,
+  loading,
+  error,
 }: {
-  order: Order;
+  order: OrderData;
   onAddItem: () => void;
   onSendToKitchen: () => void;
   onCompleteOrder: () => void;
   onItemStatus: (itemId: string, status: string) => void;
   onCancelItem: (itemId: string) => void;
+  loading?: { send?: boolean; complete?: boolean };
+  error?: string | null;
 }) {
   const tableLabel = order.tableNumber ? `میز ${order.tableNumber}` : "";
   const badge = statusBadge[order.status] || statusBadge.PENDING;
@@ -75,8 +61,7 @@ export function OrderPanel({
   };
 
   return (
-    <div className="flex h-full flex-col rounded-[var(--radius-panel)] border border-line bg-paper">
-      {/* Header */}
+    <div className="flex h-full flex-col rounded-[var(--radius-panel)] border border-line bg-paper transition-all duration-300">
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-serif text-ink-strong">{tableLabel}</h2>
@@ -86,7 +71,6 @@ export function OrderPanel({
         </div>
       </div>
 
-      {/* Items list */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {items.length === 0 ? (
           <p className="text-sm text-ink-muted">هیچ آیتمی اضافه نشده است</p>
@@ -98,7 +82,7 @@ export function OrderPanel({
               return (
                 <div
                   key={item.id}
-                  className="rounded-[var(--radius-control)] border border-line p-3"
+                  className="rounded-[var(--radius-control)] border border-line p-3 transition-colors hover:bg-surface/50"
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -122,22 +106,27 @@ export function OrderPanel({
                       {item.totalPrice.toLocaleString("fa-IR")} تومان
                     </span>
                   </div>
-                  {next && (
-                    <button
-                      onClick={() => onItemStatus(item.id, next)}
-                      className="mt-2 rounded bg-ink px-3 py-1 text-xs text-paper transition-opacity hover:opacity-90"
-                    >
-                      {nextStatusLabel(next)}
-                    </button>
-                  )}
-                  {(item.status === "SENT" || item.status === "PREPARING") && (
-                    <button
-                      onClick={() => onCancelItem(item.id)}
-                      className="mr-2 mt-2 text-xs text-red-500 hover:text-red-600 transition-colors"
-                    >
-                      لغو
-                    </button>
-                  )}
+                  <div className="mt-2 flex items-center gap-2">
+                    {next && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => onItemStatus(item.id, next)}
+                      >
+                        {nextStatusLabel(next)}
+                      </Button>
+                    )}
+                    {(item.status === "SENT" || item.status === "PREPARING") && (
+                      <Button
+                        variant="tertiary"
+                        size="sm"
+                        onClick={() => onCancelItem(item.id)}
+                        className="text-red-500 hover:text-red-600"
+                      >
+                        لغو
+                      </Button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -145,8 +134,12 @@ export function OrderPanel({
         )}
       </div>
 
-      {/* Footer */}
       <div className="border-t border-line px-4 py-3">
+        {error && (
+          <div className="mb-3 rounded-[var(--radius-control)] bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
+            {error}
+          </div>
+        )}
         <div className="flex justify-between text-sm">
           <span className="text-ink-muted">جمع کل</span>
           <span className="font-medium text-ink">
@@ -154,27 +147,32 @@ export function OrderPanel({
           </span>
         </div>
         <div className="mt-3 flex flex-col gap-2">
-          <button
+          <Button
+            variant="secondary"
             onClick={onAddItem}
-            className="w-full rounded-[var(--radius-control)] border border-line bg-paper px-4 py-2 text-sm text-ink transition-colors hover:bg-surface"
+            className="w-full"
           >
             افزودن آیتم
-          </button>
+          </Button>
           {canSend && (
-            <button
+            <Button
+              variant="primary"
               onClick={onSendToKitchen}
-              className="w-full rounded-[var(--radius-control)] bg-ink px-4 py-2 text-sm text-paper transition-opacity hover:opacity-90"
+              className="w-full"
+              disabled={loading?.send}
             >
-              ارسال به آشپزخانه
-            </button>
+              {loading?.send ? "..." : "ارسال به آشپزخانه"}
+            </Button>
           )}
           {canComplete && (
-            <button
+            <Button
+              variant="primary"
               onClick={onCompleteOrder}
-              className="w-full rounded-[var(--radius-control)] bg-green-600 px-4 py-2 text-sm text-white transition-opacity hover:opacity-90"
+              className="w-full bg-green-600 border-green-600 hover:bg-green-700 hover:border-green-700 text-white"
+              disabled={loading?.complete}
             >
-              تسویه حساب
-            </button>
+              {loading?.complete ? "..." : "تسویه حساب"}
+            </Button>
           )}
         </div>
       </div>

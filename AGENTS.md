@@ -241,6 +241,7 @@ go mod tidy             # Sync dependencies
 | Seed data | `prisma/seed.ts` |
 | DB singleton | `src/lib/prisma.ts` |
 | Auth functions | `src/lib/auth.ts` |
+| Signup page | `src/app/signup/page.tsx` |
 | Signup API | `src/app/api/auth/signup/route.ts` |
 | Registration form | `src/app/_components/RegistrationForm.tsx` |
 | Audit helper | `src/lib/audit.ts` |

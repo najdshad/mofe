@@ -16,7 +16,7 @@ export async function GET(
 
     const members = await prisma.venueMember.findMany({
       where: { venueId },
-      include: { user: true },
+      include: { user: { select: { id: true, name: true, email: true } } },
     });
 
     return NextResponse.json(members);
@@ -62,14 +62,14 @@ export async function POST(
     );
   }
 
-  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+  const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { slug: true } });
   if (!venue) {
     return NextResponse.json({ error: "Venue not found" }, { status: 404 });
   }
 
   const email = `${username}@${venue.slug}`;
 
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  const existingUser = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (existingUser) {
     const existingMember = await prisma.venueMember.findUnique({
       where: { venueId_userId: { venueId, userId: existingUser.id } },

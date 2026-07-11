@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -48,9 +49,12 @@ func main() {
 	}
 	slog.Info("Migrations applied")
 
+	redisCtx, redisCancel := context.WithCancel(context.Background())
+	defer redisCancel()
+
 	var hub *handlers.Hub
 	if cfg.RedisURL != "" {
-		rps, err := handlers.NewRedisPubSub(cfg.RedisURL)
+		rps, err := handlers.NewRedisPubSub(redisCtx, cfg.RedisURL)
 		if err != nil {
 			slog.Error("Failed to connect to Redis", "error", err)
 			os.Exit(1)
@@ -113,11 +117,12 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Port),
-		Handler:      r,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:           fmt.Sprintf(":%d", cfg.Port),
+		Handler:        r,
+		ReadTimeout:    15 * time.Second,
+		WriteTimeout:   15 * time.Second,
+		IdleTimeout:    60 * time.Second,
+		MaxHeaderBytes: 65536,
 	}
 
 	go func() {
@@ -146,6 +151,18 @@ func main() {
 }
 
 func runMigrations(databaseURL string) error {
+	db, err := sql.Open("pgx", databaseURL)
+	if err != nil {
+		return fmt.Errorf("failed to open DB for migration lock: %w", err)
+	}
+	defer db.Close()
+
+	// Acquire PostgreSQL advisory lock to prevent concurrent migrations
+	if _, err := db.Exec("SELECT pg_advisory_lock(19890714)"); err != nil {
+		return fmt.Errorf("failed to acquire migration lock: %w", err)
+	}
+	defer db.Exec("SELECT pg_advisory_unlock(19890714)")
+
 	m, err := migrate.New("file://migrations", databaseURL)
 	if err != nil {
 		return fmt.Errorf("failed to create migrator: %w", err)

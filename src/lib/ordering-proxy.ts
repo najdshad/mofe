@@ -15,16 +15,23 @@ export async function proxyToOrdering(
 ) {
   let res: Response;
   try {
-    res = await fetch(`${ORDERING_SERVICE_URL}${path}`, {
-      method: options.method || "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Venue-ID": options.venueId,
-        Cookie: options.cookie,
-        Origin: "http://localhost:3000",
-      },
-      body: options.body ? JSON.stringify(options.body) : undefined,
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    try {
+      res = await fetch(`${ORDERING_SERVICE_URL}${path}`, {
+        method: options.method || "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Venue-ID": options.venueId,
+          Cookie: options.cookie,
+          Origin: "http://localhost:3000",
+        },
+        body: options.body ? JSON.stringify(options.body) : undefined,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch {
     return NextResponse.json(
       { error: "سرویس سفارش‌گیری در دسترس نیست", code: "ORDERING_SERVICE_UNAVAILABLE" },

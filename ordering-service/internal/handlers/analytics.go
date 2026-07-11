@@ -61,6 +61,9 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
 	dateStr := r.URL.Query().Get("date")
 	if dateStr == "" {
 		dateStr = time.Now().Format("2006-01-02")
@@ -77,7 +80,7 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 	var summary DailySummary
 	summary.Date = dateStr
 
-	err = h.queryRowContext(r.Context(), `
+	err = h.queryRowContext(ctx, `
 		SELECT
 			COUNT(*) AS total_orders,
 			COALESCE(SUM(total), 0) AS total_revenue,
@@ -106,7 +109,7 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.queryRowContext(r.Context(), `
+	err = h.queryRowContext(ctx, `
 		SELECT COALESCE(SUM(quantity), 0)
 		FROM order_items oi
 		JOIN orders o ON oi.order_id = o.id
@@ -121,7 +124,7 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var topItems []TopItem
-	rows, err := h.queryContext(r.Context(), `
+	rows, err := h.queryContext(ctx, `
 		SELECT
 			oi.menu_item_id,
 			oi.menu_item_name,
@@ -149,6 +152,9 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 				continue
 			}
 			topItems = append(topItems, item)
+		}
+		if err := rows.Err(); err != nil {
+			slog.Error("Error iterating top item rows", "error", err)
 		}
 	}
 

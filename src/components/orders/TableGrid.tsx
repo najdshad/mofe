@@ -1,19 +1,24 @@
 "use client";
 
-export interface TableInfo {
-  tableNumber: number;
-  tableId: string;
-  status: "free" | "active" | "ready" | "settled";
-}
+import { Button } from "@/components/ui/Button";
+import type { TableInfo } from "./types";
 
 export function TableGrid({
   tables,
   selectedTable,
   onSelectTable,
+  editMode,
+  onEdit,
+  onDelete,
+  onAddTable,
 }: {
   tables: TableInfo[];
   selectedTable: number | null;
   onSelectTable: (n: number) => void;
+  editMode?: boolean;
+  onEdit?: (table: { id: string; number: number; label?: string }) => void;
+  onDelete?: (id: string) => void;
+  onAddTable?: () => void;
 }) {
   const statusColor = (status: string) => {
     switch (status) {
@@ -29,24 +34,65 @@ export function TableGrid({
   };
 
   return (
-    <div className="grid grid-cols-4 gap-4 md:grid-cols-5">
-      {tables.map((t) => (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {editMode && onAddTable && (
         <button
-          key={t.tableNumber}
-          onClick={() => onSelectTable(t.tableNumber)}
-          className={`flex flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 p-6 transition-all ${
-            selectedTable === t.tableNumber
-              ? "border-ink bg-surface"
-              : "border-line bg-paper hover:border-ink/50"
-          }`}
+          onClick={onAddTable}
+          className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-paper p-6 transition-all hover:border-ink/50"
         >
-          <span className="text-3xl font-serif text-ink-strong">
-            {t.tableNumber}
-          </span>
-          <span
-            className={`h-3 w-3 rounded-full ${statusColor(t.status)}`}
-          />
+          <span className="text-3xl font-serif text-ink-muted">+</span>
+          <span className="text-xs text-ink-muted">افزودن میز</span>
         </button>
+      )}
+      {tables.map((t) => (
+        <div key={t.tableId} className="relative">
+          <button
+            onClick={() => onSelectTable(t.tableNumber)}
+            className={`flex w-full flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 p-6 transition-all duration-200 ${
+              selectedTable === t.tableNumber
+                ? "border-ink bg-surface shadow-sm"
+                : "border-line bg-paper hover:border-ink/50 hover:shadow-sm"
+            }`}
+          >
+            <span className="text-3xl font-serif text-ink-strong">
+              {t.tableNumber}
+            </span>
+            {t.label && (
+              <span className="text-xs text-ink-muted">{t.label}</span>
+            )}
+            <span
+              className={`h-3 w-3 rounded-full transition-colors duration-300 ${statusColor(t.status)}`}
+            />
+          </button>
+          {editMode && (
+            <div className="absolute left-1 top-1 flex gap-1">
+              {onEdit && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit({ id: t.tableId, number: t.tableNumber, label: t.label });
+                  }}
+                >
+                  ویرایش
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(t.tableId);
+                  }}
+                >
+                  حذف
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       ))}
     </div>
   );

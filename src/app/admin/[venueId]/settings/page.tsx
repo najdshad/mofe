@@ -16,13 +16,15 @@ export default async function SettingsPage({
   const { venueId } = await params;
   const membership = await requireVenueAccess(user.id, venueId);
 
-  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
-  if (!venue) redirect("/venues");
+  const [venue, members] = await Promise.all([
+    prisma.venue.findUnique({ where: { id: venueId } }),
+    prisma.venueMember.findMany({
+      where: { venueId },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    }),
+  ]);
 
-  const members = await prisma.venueMember.findMany({
-    where: { venueId },
-    include: { user: true },
-  });
+  if (!venue) redirect("/venues");
 
   return (
     <SettingsClient

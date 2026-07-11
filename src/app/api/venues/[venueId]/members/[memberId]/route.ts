@@ -18,7 +18,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const target = await prisma.venueMember.findUnique({ where: { id: memberId } });
+    const target = await prisma.venueMember.findUnique({ where: { id: memberId }, select: { userId: true, role: true, venueId: true } });
     if (!target || target.venueId !== venueId) {
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
@@ -92,7 +92,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const target = await prisma.venueMember.findUnique({ where: { id: memberId } });
+    const target = await prisma.venueMember.findUnique({ where: { id: memberId }, select: { userId: true, role: true, venueId: true } });
     if (!target || target.venueId !== venueId) {
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
@@ -114,7 +114,7 @@ export async function DELETE(
 
     const deletedMember = await prisma.venueMember.findUnique({
       where: { id: memberId },
-      include: { user: true },
+      include: { user: { select: { email: true } } },
     });
 
     await prisma.venueMember.delete({ where: { id: memberId } });

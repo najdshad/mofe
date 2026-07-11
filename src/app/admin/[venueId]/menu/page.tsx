@@ -16,24 +16,34 @@ export default async function MenuPage({
   const { venueId } = await params;
   await requireVenueAccess(user.id, venueId);
 
-  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+  const [venue, canUserPublish, categories, items, lastPublication, publicationsData] =
+    await Promise.all([
+      prisma.venue.findUnique({ where: { id: venueId }, select: { updatedAt: true, slug: true, publicStatus: true } }),
+      canManage(user.id, venueId),
+      prisma.category.findMany({
+        where: { venueId, deletedAt: null },
+        orderBy: { displayOrder: "asc" },
+        include: { _count: { select: { menuItems: true } } },
+      }),
+      prisma.menuItem.findMany({
+        where: { venueId, deletedAt: null },
+        orderBy: [{ categoryId: "asc" }, { displayOrder: "asc" }],
+        include: { category: { select: { nameFa: true } } },
+      }),
+      prisma.menuPublication.findFirst({
+        where: { venueId, status: "published" },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      }),
+      prisma.menuPublication.findMany({
+        where: { venueId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: { id: true, status: true, trigger: true, createdAt: true },
+      }),
+    ]);
+
   if (!venue) redirect("/venues");
-
-  const canUserPublish = await canManage(user.id, venueId);
-
-  const categories = await prisma.category.findMany({
-    where: { venueId, deletedAt: null },
-    orderBy: { displayOrder: "asc" },
-    include: {
-      _count: { select: { menuItems: true } },
-    },
-  });
-
-  const items = await prisma.menuItem.findMany({
-    where: { venueId, deletedAt: null },
-    orderBy: [{ categoryId: "asc" }, { displayOrder: "asc" }],
-    include: { category: true },
-  });
 
   const categoriesData = categories.map((c) => ({
     id: c.id,
@@ -59,35 +69,25 @@ export default async function MenuPage({
     photoAssetId: i.photoAssetId,
   }));
 
-  const lastPublication = await prisma.menuPublication.findFirst({
-    where: { venueId, status: "published" },
-    orderBy: { createdAt: "desc" },
-  });
-
   const hasUnpublishedChanges = !lastPublication ? true : await (async () => {
     const dates = [new Date(venue.updatedAt)];
 
-    const catAgg = await prisma.category.aggregate({
-      where: { venueId, deletedAt: null },
-      _max: { updatedAt: true },
-    });
+    const [catAgg, itemAgg] = await Promise.all([
+      prisma.category.aggregate({
+        where: { venueId, deletedAt: null },
+        _max: { updatedAt: true },
+      }),
+      prisma.menuItem.aggregate({
+        where: { venueId, deletedAt: null },
+        _max: { updatedAt: true },
+      }),
+    ]);
     if (catAgg._max.updatedAt) dates.push(new Date(catAgg._max.updatedAt));
-
-    const itemAgg = await prisma.menuItem.aggregate({
-      where: { venueId, deletedAt: null },
-      _max: { updatedAt: true },
-    });
     if (itemAgg._max.updatedAt) dates.push(new Date(itemAgg._max.updatedAt));
 
     const maxDate = dates.reduce((a, b) => (a > b ? a : b));
     return maxDate > new Date(lastPublication.createdAt);
   })();
-
-  const publicationsData = await prisma.menuPublication.findMany({
-    where: { venueId },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
 
   const publications = publicationsData.map((pub) => ({
     id: pub.id,

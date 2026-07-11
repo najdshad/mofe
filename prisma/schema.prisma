@@ -327,6 +327,7 @@ model AuditLog {
   @@index([venueId])
   @@index([actorUserId])
   @@index([createdAt])
+  @@index([venueId, createdAt])
 }
 
 model PasswordResetToken {
@@ -349,6 +350,8 @@ model RateLimitEntry {
   count     Int      @default(1)
   resetAt   DateTime
   createdAt DateTime @default(now())
+
+  @@index([resetAt])
 }
 
 model Session {

@@ -36,8 +36,10 @@ export async function seedTestSale(
 export async function seedTestData() {
   const passwordHash = await bcrypt.hash("demo1234", 12);
 
-  const user = await prisma.user.create({
-    data: {
+  const user = await prisma.user.upsert({
+    where: { email: "admin@test.ir" },
+    update: { name: "مدیر تست", passwordHash, status: "active", emailVerifiedAt: new Date() },
+    create: {
       email: "admin@test.ir",
       name: "مدیر تست",
       passwordHash,
@@ -46,8 +48,10 @@ export async function seedTestData() {
     },
   });
 
-  const venue = await prisma.venue.create({
-    data: {
+  const venue = await prisma.venue.upsert({
+    where: { slug: "test-cafe" },
+    update: { nameFa: "کافه تست" },
+    create: {
       nameFa: "کافه تست",
       nameEn: "Test Cafe",
       slug: "test-cafe",

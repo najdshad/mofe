@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     if (!email?.trim()) throw new ApiError("Email is required");
     if (!password || password.length < 8) throw new ApiError("Password must be at least 8 characters");
 
-    const existing = await prisma.user.findUnique({ where: { email: email.trim() } });
+    const existing = await prisma.user.findUnique({ where: { email: email.trim() }, select: { id: true } });
     if (existing) throw new ApiError("A user with this email already exists");
 
     const passwordHash = await hashPassword(password);

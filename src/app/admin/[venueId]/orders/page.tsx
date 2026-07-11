@@ -1,7 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { requireRole } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { cleanStaleTableStatuses } from "@/lib/tables";
 import { redirect } from "next/navigation";
 import { AdminOrdersClient } from "./AdminOrdersClient";
 
@@ -15,8 +14,6 @@ export default async function AdminOrdersPage({
 
   const { venueId } = await params;
   await requireRole(user.id, venueId, ["owner", "manager"]);
-
-  await cleanStaleTableStatuses(venueId);
 
   const [tables, categories] = await Promise.all([
     prisma.venueTable.findMany({

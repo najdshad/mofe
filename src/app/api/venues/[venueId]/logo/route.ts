@@ -2,13 +2,12 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import sharp from "sharp";
 import path from "path";
 import fs from "fs/promises";
 import crypto from "crypto";
+import { compressToTarget, MAX_SIZE_BYTES } from "@/lib/compress-image";
 
 const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
-const MAX_SIZE_BYTES = 50 * 1024;
 
 export async function POST(
   request: Request,
@@ -32,33 +31,17 @@ export async function POST(
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    let resized = await sharp(buffer)
-      .resize(500, 500, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 80 })
-      .toBuffer();
-
-    if (resized.length > MAX_SIZE_BYTES) {
-      resized = await sharp(buffer)
-        .resize(500, 500, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 60 })
-        .toBuffer();
-    }
-
-    if (resized.length > MAX_SIZE_BYTES) {
-      resized = await sharp(buffer)
-        .resize(500, 500, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: 40 })
-        .toBuffer();
-    }
-
-    if (resized.length > MAX_SIZE_BYTES) {
+    let resized: Buffer;
+    try {
+      resized = await compressToTarget(buffer, 500, MAX_SIZE_BYTES);
+    } catch {
       return NextResponse.json(
         { error: "Could not compress image to under 50KB" },
         { status: 400 }
       );
     }
 
-    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+    const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoAssetId: true } });
     if (venue?.logoAssetId) {
       const oldPath = path.join(process.cwd(), "public", venue.logoAssetId);
       try { await fs.unlink(oldPath); } catch { /* ok */ }
@@ -95,7 +78,7 @@ export async function DELETE(
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+    const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoAssetId: true } });
     if (!venue) {
       return NextResponse.json({ error: "Venue not found" }, { status: 404 });
     }

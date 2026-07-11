@@ -24,7 +24,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
     if (!user) {
       return NextResponse.json({
         message: "اگر این ایمیل در سیستم ثبت شده باشد، لینک بازنشانی ارسال خواهد شد"

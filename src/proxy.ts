@@ -7,8 +7,11 @@ function matchesDashboard(pathname: string): boolean {
   return DASHBOARD_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
-function addSecurityHeaders(response: NextResponse): NextResponse {
+function addSecurityHeaders(response: NextResponse, pathname: string): NextResponse {
   response.headers.set("X-Content-Type-Options", "nosniff");
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth")) {
+    response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  }
   return response;
 }
 
@@ -43,7 +46,7 @@ export function proxy(request: NextRequest) {
   const isIpAddress = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
 
   if (isLocalhost || isIpAddress) {
-    return authGuard(pathname, sessionCookie, request.nextUrl) ?? addSecurityHeaders(NextResponse.next());
+    return authGuard(pathname, sessionCookie, request.nextUrl) ?? addSecurityHeaders(NextResponse.next(), pathname);
   }
 
   if (hostname.startsWith("menu.")) {
@@ -58,7 +61,7 @@ export function proxy(request: NextRequest) {
         new URL(sessionCookie?.value ? "/venues" : "/login", request.nextUrl.origin),
       );
     }
-    return authGuard(pathname, sessionCookie, request.nextUrl) ?? addSecurityHeaders(NextResponse.next());
+    return authGuard(pathname, sessionCookie, request.nextUrl) ?? addSecurityHeaders(NextResponse.next(), pathname);
   }
 
   if (pathname === "/") {
@@ -73,7 +76,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(pathname, `https://menu.${hostname}`), 301);
   }
 
-  return addSecurityHeaders(NextResponse.next());
+  return addSecurityHeaders(NextResponse.next(), pathname);
 }
 
 export const config = {

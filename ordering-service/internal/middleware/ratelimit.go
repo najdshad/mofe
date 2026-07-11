@@ -9,16 +9,18 @@ import (
 	"golang.org/x/time/rate"
 )
 
+const maxRateLimiterEntries = 100000
+
 type visitor struct {
 	limiter  *rate.Limiter
 	lastSeen time.Time
 }
 
 type RateLimiter struct {
-	visitors map[string]*visitor
-	mu       sync.RWMutex
-	rate     rate.Limit
-	burst    int
+	visitors   map[string]*visitor
+	mu         sync.Mutex
+	rate       rate.Limit
+	burst      int
 }
 
 func NewRateLimiter(rps int, burst int) *RateLimiter {
@@ -32,21 +34,27 @@ func NewRateLimiter(rps int, burst int) *RateLimiter {
 }
 
 func (rl *RateLimiter) getVisitor(key string) *rate.Limiter {
-	rl.mu.RLock()
-	v, exists := rl.visitors[key]
-	rl.mu.RUnlock()
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
 
+	v, exists := rl.visitors[key]
 	if exists {
-		rl.mu.Lock()
 		v.lastSeen = time.Now()
-		rl.mu.Unlock()
 		return v.limiter
 	}
 
+	if len(rl.visitors) >= maxRateLimiterEntries {
+		for k, evict := range rl.visitors {
+			delete(rl.visitors, k)
+			if len(rl.visitors) < maxRateLimiterEntries/2 {
+				break
+			}
+			_ = evict
+		}
+	}
+
 	limiter := rate.NewLimiter(rl.rate, rl.burst)
-	rl.mu.Lock()
 	rl.visitors[key] = &visitor{limiter: limiter, lastSeen: time.Now()}
-	rl.mu.Unlock()
 	return limiter
 }
 

@@ -1,7 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { getVenueMembership } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { cleanStaleTableStatuses } from "@/lib/tables";
 import { redirect } from "next/navigation";
 import { OrdersClient } from "./OrdersClient";
 
@@ -16,8 +15,6 @@ export default async function StaffOrdersPage({
   const { venueId } = await params;
   const membership = await getVenueMembership(user.id, venueId);
   if (!membership) redirect("/venues");
-
-  await cleanStaleTableStatuses(venueId);
 
   const [tables, categories] = await Promise.all([
     prisma.venueTable.findMany({

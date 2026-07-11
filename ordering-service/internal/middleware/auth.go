@@ -55,7 +55,6 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 				return
 			}
 
-			var venueID, role string
 			if venueCount > 1 {
 				venueHeader := r.Header.Get("X-Venue-ID")
 				if venueHeader == "" {
@@ -65,24 +64,27 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 				err = db.QueryRowContext(r.Context(), `
 					SELECT "venueId", role FROM "VenueMember"
 					WHERE "userId" = $1 AND "venueId" = $2
-				`, session.UserID, venueHeader).Scan(&venueID, &role)
+				`, session.UserID, venueHeader).Scan(&session.VenueID, &session.Role)
 				if err != nil {
 					models.WriteError(w, http.StatusForbidden, "Not a member of this venue", "VENUE_ACCESS_DENIED")
 					return
 				}
 			} else {
+				// Single-venue user: combine into one JOIN query
 				err = db.QueryRowContext(r.Context(), `
-					SELECT "venueId", role FROM "VenueMember"
-					WHERE "userId" = $1
-				`, session.UserID).Scan(&venueID, &role)
+					SELECT vm."venueId", vm.role
+					FROM "Session" s
+					JOIN "VenueMember" vm ON vm."userId" = s."userId"
+					WHERE s."tokenHash" = $1
+					  AND s."expiresAt" > NOW()
+					  AND s."revokedAt" IS NULL
+					LIMIT 1
+				`, hashedToken).Scan(&session.VenueID, &session.Role)
 				if err != nil {
 					models.WriteError(w, http.StatusInternalServerError, "Failed to get venue", "DB_ERROR")
 					return
 				}
 			}
-
-			session.VenueID = venueID
-			session.Role = role
 
 			ctx := context.WithValue(r.Context(), SessionContextKey, &session)
 			next.ServeHTTP(w, r.WithContext(ctx))

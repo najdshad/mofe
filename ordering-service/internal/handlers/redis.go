@@ -17,14 +17,13 @@ type RedisPubSub struct {
 	pubsub *redis.PubSub
 }
 
-func NewRedisPubSub(redisURL string) (*RedisPubSub, error) {
+func NewRedisPubSub(ctx context.Context, redisURL string) (*RedisPubSub, error) {
 	opts, err := redis.ParseURL(redisURL)
 	if err != nil {
 		return nil, err
 	}
 
 	client := redis.NewClient(opts)
-	ctx := context.Background()
 
 	if err := client.Ping(ctx).Err(); err != nil {
 		return nil, err

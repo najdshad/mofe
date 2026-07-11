@@ -34,10 +34,10 @@ export async function POST(request: Request) {
       throw new ApiError("Slug must be lowercase alphanumeric with hyphens");
     }
 
-    const existingVenue = await prisma.venue.findUnique({ where: { slug: slug.trim() } });
+    const existingVenue = await prisma.venue.findUnique({ where: { slug: slug.trim() }, select: { id: true } });
     if (existingVenue) throw new ApiError("A venue with this slug already exists");
 
-    const owner = await prisma.user.findUnique({ where: { email: ownerEmail.trim() } });
+    const owner = await prisma.user.findUnique({ where: { email: ownerEmail.trim() }, select: { id: true } });
     if (!owner) throw new ApiError("Owner user not found. Create the user account first.");
 
     const venue = await prisma.venue.create({

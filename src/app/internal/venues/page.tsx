@@ -9,9 +9,18 @@ export default async function InternalVenuesPage() {
 
   const venues = await prisma.venue.findMany({
     orderBy: { createdAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      nameFa: true,
+      nameEn: true,
+      slug: true,
+      publicStatus: true,
+      timezone: true,
+      createdAt: true,
       members: {
-        include: { user: { select: { id: true, name: true, email: true } } },
+        select: {
+          user: { select: { id: true, name: true, email: true } },
+        },
       },
     },
   });

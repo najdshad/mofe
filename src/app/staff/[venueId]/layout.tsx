@@ -14,10 +14,12 @@ export default async function StaffLayout({
   if (!user) redirect("/login");
 
   const { venueId } = await params;
-  const membership = await getVenueMembership(user.id, venueId);
-  if (!membership) redirect("/venues");
+  const [membership, venue] = await Promise.all([
+    getVenueMembership(user.id, venueId),
+    prisma.venue.findUnique({ where: { id: venueId }, select: { nameFa: true } }),
+  ]);
 
-  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+  if (!membership) redirect("/venues");
   if (!venue) redirect("/venues");
 
   return (

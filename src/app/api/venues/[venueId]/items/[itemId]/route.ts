@@ -83,6 +83,7 @@ export async function DELETE(
 
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId, venueId },
+      select: { photoAssetId: true, nameFa: true },
     });
 
     if (item?.photoAssetId) {
