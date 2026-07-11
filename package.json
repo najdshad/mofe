@@ -13,7 +13,7 @@
     "download:menus": "tsx scripts/download-menus.ts",
     "db:reset": "npx prisma migrate reset --force",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --no-file-parallelism",
     "test:watch": "vitest"
   },
   "dependencies": {
