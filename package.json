@@ -9,7 +9,7 @@
     "lint": "eslint",
     "db:studio": "npx prisma studio",
     "db:migrate": "npx prisma migrate dev",
-    "db:seed": "npx prisma db seed",
+    "db:push": "psql \"${DATABASE_URL}\" -c \"DROP TABLE IF EXISTS schema_migrations;\" && npx prisma db push && psql \"${DATABASE_URL}\" -c \"CREATE TABLE IF NOT EXISTS schema_migrations (version bigint PRIMARY KEY, dirty boolean NOT NULL); INSERT INTO schema_migrations (version, dirty) VALUES (4, false) ON CONFLICT (version) DO NOTHING;\"",
     "download:menus": "tsx scripts/download-menus.ts",
     "db:reset": "npx prisma migrate reset --force",
     "typecheck": "tsc --noEmit",

@@ -415,7 +415,7 @@ export function OrdersClient({
 
       {/* Order panel / placeholder */}
       <div className="w-full lg:w-[35%] overflow-y-auto transition-all duration-300">
-        {error && !activeOrder && (
+        {error && (
           <div className="mb-3 rounded-[var(--radius-control)] bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
             {error}
             <button onClick={clearError} className="mr-2 text-red-500 hover:text-red-700 font-medium">✕</button>

@@ -1,31 +1,29 @@
--- Extend existing enums
-CREATE TYPE order_status AS ENUM (
-    'DRAFT',
-    'PENDING',
-    'SENT',
-    'IN_PROGRESS',
-    'READY',
-    'DELIVERED',
-    'CANCELLED'
-);
+-- Extend existing enums (IF NOT EXISTS for idempotent re-runs)
+DO $$ BEGIN
+    CREATE TYPE order_status AS ENUM (
+        'DRAFT', 'PENDING', 'SENT', 'IN_PROGRESS', 'READY', 'DELIVERED', 'CANCELLED'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE item_status AS ENUM (
-    'PENDING',
-    'SENT',
-    'PREPARING',
-    'READY',
-    'DELIVERED',
-    'CANCELLED'
-);
+DO $$ BEGIN
+    CREATE TYPE item_status AS ENUM (
+        'PENDING', 'SENT', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE station AS ENUM ('KITCHEN', 'BAR');
+DO $$ BEGIN
+    CREATE TYPE station AS ENUM ('KITCHEN', 'BAR');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- NOTE: All price columns use INT to match Prisma's MenuItem.priceToman (Int).
 -- Do NOT use DECIMAL — the Next.js app stores prices as integer tomans.
 -- MenuItemVariant.priceModifier is also Int, added to base price.
 
 -- Orders table
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id               TEXT PRIMARY KEY,
     venue_id         TEXT NOT NULL REFERENCES "Venue"(id) ON DELETE CASCADE,
     waiter_id        TEXT NOT NULL REFERENCES "User"(id),
@@ -56,7 +54,7 @@ CREATE INDEX idx_orders_venue_status ON orders(venue_id, status, created_at DESC
 CREATE INDEX idx_orders_waiter ON orders(waiter_id, created_at DESC);
 
 -- Order items table
-CREATE TABLE order_items (
+CREATE TABLE IF NOT EXISTS order_items (
     id               TEXT PRIMARY KEY,
     order_id         TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
 
