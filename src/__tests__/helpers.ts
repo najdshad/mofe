@@ -60,8 +60,10 @@ export async function seedTestData() {
     },
   });
 
-  await prisma.venueMember.create({
-    data: {
+  await prisma.venueMember.upsert({
+    where: { venueId_userId: { venueId: venue.id, userId: user.id } },
+    update: { role: "owner" },
+    create: {
       venueId: venue.id,
       userId: user.id,
       role: "owner",

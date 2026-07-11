@@ -769,10 +769,10 @@ func TestCompleteOrder_FromSentStatus(t *testing.T) {
 	handler, db, clean := setupLifecycleTest(t)
 	defer clean()
 
-	// Complete from SENT also allowed when all items are DELIVERED
-	orderID := "test-co-sent"
-	itemID := "test-item-co-sent"
-	seedOrderInStatus(t, db, orderID, itemID, "SENT", "DELIVERED")
+	// Complete from DELIVERED when all items are DELIVERED
+	orderID := "test-co-delivered"
+	itemID := "test-item-co-delivered"
+	seedOrderInStatus(t, db, orderID, itemID, "DELIVERED", "DELIVERED")
 
 	r := chi.NewRouter()
 	r.Post("/api/orders/{id}/complete", handler.CompleteOrder)
@@ -1305,6 +1305,7 @@ func TestOrderLifecycle_SendToKitchenWithDraftStatus(t *testing.T) {
 	r := chi.NewRouter()
 	r.Post("/api/orders", handler.CreateOrder)
 	r.Post("/api/orders/{id}/send", handler.SendToKitchen)
+	r.Post("/api/orders/{id}/items", handler.AddItem)
 
 	body := `{}`
 	req := httptest.NewRequest("POST", "/api/orders", strings.NewReader(body))
@@ -1316,7 +1317,18 @@ func TestOrderLifecycle_SendToKitchenWithDraftStatus(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&createResp)
 	orderID := createResp["orderId"]
 
-	// Send to kitchen — order was created as PENDING, should work
+	// Add an item so we have something to send
+	itemBody := `{"menuItemId":"test-mi-lifecycle","quantity":2}`
+	req = httptest.NewRequest("POST", "/api/orders/"+orderID+"/items", strings.NewReader(itemBody))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(lifecycleContext(req.Context()))
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("add item expected 201, got %d", w.Code)
+	}
+
+	// Send to kitchen — order has items, should work
 	req = httptest.NewRequest("POST", "/api/orders/"+orderID+"/send", nil)
 	req = req.WithContext(lifecycleContext(req.Context()))
 	w = httptest.NewRecorder()
@@ -1442,7 +1454,7 @@ func TestOrderLifecycle_NotesTooLong(t *testing.T) {
 }
 
 func TestOrderLifecycle_CannotSendAlreadySentOrder(t *testing.T) {
-	handler, db, clean := setupLifecycleTest(t)
+	handler, _, clean := setupLifecycleTest(t)
 	defer clean()
 
 	r := chi.NewRouter()
@@ -1460,8 +1472,18 @@ func TestOrderLifecycle_CannotSendAlreadySentOrder(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&createResp)
 	orderID := createResp["orderId"]
 
+	// Add an item first
+	itemBody := `{"menuItemId":"test-mi-lifecycle","quantity":2}`
+	req = httptest.NewRequest("POST", "/api/orders/"+orderID+"/items", strings.NewReader(itemBody))
+	req.Header.Set("Content-Type", "application/json")
+	req = req.WithContext(lifecycleContext(req.Context()))
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("add item expected 201, got %d", w.Code)
+	}
+
 	// First send — should succeed
-	db.Exec(`UPDATE orders SET status = 'PENDING' WHERE id = $1`, orderID)
 	req = httptest.NewRequest("POST", "/api/orders/"+orderID+"/send", nil)
 	req = req.WithContext(lifecycleContext(req.Context()))
 	w = httptest.NewRecorder()

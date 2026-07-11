@@ -193,7 +193,7 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if currentStatus != "DRAFT" && currentStatus != "PENDING" && currentStatus != "SENT" {
+	if currentStatus != "PENDING" && currentStatus != "SENT" {
 		models.WriteError(w, http.StatusBadRequest, "Cannot modify order in status: "+currentStatus, "INVALID_STATUS")
 		return
 	}
@@ -403,6 +403,7 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		ReadyAt         sql.NullTime
 		DeliveredAt     sql.NullTime
 		CancelledAt     sql.NullTime
+		CompletedAt     sql.NullTime
 		CreatedByName   string
 	}
 
@@ -411,14 +412,14 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		SELECT id, venue_id, waiter_id, table_number, guest_count,
 		       status, subtotal, total, notes, created_at,
 		       sent_to_kitchen_at, ready_at, delivered_at, cancelled_at,
-		       created_by_name
+		       completed_at, created_by_name
 		FROM orders
 		WHERE id = $1
 	`, orderID).Scan(
 		&o.ID, &o.VenueID, &o.WaiterID, &o.TableNumber, &o.GuestCount,
 		&o.Status, &o.Subtotal, &o.Total, &o.Notes, &o.CreatedAt,
 		&o.SentToKitchenAt, &o.ReadyAt, &o.DeliveredAt, &o.CancelledAt,
-		&o.CreatedByName,
+		&o.CompletedAt, &o.CreatedByName,
 	)
 
 	if err != nil {
@@ -548,12 +549,9 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		"readyAt":     o.ReadyAt.Time,
 		"deliveredAt": o.DeliveredAt.Time,
 		"cancelledAt": o.CancelledAt.Time,
+		"completedAt": o.CompletedAt.Time,
 		"createdBy":   o.CreatedByName,
 		"items":       items,
-	}
-
-	if o.TableNumber.String == "" {
-		delete(order, "tableNumber")
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -839,12 +837,12 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if currentStatus != "DRAFT" && currentStatus != "PENDING" && currentStatus != "SENT" && currentStatus != "IN_PROGRESS" && currentStatus != "READY" {
+	if currentStatus != "PENDING" && currentStatus != "SENT" && currentStatus != "IN_PROGRESS" && currentStatus != "READY" {
 		models.WriteError(w, http.StatusBadRequest, "Cannot send in status: "+currentStatus, "INVALID_STATUS")
 		return
 	}
 
-	if currentStatus == "DRAFT" || currentStatus == "PENDING" {
+	if currentStatus == "PENDING" {
 		var pendingCount int
 		err = tx.QueryRowContext(ctx, `
 			SELECT COUNT(*) FROM order_items
@@ -955,12 +953,23 @@ func (h *OrderHandler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) 
 		"READY":     "DELIVERED",
 	}
 
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
+	tx, err := h.db.BeginTx(ctx, nil)
+	if err != nil {
+		models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+		return
+	}
+	defer tx.Rollback()
+
 	var venueID, currentStatus string
-	err := h.db.QueryRowContext(r.Context(), `
+	err = tx.QueryRowContext(ctx, `
 		SELECT o.venue_id, oi.status
 		FROM order_items oi
 		JOIN orders o ON oi.order_id = o.id
 		WHERE oi.id = $1 AND oi.order_id = $2
+		FOR UPDATE OF oi, o
 	`, itemID, orderID).Scan(&venueID, &currentStatus)
 
 	if err != nil {
@@ -995,15 +1004,56 @@ func (h *OrderHandler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) 
 		timeField = "delivered_at = NOW()"
 	}
 
-	_, err = h.execContext(r.Context(), fmt.Sprintf(`
+	start := time.Now()
+	res, err := tx.ExecContext(ctx, fmt.Sprintf(`
 		UPDATE order_items
 		SET status = $1, %s
-		WHERE id = $2
-	`, timeField), req.Status, itemID)
+		WHERE id = $2 AND status = $3
+	`, timeField), req.Status, itemID, currentStatus)
+	middleware.ObserveDBQuery(time.Since(start))
 
 	if err != nil {
 		slog.Error("Failed to update item status", "error", err, "itemId", itemID)
 		models.WriteError(w, http.StatusInternalServerError, "Failed to update status", "UPDATE_FAILED")
+		return
+	}
+
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		models.WriteError(w, http.StatusConflict,
+			"Item status was changed by another request, please refresh",
+			"CONCURRENT_UPDATE")
+		return
+	}
+
+	var undelivered int
+	err = tx.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM order_items
+		WHERE order_id = $1
+		  AND status != 'CANCELLED'
+		  AND status != 'DELIVERED'
+	`, orderID).Scan(&undelivered)
+	if err != nil {
+		slog.Error("Failed to count undelivered items", "error", err, "orderId", orderID)
+		return
+	}
+
+	if undelivered == 0 {
+		start = time.Now()
+		_, err = tx.ExecContext(ctx, `
+			UPDATE orders SET status = 'DELIVERED', delivered_at = NOW()
+			WHERE id = $1
+		`, orderID)
+		middleware.ObserveDBQuery(time.Since(start))
+		if err != nil {
+			slog.Error("Failed to promote order to DELIVERED", "error", err, "orderId", orderID)
+			return
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		slog.Error("Failed to commit transaction", "error", err, "itemId", itemID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to commit", "DB_ERROR")
 		return
 	}
 
@@ -1058,9 +1108,9 @@ func (h *OrderHandler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if currentStatus != "SENT" && currentStatus != "DELIVERED" {
+	if currentStatus != "DELIVERED" {
 		models.WriteError(w, http.StatusBadRequest,
-			"Can only complete orders in SENT or DELIVERED status, got: "+currentStatus,
+			"Can only complete orders in DELIVERED status, got: "+currentStatus,
 			"INVALID_STATUS")
 		return
 	}
