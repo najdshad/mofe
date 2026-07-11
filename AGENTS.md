@@ -21,6 +21,8 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 ```
 - for internet access, use proxy at 172.25.144.1:10808
 - after each successful implementation, commit to git
+- **⚠ NEVER run `npx prisma db push --accept-data-loss`** — it destroys Go-managed tables (`orders`, `order_items`). The `@@ignore` Prisma models prevent table drops but column type mismatches (ENUM→TEXT) can still destroy NOT NULL constraints, defaults, and FKs.
+- **Safe `prisma db push` workflow:** `psql "${DATABASE_URL}" -c "DROP TABLE IF EXISTS schema_migrations;" && npx prisma db push && psql "${DATABASE_URL}" -c "CREATE TABLE IF NOT EXISTS schema_migrations (version bigint PRIMARY KEY, dirty boolean NOT NULL); INSERT INTO schema_migrations (version, dirty) VALUES (4, false) ON CONFLICT (version) DO NOTHING;"`
 
 ### Internal Auth
 - `requireInternalAuth()` from `@/lib/api-helpers` — checks `user.role === "internal"` in internal API routes

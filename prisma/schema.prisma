@@ -249,49 +249,78 @@ model VenueTable {
   @@index([venueId, isActive])
 }
 
-/// Managed by Go ordering-service — Prisma should not alter
+/// Managed by Go ordering-service — Prisma must NOT alter or drop these tables.
+/// @@ignore prevents Prisma Client generation; enums + constraints prevent db push from
+/// trying to convert columns to String (which would drop defaults/constraints).
+/// See ordering-service/migrations/001 for the authoritative table definition.
+
+enum OrderStatusGo {
+  DRAFT
+  PENDING
+  SENT
+  IN_PROGRESS
+  READY
+  DELIVERED
+  COMPLETED
+  CANCELLED
+
+  @@map("order_status")
+}
+
+enum ItemStatusGo {
+  PENDING
+  SENT
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+
+  @@map("item_status")
+}
+
+/// Go ordering-service order table (see ordering-service/migrations/001)
 model orders {
-  id           String   @id @default("")
-  venue_id     String?
-  waiter_id    String?
-  table_number String?
-  guest_count  Int?
-  status       String?
-  subtotal     Int?
-  total        Int?
-  notes        String?
-  created_at   DateTime?
+  id                String          @id
+  venue_id          String
+  waiter_id         String
+  table_number      String?
+  guest_count       Int?            @default(1)
+  status            OrderStatusGo?  @default(PENDING)
+  subtotal          Int             @default(0)
+  total             Int             @default(0)
+  notes             String?
+  created_at        DateTime?       @default(now())
   sent_to_kitchen_at DateTime?
-  ready_at     DateTime?
-  delivered_at DateTime?
-  cancelled_at DateTime?
-  completed_at DateTime?
-  created_by_name String?
+  ready_at          DateTime?
+  delivered_at      DateTime?
+  cancelled_at      DateTime?
+  completed_at      DateTime?
+  created_by_name   String?
 
   @@ignore
 }
 
-/// Managed by Go ordering-service — Prisma should not alter
+/// Go ordering-service order items table (see ordering-service/migrations/001)
 model order_items {
-  id           String   @id @default("")
-  order_id     String?
-  menu_item_id String?
-  menu_item_name String?
-  variant_id   String?
-  variant_name String?
-  quantity     Int?
-  unit_price   Int?
-  total_price  Int?
-  station      String?
-  status       String?
-  notes        String?
-  sent_at      DateTime?
-  preparing_at DateTime?
-  ready_at     DateTime?
-  delivered_at DateTime?
-  cancelled_at DateTime?
-  course_number Int?
-  created_at   DateTime?
+  id             String         @id
+  order_id       String
+  menu_item_id   String
+  menu_item_name String
+  variant_id     String?
+  variant_name   String?
+  quantity       Int
+  unit_price     Int
+  total_price    Int
+  station        String
+  status         ItemStatusGo?  @default(PENDING)
+  notes          String?
+  sent_at        DateTime?
+  preparing_at   DateTime?
+  ready_at       DateTime?
+  delivered_at   DateTime?
+  cancelled_at   DateTime?
+  course_number  Int?           @default(1)
+  created_at     DateTime?      @default(now())
 
   @@ignore
 }
