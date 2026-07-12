@@ -101,6 +101,7 @@ func main() {
 	r.Use(rl.Middleware)
 
 	r.Get("/health", handlers.HealthCheck(db))
+	r.Head("/health", handlers.HealthCheck(db))
 	r.Handle("/metrics", middleware.MetricsHandler())
 
 	r.Route("/api/orders", func(r chi.Router) {
