@@ -3,6 +3,7 @@ ARG NEXT_PUBLIC_WS_URL
 FROM node:22-slim AS builder
 ARG NEXT_PUBLIC_WS_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -27,6 +28,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Prisma runtime — schema, seed, CLI, and generated client
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/src/generated ./src/generated
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 RUN npm install --no-save --no-package-lock --ignore-scripts \
