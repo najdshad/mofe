@@ -48,7 +48,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: postgresql://mofe:mofe@db:5432/mofe
+      DATABASE_URL: postgresql://mofe:mofe@db:5432/mofe?sslmode=disable
       PORT: 8080
       SESSION_COOKIE_NAME: mofe_session
     depends_on:
