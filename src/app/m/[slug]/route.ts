@@ -38,6 +38,13 @@ export async function GET(
     });
   }
 
+  if (publication.staticAssetId?.startsWith("http")) {
+    return new Response(null, {
+      status: 302,
+      headers: { Location: publication.staticAssetId },
+    });
+  }
+
   const cacheKey = publication.id;
   const cached = getCached(cacheKey);
   if (cached) {

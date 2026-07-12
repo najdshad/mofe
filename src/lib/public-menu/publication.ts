@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
 import { logAudit } from "@/lib/audit";
 import { clearMenuCache } from "@/lib/menu-cache";
+import { renderPublicMenu } from "./renderer";
+import { getStorage } from "@/lib/storage";
 
 export async function buildPublicSnapshot(venueId: string) {
   const venue = await prisma.venue.findUnique({
@@ -106,6 +108,19 @@ export async function publishVenueMenu(venueId: string, userId: string) {
 
   const pubVenue = await prisma.venue.findUnique({ where: { id: venueId }, select: { slug: true } });
   if (pubVenue) clearMenuCache(pubVenue.slug);
+
+  try {
+    const html = renderPublicMenu(snapshot as Parameters<typeof renderPublicMenu>[0]);
+    const storage = await getStorage();
+    const key = `menus/${snapshot.venue.slug}.html`;
+    const result = await storage.save(key, Buffer.from(html, "utf-8"), "text/html; charset=utf-8");
+    await prisma.menuPublication.update({
+      where: { id: publication.id },
+      data: { staticAssetId: result.url },
+    });
+  } catch {
+    // CDN upload failure is non-critical — menu still served from origin
+  }
 
   await logAudit({
     venueId,

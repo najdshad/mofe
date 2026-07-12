@@ -6,6 +6,8 @@ import { OrderPanel } from "@/components/orders/OrderPanel";
 import { MenuItemBrowser } from "@/components/orders/MenuItemBrowser";
 import { useOrderWebSocket } from "@/lib/useOrderWebSocket";
 import { fetchApi } from "@/lib/fetch-api";
+import { addToQueue } from "@/lib/offline-queue";
+import { useOfflineSync } from "@/lib/useOfflineSync";
 import type { TableInfo, OrderData, CategoryData, TableData } from "@/components/orders/types";
 
 type TableStatus = "free" | "active" | "ready" | "settled";
@@ -33,9 +35,12 @@ export function OrdersClient({
   const [showMenuBrowser, setShowMenuBrowser] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState({ send: false, complete: false });
-  const fetchedRef = useRef(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const tablesRef = useRef(tables);
   useEffect(() => { tablesRef.current = tables; }, [tables]);
+  const fetchKeyRef = useRef({ venueId, key: 0 });
+
+  const { isOnline, pendingCount, isSyncing, sync } = useOfflineSync();
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -54,12 +59,18 @@ export function OrdersClient({
   }
 
   useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
+    const currentKey = { venueId, key: refreshTrigger };
+    if (
+      fetchKeyRef.current.venueId === venueId &&
+      fetchKeyRef.current.key === refreshTrigger
+    ) {
+      return;
+    }
+    fetchKeyRef.current = currentKey;
 
     async function fetchInitialOrders() {
       const statusMap = new Map<number, TableStatus>(
-        tables.map((t) => [t.number, (t.status?.toLowerCase() as TableStatus) || "free"]),
+        tablesRef.current.map((t) => [t.number, (t.status?.toLowerCase() as TableStatus) || "free"]),
       );
       let orderMap = new Map<string, OrderData>();
 
@@ -88,7 +99,7 @@ export function OrdersClient({
       setTableStatuses(statusMap);
     }
     fetchInitialOrders();
-  }, [venueId, tables]);
+  }, [venueId, refreshTrigger]);
 
   const activeOrderId = useMemo(() => {
     if (selectedTableNumber === null) return null;
@@ -218,7 +229,12 @@ export function OrdersClient({
     }
   };
 
-  useOrderWebSocket(venueId, onWSEvent);
+  const handleReconnect = useCallback(async () => {
+    await sync();
+    setRefreshTrigger((v) => v + 1);
+  }, [sync]);
+
+  useOrderWebSocket(venueId, onWSEvent, handleReconnect);
 
   const tableInfoList: TableInfo[] = tables.map((t) => ({
     tableNumber: t.number,
@@ -229,8 +245,22 @@ export function OrdersClient({
 
   async function handleCreateOrder() {
     if (selectedTableNumber === null) return;
+    setError(null);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      addToQueue(
+        `/api/venues/${venueId}/orders`,
+        "POST",
+        { tableNumber: String(selectedTableNumber), guestCount: 1 },
+      );
+      setTableStatuses((prev) => {
+        const next = new Map(prev);
+        next.set(selectedTableNumber, "active");
+        return next;
+      });
+      setError("عملیات در صف همگام‌سازی قرار گرفت");
+      return;
+    }
     try {
-      setError(null);
       const data = await fetchApi(`/api/venues/${venueId}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -257,6 +287,12 @@ export function OrdersClient({
     if (!activeOrderId) return;
     setLoading((prev) => ({ ...prev, send: true }));
     setError(null);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      addToQueue(`/api/venues/${venueId}/orders/${activeOrderId}/send`, "POST", null);
+      setError("عملیات در صف همگام‌سازی قرار گرفت");
+      setLoading((prev) => ({ ...prev, send: false }));
+      return;
+    }
     try {
       await fetchApi(`/api/venues/${venueId}/orders/${activeOrderId}/send`, { method: "POST" });
       await refreshOrder();
@@ -271,6 +307,12 @@ export function OrdersClient({
     if (!activeOrderId) return;
     setLoading((prev) => ({ ...prev, complete: true }));
     setError(null);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      addToQueue(`/api/venues/${venueId}/orders/${activeOrderId}/complete`, "POST", null);
+      setError("عملیات در صف همگام‌سازی قرار گرفت");
+      setLoading((prev) => ({ ...prev, complete: false }));
+      return;
+    }
     try {
       await fetchApi(`/api/venues/${venueId}/orders/${activeOrderId}/complete`, { method: "POST" });
       const order = orders.get(activeOrderId);
@@ -298,6 +340,16 @@ export function OrdersClient({
   async function handleAddItem(menuItemId: string, variantId?: string, quantity: number = 1) {
     if (!activeOrderId) return;
     setError(null);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      addToQueue(
+        `/api/venues/${venueId}/orders/${activeOrderId}/items`,
+        "POST",
+        { menuItemId, variantId, quantity },
+      );
+      setShowMenuBrowser(false);
+      setError("عملیات در صف همگام‌سازی قرار گرفت");
+      return;
+    }
     try {
       await fetchApi(`/api/venues/${venueId}/orders/${activeOrderId}/items`, {
         method: "POST",
@@ -347,6 +399,15 @@ export function OrdersClient({
   async function handleItemStatus(itemId: string, status: string) {
     if (!activeOrderId) return;
     setError(null);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      addToQueue(
+        `/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}/status`,
+        "PATCH",
+        { status },
+      );
+      setError("عملیات در صف همگام‌سازی قرار گرفت");
+      return;
+    }
     try {
       await fetchApi(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}/status`, {
         method: "PATCH",
@@ -362,6 +423,11 @@ export function OrdersClient({
   async function handleCancelItem(itemId: string) {
     if (!activeOrderId) return;
     setError(null);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      addToQueue(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}`, "DELETE", null);
+      setError("عملیات در صف همگام‌سازی قرار گرفت");
+      return;
+    }
     try {
       await fetchApi(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}`, {
         method: "DELETE",
@@ -384,9 +450,6 @@ export function OrdersClient({
       return next;
     });
     persistTableStatus(selectedTableNumber, "free");
-    try {
-      await fetch(`/api/venues/${venueId}/orders/release-table/${selectedTableNumber}`, { method: "POST" });
-    } catch {}
     setOrders((prev) => {
       const next = new Map(prev);
       for (const [id, order] of next) {
@@ -396,10 +459,29 @@ export function OrdersClient({
       }
       return next;
     });
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      addToQueue(`/api/venues/${venueId}/orders/release-table/${selectedTableNumber}`, "POST", null);
+      return;
+    }
+    try {
+      await fetch(`/api/venues/${venueId}/orders/release-table/${selectedTableNumber}`, { method: "POST" });
+    } catch {}
   }
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:h-[calc(100vh-8rem)]">
+    <>
+      {(!isOnline || pendingCount > 0 || isSyncing) && (
+        <div className={`mb-3 rounded-[var(--radius-control)] px-3 py-2 text-xs ${
+          isSyncing
+            ? "bg-blue-50 border border-blue-200 text-blue-700"
+            : "bg-amber-50 border border-amber-200 text-amber-700"
+        }`}>
+          {isSyncing && "در حال همگام‌سازی..."}
+          {!isOnline && !isSyncing && "قطع اتصال — عملیات در صف قرار می‌گیرد"}
+          {isOnline && !isSyncing && pendingCount > 0 && `${pendingCount} عملیات در انتظار همگام‌سازی`}
+        </div>
+      )}
+      <div className="flex flex-col gap-6 lg:flex-row lg:h-[calc(100vh-8rem)]">
       {/* Table grid */}
       <div className="w-full lg:w-[65%] overflow-y-auto">
         <TableGrid
@@ -474,5 +556,6 @@ export function OrdersClient({
         />
       )}
     </div>
+    </>
   );
 }
