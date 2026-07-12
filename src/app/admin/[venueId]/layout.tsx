@@ -5,6 +5,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
 import { QRIconButton } from "./QRIconButton";
+import { NavClient } from "./NavClient";
 
 export default async function AdminLayout({
   children,
@@ -59,32 +60,7 @@ export default async function AdminLayout({
       </header>
 
       <nav className="border-b border-line bg-paper">
-        <div className="mx-auto flex max-w-5xl gap-4 px-4">
-          <Link
-            href={`/admin/${venueId}/menu`}
-            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
-          >
-            منو
-          </Link>
-          <Link
-            href={`/admin/${venueId}/orders`}
-            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
-          >
-            سفارشات
-          </Link>
-          <Link
-            href={`/admin/${venueId}/sales`}
-            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
-          >
-            فروش
-          </Link>
-          <Link
-            href={`/admin/${venueId}/settings`}
-            className="border-b-2 border-transparent px-1 py-2.5 text-sm text-ink-muted transition-colors hover:border-ink hover:text-ink"
-          >
-            تنظیمات
-          </Link>
-        </div>
+        <NavClient venueId={venueId} />
       </nav>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-4">

@@ -56,11 +56,6 @@ type TopItem struct {
 func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 
-	if session.Role != "OWNER" && session.Role != "MANAGER" {
-		models.WriteError(w, http.StatusForbidden, "Forbidden", "INSUFFICIENT_ROLE")
-		return
-	}
-
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,6 +22,8 @@ type RateLimiter struct {
 	mu         sync.Mutex
 	rate       rate.Limit
 	burst      int
+	stopCh     chan struct{}
+	stopOnce   sync.Once
 }
 
 func NewRateLimiter(rps int, burst int) *RateLimiter {
@@ -28,6 +31,7 @@ func NewRateLimiter(rps int, burst int) *RateLimiter {
 		visitors: make(map[string]*visitor),
 		rate:     rate.Limit(rps),
 		burst:    burst,
+		stopCh:   make(chan struct{}),
 	}
 	go rl.cleanup()
 	return rl
@@ -62,7 +66,13 @@ func (rl *RateLimiter) cleanup() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
+	for {
+		select {
+		case <-rl.stopCh:
+			return
+		case <-ticker.C:
+		}
+
 		rl.mu.Lock()
 		for key, v := range rl.visitors {
 			if time.Since(v.lastSeen) > 10*time.Minute {
@@ -73,9 +83,24 @@ func (rl *RateLimiter) cleanup() {
 	}
 }
 
+func (rl *RateLimiter) Stop() {
+	rl.stopOnce.Do(func() { close(rl.stopCh) })
+}
+
+func getRealIP(r *http.Request) string {
+	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+		parts := strings.SplitN(fwd, ",", 2)
+		return strings.TrimSpace(parts[0])
+	}
+	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+		return strings.TrimSpace(realIP)
+	}
+	return r.RemoteAddr
+}
+
 func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		key := r.RemoteAddr
+		key := getRealIP(r)
 		if session := GetSession(r.Context()); session != nil {
 			key = session.UserID
 		}

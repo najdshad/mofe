@@ -2,14 +2,35 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export async function cleanTestData() {
+  // Delete child tables first (reverse FK dependency order)
+  // Sub-models under MenuItem
+  await prisma.menuItemAllergen.deleteMany();
+  await prisma.menuItemVariant.deleteMany();
+  await prisma.menuItemPrice.deleteMany();
+  // Per-venue sub-models
+  await prisma.stationSchedule.deleteMany();
+  await prisma.venueTable.deleteMany();
+  await prisma.auditLog.deleteMany();
+  await prisma.passwordResetToken.deleteMany();
+  await prisma.domain.deleteMany();
+  await prisma.asset.deleteMany();
+  // Rate-limit entries (no FK to venue/user)
   await prisma.rateLimitEntry.deleteMany();
+  // Sale references Venue
   await prisma.sale.deleteMany();
+  // MenuPublication references Venue
   await prisma.menuPublication.deleteMany();
+  // MenuItem references Venue + Category
   await prisma.menuItem.deleteMany();
+  // Category references Venue
   await prisma.category.deleteMany();
+  // VenueMember references Venue + User
   await prisma.venueMember.deleteMany();
+  // Session references User
   await prisma.session.deleteMany();
+  // Venue (no remaining deps)
   await prisma.venue.deleteMany();
+  // User (no remaining deps)
   await prisma.user.deleteMany();
 }
 

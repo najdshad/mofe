@@ -71,8 +71,11 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
 	var waiterName string
-	err := h.db.QueryRowContext(r.Context(),
+	err := h.db.QueryRowContext(ctx,
 		`SELECT name FROM "User" WHERE id = $1`, session.UserID,
 	).Scan(&waiterName)
 	if err != nil {
@@ -91,7 +94,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		tableNumber = &req.TableNumber
 	}
 
-	_, err = h.execContext(r.Context(), `
+	_, err = h.execContext(ctx, `
 		INSERT INTO orders (
 			id, venue_id, waiter_id, table_number,
 			guest_count, notes, status, subtotal, total, created_by_name

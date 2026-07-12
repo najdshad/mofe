@@ -63,18 +63,26 @@ func (r *RedisPubSub) Channel() <-chan *Message {
 			redis.WithChannelSize(256),
 			redis.WithChannelHealthCheckInterval(30*time.Second),
 		)
-		for redisMsg := range redisCh {
-			var parsed Message
-			if err := json.Unmarshal([]byte(redisMsg.Payload), &parsed); err != nil {
-				slog.Error("Failed to unmarshal Redis pub/sub message", "error", err)
-				continue
+		for {
+			select {
+			case <-r.ctx.Done():
+				close(ch)
+				return
+			case redisMsg, ok := <-redisCh:
+				if !ok {
+					close(ch)
+					return
+				}
+				var parsed Message
+				if err := json.Unmarshal([]byte(redisMsg.Payload), &parsed); err != nil {
+					slog.Error("Failed to unmarshal Redis pub/sub message", "error", err)
+					continue
+				}
+				venueID := venueIDFromChannel(redisMsg.Channel)
+				parsed.VenueID = venueID
+				ch <- &parsed
 			}
-			// Extract venueID from the Redis channel name (ws:venue:{venueID})
-			venueID := venueIDFromChannel(redisMsg.Channel)
-			parsed.VenueID = venueID
-			ch <- &parsed
 		}
-		close(ch)
 	}()
 	return ch
 }

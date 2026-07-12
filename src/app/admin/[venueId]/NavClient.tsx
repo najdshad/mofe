@@ -1,0 +1,37 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { useMemo } from "react";
+
+export function NavClient({ venueId }: { venueId: string }) {
+  const pathname = usePathname();
+
+  const links = useMemo(() => [
+    { href: `/admin/${venueId}/menu`, label: "منو" },
+    { href: `/admin/${venueId}/orders`, label: "سفارشات" },
+    { href: `/admin/${venueId}/sales`, label: "فروش" },
+    { href: `/admin/${venueId}/settings`, label: "تنظیمات" },
+  ], [venueId]);
+
+  return (
+    <div className="mx-auto flex max-w-5xl gap-4 px-4">
+      {links.map((link) => {
+        const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`border-b-2 px-1 py-2.5 text-sm transition-colors ${
+              isActive
+                ? "border-ink text-ink"
+                : "border-transparent text-ink-muted hover:border-ink hover:text-ink"
+            }`}
+          >
+            {link.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}

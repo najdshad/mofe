@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { NextRequest } from "next/server";
 
 function createMockRequest({
   pathname,
@@ -8,15 +9,14 @@ function createMockRequest({
   pathname: string;
   host: string;
   hasCookie: boolean;
-}) {
-  const url = new URL(`https://${host}${pathname}`);
-  return {
-    nextUrl: url,
-    headers: new Map([["host", host]]),
-    cookies: {
-      get: () => (hasCookie ? { value: "session-token" } : undefined),
-    },
+}): NextRequest {
+  const url = `https://${host}${pathname}`;
+  const request = new Request(url, { headers: { host } });
+  (request as unknown as Record<string, unknown>).nextUrl = new URL(url);
+  (request as unknown as Record<string, unknown>).cookies = {
+    get: () => (hasCookie ? { value: "session-token" } : undefined),
   };
+  return request as unknown as NextRequest;
 }
 
 describe("Proxy routing (#19)", () => {
@@ -27,7 +27,7 @@ describe("Proxy routing (#19)", () => {
       host: "menu.example.com",
       hasCookie: false,
     });
-    const res = proxy(req as never);
+    const res = proxy(req);
     expect(res.headers.get("X-Robots-Tag")).toBe("noindex");
   });
 
@@ -38,7 +38,7 @@ describe("Proxy routing (#19)", () => {
       host: "app.example.com",
       hasCookie: false,
     });
-    const res = proxy(req as never);
+    const res = proxy(req);
     expect(res.status).toBe(307);
     const location = res.headers.get("Location") || "";
     expect(location).toContain("/login");
@@ -51,7 +51,7 @@ describe("Proxy routing (#19)", () => {
       host: "app.example.com",
       hasCookie: true,
     });
-    const res = proxy(req as never);
+    const res = proxy(req);
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 
@@ -62,7 +62,7 @@ describe("Proxy routing (#19)", () => {
       host: "app.example.com",
       hasCookie: false,
     });
-    const res = proxy(req as never);
+    const res = proxy(req);
     expect(res.status).toBe(401);
   });
 
@@ -73,7 +73,7 @@ describe("Proxy routing (#19)", () => {
       host: "app.example.com",
       hasCookie: false,
     });
-    const res = proxy(req as never);
+    const res = proxy(req);
     expect(res.headers.get("X-Robots-Tag")).toBe("noindex");
   });
 
@@ -84,7 +84,7 @@ describe("Proxy routing (#19)", () => {
       host: "example.com",
       hasCookie: false,
     });
-    const res = proxy(req as never);
+    const res = proxy(req);
     expect(res.status).toBe(301);
     const location = res.headers.get("Location") || "";
     expect(location).toContain("app.example.com");
@@ -97,7 +97,7 @@ describe("Proxy routing (#19)", () => {
       host: "example.com",
       hasCookie: false,
     });
-    const res = proxy(req as never);
+    const res = proxy(req);
     expect(res.status).toBe(301);
     const location = res.headers.get("Location") || "";
     expect(location).toContain("menu.example.com");
@@ -110,7 +110,7 @@ describe("Proxy routing (#19)", () => {
       host: "app.example.com",
       hasCookie: false,
     });
-    const res = proxy(req as never);
+    const res = proxy(req);
     expect(res.headers.get("X-Robots-Tag")).toBe("noindex");
   });
 
@@ -121,7 +121,7 @@ describe("Proxy routing (#19)", () => {
       host: "localhost:3000",
       hasCookie: true,
     });
-    const res = proxy(req as never);
+    const res = proxy(req);
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 });

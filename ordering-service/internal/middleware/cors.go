@@ -1,18 +1,32 @@
 package middleware
 
-import "net/http"
+import (
+	"net/http"
+	"os"
+	"strings"
+)
 
-var allowedCORSOrigins = map[string]bool{
-	"https://admin.mofe.ir":    true,
-	"http://localhost:3000":    true,
-	"https://admin.noghteh.ir": true,
+func allowedCORSOrigins() map[string]bool {
+	origins := map[string]bool{
+		"https://admin.mofe.ir":    true,
+		"http://localhost:3000":    true,
+		"https://admin.noghteh.ir": true,
+	}
+	if env := os.Getenv("CORS_ALLOWED_ORIGINS"); env != "" {
+		for _, o := range strings.Split(env, ",") {
+			origins[strings.TrimSpace(o)] = true
+		}
+	}
+	return origins
 }
 
 func CORS(next http.Handler) http.Handler {
+	allowedOrigins := allowedCORSOrigins()
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		allowed := ""
-		if allowedCORSOrigins[origin] {
+		if allowedOrigins[origin] {
 			allowed = origin
 		}
 

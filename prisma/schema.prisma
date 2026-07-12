@@ -31,16 +31,17 @@ model User {
 }
 
 model Venue {
-  id             String    @id @default(uuid())
-  nameFa         String
-  nameEn         String?
-  slug           String    @unique
-  plan           String    @default("starter")
-  timezone       String    @default("Asia/Tehran")
-  accentColor    String?
-  welcomeMessage String?
-  logoAssetId    String?
-  publicStatus   String    @default("draft")
+  id              String    @id @default(uuid())
+  nameFa          String
+  nameEn          String?
+  slug            String    @unique
+  plan            String    @default("starter")
+  timezone        String    @default("Asia/Tehran")
+  accentColor     String?
+  welcomeMessage  String?
+  logoAssetId     String?
+  menuPhotoMode   Boolean   @default(false)
+  publicStatus    String    @default("draft")
   publishedAt    DateTime?
   unpublishedAt  DateTime?
   createdAt      DateTime  @default(now())
@@ -71,6 +72,7 @@ model VenueMember {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([venueId, userId])
+  @@index([userId])
 }
 
 model Category {
@@ -88,6 +90,7 @@ model Category {
 
   @@index([venueId, displayOrder])
   @@index([venueId, active])
+  @@index([venueId, updatedAt])
 }
 
 model MenuItem {
@@ -116,6 +119,7 @@ model MenuItem {
   @@index([venueId, categoryId, displayOrder])
   @@index([venueId, station])
   @@index([venueId, isSoldOut])
+  @@index([venueId, updatedAt])
 }
 
 model Asset {
@@ -133,7 +137,7 @@ model Asset {
   createdByUserId String?
   createdAt       DateTime @default(now())
 
-  venue    Venue? @relation(fields: [venueId], references: [id])
+  venue    Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
   uploader User?  @relation("UploadedAssets", fields: [createdByUserId], references: [id])
 }
 
@@ -151,6 +155,8 @@ model MenuPublication {
 
   venue   Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
   creator User? @relation("PublicationCreator", fields: [createdByUserId], references: [id])
+
+  @@index([venueId])
 }
 
 model Domain {

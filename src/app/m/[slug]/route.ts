@@ -1,26 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { renderPublicMenu, renderUnavailablePage } from "@/lib/public-menu/renderer";
+import { getCached, setCache, clearMenuCache } from "@/lib/menu-cache";
 
-const menuCache = new Map<string, { html: string; createdAt: number }>();
-const CACHE_TTL_MS = 60_000;
-
-function getCached(key: string): string | undefined {
-  const entry = menuCache.get(key);
-  if (!entry) return undefined;
-  if (Date.now() - entry.createdAt > CACHE_TTL_MS) {
-    menuCache.delete(key);
-    return undefined;
-  }
-  return entry.html;
-}
-
-function setCache(key: string, html: string) {
-  if (menuCache.size > 1000) {
-    const oldest = menuCache.entries().next().value;
-    if (oldest) menuCache.delete(oldest[0]);
-  }
-  menuCache.set(key, { html, createdAt: Date.now() });
-}
+export { clearMenuCache };
 
 export async function GET(
   _request: Request,
@@ -75,7 +57,7 @@ export async function GET(
     return new Response(html, { status: 500, headers: { "Content-Type": "text/html; charset=utf-8" } });
   }
   const html = renderPublicMenu(snapshot);
-  setCache(cacheKey, html);
+  setCache(cacheKey, html, venue.slug);
 
   return new Response(html, {
     headers: {

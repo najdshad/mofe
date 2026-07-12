@@ -17,7 +17,13 @@ export default async function SettingsPage({
   const membership = await requireVenueAccess(user.id, venueId);
 
   const [venue, members] = await Promise.all([
-    prisma.venue.findUnique({ where: { id: venueId } }),
+    prisma.venue.findUnique({
+      where: { id: venueId },
+      select: {
+        id: true, nameFa: true, nameEn: true, slug: true, timezone: true,
+        plan: true, welcomeMessage: true, logoAssetId: true,
+      },
+    }),
     prisma.venueMember.findMany({
       where: { venueId },
       include: { user: { select: { id: true, name: true, email: true } } },

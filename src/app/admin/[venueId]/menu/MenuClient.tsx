@@ -814,6 +814,8 @@ export function MenuClient({
     details: { row: number; status: string; nameFa: string; message?: string }[];
   } | null>(null);
 
+  const [dragError, setDragError] = useState("");
+
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -884,7 +886,7 @@ export function MenuClient({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  const handleCategoryDragEnd = (event: DragEndEvent) => {
+  const handleCategoryDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const sorted = [...categories].sort((a, b) => a.displayOrder - b.displayOrder);
@@ -893,20 +895,28 @@ export function MenuClient({
     if (oldIndex === -1 || newIndex === -1) return;
     const reordered = arrayMove(sorted, oldIndex, newIndex);
     const updates = reordered.map((cat, idx) => ({ id: cat.id, displayOrder: idx }));
+    const prev = [...categories];
     setCategories((prev) =>
       prev.map((cat) => {
         const u = updates.find((x) => x.id === cat.id);
         return u ? { ...cat, displayOrder: u.displayOrder } : cat;
       })
     );
-    fetch(`/api/venues/${venueId}/categories/reorder`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orders: updates }),
-    });
+    setDragError("");
+    try {
+      const res = await fetch(`/api/venues/${venueId}/categories/reorder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orders: updates }),
+      });
+      if (!res.ok) throw new Error("Reorder failed");
+    } catch {
+      setCategories(prev);
+      setDragError("خطا در ذخیره ترتیب دسته‌ها");
+    }
   };
 
-  const handleItemDragEnd = (event: DragEndEvent) => {
+  const handleItemDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const dragged = items.find((i) => i.id === active.id);
@@ -919,17 +929,25 @@ export function MenuClient({
     if (oldIndex === -1 || newIndex === -1) return;
     const reordered = arrayMove(sameCategory, oldIndex, newIndex);
     const updates = reordered.map((item, idx) => ({ id: item.id, displayOrder: idx }));
+    const prev = [...items];
     setItems((prev) =>
       prev.map((item) => {
         const u = updates.find((x) => x.id === item.id);
         return u ? { ...item, displayOrder: u.displayOrder } : item;
       })
     );
-    fetch(`/api/venues/${venueId}/items/reorder`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orders: updates }),
-    });
+    setDragError("");
+    try {
+      const res = await fetch(`/api/venues/${venueId}/items/reorder`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orders: updates }),
+      });
+      if (!res.ok) throw new Error("Reorder failed");
+    } catch {
+      setItems(prev);
+      setDragError("خطا در ذخیره ترتیب آیتم‌ها");
+    }
   };
 
   const handleCreateCategory = async (nameFa: string) => {
@@ -1206,6 +1224,9 @@ export function MenuClient({
 
           {publishStatus && (
             <span className="text-xs text-ink-muted shrink-0">{publishStatus}</span>
+          )}
+          {dragError && (
+            <span className="text-xs text-red-600 shrink-0">{dragError}</span>
           )}
 
           <div className="mr-auto flex items-center gap-2 shrink-0">

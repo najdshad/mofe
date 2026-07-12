@@ -1,9 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
 import { logAudit } from "@/lib/audit";
+import { clearMenuCache } from "@/lib/menu-cache";
 
 export async function buildPublicSnapshot(venueId: string) {
-  const venue = await prisma.venue.findUnique({ where: { id: venueId } });
+  const venue = await prisma.venue.findUnique({
+    where: { id: venueId },
+    select: {
+      id: true, slug: true, nameFa: true, nameEn: true,
+      welcomeMessage: true, accentColor: true, logoAssetId: true,
+      publicStatus: true,
+    },
+  });
   if (!venue) {
     return null;
   }
@@ -96,6 +104,9 @@ export async function publishVenueMenu(venueId: string, userId: string) {
 
   await trimPublications(venueId);
 
+  const pubVenue = await prisma.venue.findUnique({ where: { id: venueId }, select: { slug: true } });
+  if (pubVenue) clearMenuCache(pubVenue.slug);
+
   await logAudit({
     venueId,
     actorUserId: userId,
@@ -142,6 +153,9 @@ export async function unpublishVenueMenu(venueId: string, userId: string) {
   });
 
   await trimPublications(venueId);
+
+  const unpubVenue = await prisma.venue.findUnique({ where: { id: venueId }, select: { slug: true } });
+  if (unpubVenue) clearMenuCache(unpubVenue.slug);
 
   await logAudit({
     venueId,

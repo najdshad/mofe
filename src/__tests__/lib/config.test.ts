@@ -49,11 +49,12 @@ describe("getPublicMenuUrl", () => {
     expect(url).toBe("https://menu.mofe.ir/m/cafe#1");
   });
 
-  it("does not URL-encode path traversal in slug", async () => {
+  it("rejects path traversal in slug", async () => {
     vi.resetModules();
     const { getPublicMenuUrl } = await import("@/lib/config");
-    const url = getPublicMenuUrl("../admin");
-    expect(url).toBe("https://menu.mofe.ir/m/../admin");
+    expect(() => getPublicMenuUrl("../admin")).toThrow("Invalid slug");
+    expect(() => getPublicMenuUrl("foo/bar")).toThrow("Invalid slug");
+    expect(() => getPublicMenuUrl("foo\\bar")).toThrow("Invalid slug");
   });
 
   it("reads config from current env vars", async () => {

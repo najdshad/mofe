@@ -31,11 +31,12 @@ var upgrader = websocket.Upgrader{
 }
 
 type Client struct {
-	conn    *websocket.Conn
-	send    chan []byte
-	venueID string
-	userID  string
-	hub     *Hub
+	conn      *websocket.Conn
+	send      chan []byte
+	venueID   string
+	userID    string
+	hub       *Hub
+	closeOnce sync.Once
 }
 
 type Hub struct {
@@ -128,7 +129,7 @@ func (h *Hub) Run() {
 			if clients, ok := h.clients[venueID]; ok {
 				if _, exists := clients[client]; exists {
 					delete(clients, client)
-					close(client.send)
+					client.closeOnce.Do(func() { close(client.send) })
 				}
 				venueEmpty = len(clients) == 0
 				if venueEmpty {
@@ -150,10 +151,6 @@ func (h *Hub) Run() {
 			)
 
 		case message := <-h.broadcast:
-			h.mu.RLock()
-			clients := h.clients[message.VenueID]
-			h.mu.RUnlock()
-
 			if h.redisPubSub != nil {
 				if err := h.redisPubSub.Publish(message.VenueID, message.Type, message.Payload); err != nil {
 					slog.Error("Failed to publish to Redis",
@@ -170,37 +167,51 @@ func (h *Hub) Run() {
 				continue
 			}
 
-			for client := range clients {
+			h.mu.RLock()
+			var slowClients []*Client
+			for client := range h.clients[message.VenueID] {
 				select {
 				case client.send <- data:
 				default:
-					h.mu.Lock()
-					close(client.send)
-					delete(h.clients[message.VenueID], client)
-					h.mu.Unlock()
+					slowClients = append(slowClients, client)
 				}
+			}
+			h.mu.RUnlock()
+
+			if len(slowClients) > 0 {
+				h.mu.Lock()
+				for _, client := range slowClients {
+					client.closeOnce.Do(func() { close(client.send) })
+					delete(h.clients[message.VenueID], client)
+				}
+				h.mu.Unlock()
 			}
 
 		case redisMsg := <-redisCh:
-			h.mu.RLock()
-			clients := h.clients[redisMsg.VenueID]
-			h.mu.RUnlock()
-
 			data, err := json.Marshal(redisMsg)
 			if err != nil {
 				slog.Error("Failed to marshal Redis relay message", "error", err)
 				continue
 			}
 
-			for client := range clients {
+			h.mu.RLock()
+			var slowClients []*Client
+			for client := range h.clients[redisMsg.VenueID] {
 				select {
 				case client.send <- data:
 				default:
-					h.mu.Lock()
-					close(client.send)
-					delete(h.clients[redisMsg.VenueID], client)
-					h.mu.Unlock()
+					slowClients = append(slowClients, client)
 				}
+			}
+			h.mu.RUnlock()
+
+			if len(slowClients) > 0 {
+				h.mu.Lock()
+				for _, client := range slowClients {
+					client.closeOnce.Do(func() { close(client.send) })
+					delete(h.clients[redisMsg.VenueID], client)
+				}
+				h.mu.Unlock()
 			}
 
 		case <-ticker.C:
@@ -302,9 +313,7 @@ func (c *Client) readPump() {
 }
 
 func (c *Client) writePump() {
-	ticker := time.NewTicker(30 * time.Second)
 	defer func() {
-		ticker.Stop()
 		c.conn.Close()
 	}()
 
@@ -318,12 +327,6 @@ func (c *Client) writePump() {
 			}
 			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				return
-			}
-
-		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}

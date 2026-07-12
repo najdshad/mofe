@@ -26,7 +26,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS orders (
     id               TEXT PRIMARY KEY,
     venue_id         TEXT NOT NULL REFERENCES "Venue"(id) ON DELETE CASCADE,
-    waiter_id        TEXT NOT NULL REFERENCES "User"(id),
+    waiter_id        TEXT NOT NULL REFERENCES "User"(id) ON DELETE SET NULL,
 
     table_number     TEXT,
     guest_count      INT DEFAULT 1,

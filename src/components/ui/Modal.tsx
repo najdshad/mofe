@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback, useId } from "react";
 import { Button } from "./Button";
 
 interface ModalProps {
@@ -25,25 +25,84 @@ export function Modal({
   loading = false,
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
+
+  const getFocusableElements = useCallback((container: HTMLElement): HTMLElement[] => {
+    const selectors = [
+      "a[href]",
+      "button:not([disabled])",
+      "textarea:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ];
+    return Array.from(container.querySelectorAll<HTMLElement>(selectors.join(",")));
+  }, []);
 
   useEffect(() => {
     if (open) {
+      const prevFocus = document.activeElement as HTMLElement;
+      previousFocusRef.current = prevFocus;
       document.body.style.overflow = "hidden";
+
+      const raf = requestAnimationFrame(() => {
+        if (dialogRef.current) {
+          const focusable = getFocusableElements(dialogRef.current);
+          if (focusable.length > 0) {
+            focusable[0].focus();
+          } else {
+            dialogRef.current.focus();
+          }
+        }
+      });
+
+      return () => {
+        cancelAnimationFrame(raf);
+        document.body.style.overflow = "";
+        previousFocusRef.current?.focus();
+        previousFocusRef.current = null;
+      };
     } else {
       document.body.style.overflow = "";
+      return undefined;
     }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
+  }, [open, getFocusableElements]);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key === "Tab" && dialogRef.current) {
+        const focusable = getFocusableElements(dialogRef.current);
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
     };
-    if (open) document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [open, onClose]);
+
+    if (open) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose, getFocusableElements]);
 
   if (!open) return null;
 
@@ -56,11 +115,14 @@ export function Modal({
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-md rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-lg"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="w-full max-w-md rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-lg focus:outline-none"
       >
-        <h3 className="font-serif text-xl text-ink">{title}</h3>
+        <h3 id={titleId} className="font-serif text-xl text-ink">{title}</h3>
         <div className="mt-3 max-h-[55vh] overflow-y-auto text-sm leading-relaxed text-ink-muted">
           {children}
         </div>

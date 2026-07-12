@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManage } from "@/lib/permissions";
+import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -11,7 +11,7 @@ export async function GET(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    await canManage(user.id, venueId);
+    await requireVenueAccess(user.id, venueId);
 
     const categories = await prisma.category.findMany({
       where: { venueId, deletedAt: null },

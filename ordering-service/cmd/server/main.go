@@ -98,7 +98,6 @@ func main() {
 	r.Use(middleware.CORS)
 	r.Use(middleware.MetricsMiddleware)
 	r.Use(middleware.CSRF)
-	r.Use(rl.Middleware)
 
 	r.Get("/health", handlers.HealthCheck(db))
 	r.Head("/health", handlers.HealthCheck(db))
@@ -106,6 +105,7 @@ func main() {
 
 	r.Route("/api/orders", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(db))
+		r.Use(rl.Middleware)
 
 		r.Post("/", orderHandler.CreateOrder)
 		r.Get("/", orderHandler.ListOrders)
@@ -121,6 +121,7 @@ func main() {
 
 	r.Route("/api/admin", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(db))
+		r.Use(rl.Middleware)
 		r.Use(middleware.RequireRole("OWNER", "MANAGER"))
 
 		r.Get("/orders", orderHandler.ListOrders)

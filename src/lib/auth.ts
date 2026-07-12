@@ -84,12 +84,16 @@ export async function getCurrentUser() {
     }
   }
 
-  prisma.session.update({
-    where: { id: session.id },
-    data: { lastActivityAt: new Date() },
-  }).catch(() => {
-    // non-critical; session still valid
-  });
+  if (!session.lastActivityAt || session.lastActivityAt < new Date(Date.now() - 5 * 60 * 1000)) {
+    try {
+      await prisma.session.update({
+        where: { id: session.id },
+        data: { lastActivityAt: new Date() },
+      });
+    } catch {
+      // non-critical; session still valid
+    }
+  }
 
   return session.user;
 }

@@ -70,16 +70,12 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 					return
 				}
 			} else {
-				// Single-venue user: combine into one JOIN query
+				// Single-venue user: use the already-fetched UserID from the first query
 				err = db.QueryRowContext(r.Context(), `
-					SELECT vm."venueId", vm.role
-					FROM "Session" s
-					JOIN "VenueMember" vm ON vm."userId" = s."userId"
-					WHERE s."tokenHash" = $1
-					  AND s."expiresAt" > NOW()
-					  AND s."revokedAt" IS NULL
+					SELECT "venueId", role FROM "VenueMember"
+					WHERE "userId" = $1
 					LIMIT 1
-				`, hashedToken).Scan(&session.VenueID, &session.Role)
+				`, session.UserID).Scan(&session.VenueID, &session.Role)
 				if err != nil {
 					models.WriteError(w, http.StatusInternalServerError, "Failed to get venue", "DB_ERROR")
 					return
