@@ -13,6 +13,10 @@ RUN npm run build
 FROM node:22-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+
+# OpenSSL required by Prisma engine binary
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
@@ -27,7 +31,8 @@ COPY --from=builder /app/src/generated ./src/generated
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 RUN npm install --no-save --no-package-lock --ignore-scripts \
     prisma @prisma/adapter-pg \
-    tsx dotenv bcryptjs 2>&1
+    tsx dotenv bcryptjs 2>&1 && \
+    chown -R nextjs:nodejs /app/node_modules
 
 # Entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/
