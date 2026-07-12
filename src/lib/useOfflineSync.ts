@@ -1,31 +1,40 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useSyncExternalStore } from "react";
 import { getQueueLength, replayQueue } from "./offline-queue";
 
+function subscribeOnline(cb: () => void) {
+  window.addEventListener("online", cb);
+  window.addEventListener("offline", cb);
+  return () => {
+    window.removeEventListener("online", cb);
+    window.removeEventListener("offline", cb);
+  };
+}
+
+function subscribeQueue(cb: () => void) {
+  window.addEventListener("storage", cb);
+  return () => window.removeEventListener("storage", cb);
+}
+
 export function useOfflineSync() {
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true,
+  const isOnline = useSyncExternalStore(
+    subscribeOnline,
+    () => navigator.onLine,
+    () => true,
   );
-  const [pendingCount, setPendingCount] = useState(getQueueLength());
+
+  const pendingCount = useSyncExternalStore(
+    subscribeQueue,
+    () => getQueueLength(),
+    () => 0,
+  );
+
   const [isSyncing, setIsSyncing] = useState(false);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
 
   const sync = useCallback(async () => {
     setIsSyncing(true);
     await replayQueue();
-    setPendingCount(getQueueLength());
     setIsSyncing(false);
   }, []);
 
