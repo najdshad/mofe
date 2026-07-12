@@ -542,6 +542,7 @@ export function OrdersClient({
             onCompleteOrder={handleCompleteOrder}
             onItemStatus={handleItemStatus}
             onCancelItem={handleCancelItem}
+            onReleaseTable={handleReleaseTable}
             loading={{ send: loading.send, complete: loading.complete }}
             error={error}
           />

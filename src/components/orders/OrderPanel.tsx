@@ -20,6 +20,7 @@ export function OrderPanel({
   onCompleteOrder,
   onItemStatus,
   onCancelItem,
+  onReleaseTable,
   loading,
   error,
 }: {
@@ -29,6 +30,7 @@ export function OrderPanel({
   onCompleteOrder: () => void;
   onItemStatus: (itemId: string, status: string) => void;
   onCancelItem: (itemId: string) => void;
+  onReleaseTable?: () => void;
   loading?: { send?: boolean; complete?: boolean };
   error?: string | null;
 }) {
@@ -172,6 +174,15 @@ export function OrderPanel({
               disabled={loading?.complete}
             >
               {loading?.complete ? "..." : "تسویه حساب"}
+            </Button>
+          )}
+          {onReleaseTable && (
+            <Button
+              variant="tertiary"
+              onClick={onReleaseTable}
+              className="w-full text-ink-muted hover:text-red-600 border border-line"
+            >
+              آزاد سازی میز
             </Button>
           )}
         </div>
