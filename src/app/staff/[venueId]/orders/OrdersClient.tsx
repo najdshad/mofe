@@ -38,7 +38,7 @@ export function OrdersClient({
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const tablesRef = useRef(tables);
   useEffect(() => { tablesRef.current = tables; }, [tables]);
-  const fetchKeyRef = useRef({ venueId, key: 0 });
+  const fetchKeyRef = useRef({ venueId: "", key: -1 });
 
   const { isOnline, pendingCount, isSyncing, sync } = useOfflineSync();
 
