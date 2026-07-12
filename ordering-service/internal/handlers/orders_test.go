@@ -874,8 +874,14 @@ func TestCompleteOrder_WrongStatus(t *testing.T) {
 
 			var errResp models.ErrorResponse
 			json.NewDecoder(w.Body).Decode(&errResp)
-			if errResp.Code != "INVALID_STATUS" {
-				t.Errorf("expected INVALID_STATUS code, got %s", errResp.Code)
+			if tt.orderStatus == "CANCELLED" {
+				if errResp.Code != "INVALID_STATUS" {
+					t.Errorf("expected INVALID_STATUS code for cancelled, got %s", errResp.Code)
+				}
+			} else {
+				if errResp.Code != "UNDELIVERED_ITEMS" {
+					t.Errorf("expected UNDELIVERED_ITEMS code for %s, got %s", tt.orderStatus, errResp.Code)
+				}
 			}
 
 			// Verify order status was NOT changed

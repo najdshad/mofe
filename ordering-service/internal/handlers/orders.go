@@ -1111,10 +1111,15 @@ func (h *OrderHandler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if currentStatus != "DELIVERED" {
+	if currentStatus == "CANCELLED" {
 		models.WriteError(w, http.StatusBadRequest,
-			"Can only complete orders in DELIVERED status, got: "+currentStatus,
-			"INVALID_STATUS")
+			"Cannot complete a cancelled order", "INVALID_STATUS")
+		return
+	}
+
+	if currentStatus == "COMPLETED" {
+		models.WriteError(w, http.StatusBadRequest,
+			"Order is already completed", "INVALID_STATUS")
 		return
 	}
 
