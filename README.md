@@ -1,5 +1,9 @@
 # mofé — Persian Cafe Menu Management
 
+> **🚧 Development Status:** This project is in active development and has not been deployed to production yet. All features, including the subscription billing system, are under construction. Zarinpal integration uses sandbox/mock mode — set `ZARINPAL_MERCHANT_ID` for real payments.
+
+
+
 Persian-first cafe menu management: manage menu categories, items, appearance, and publish static QR menus — all in Persian, with a restrained paper-and-ink design language.
 
 > **New to the project?** See [`NAVIGATION-GUIDE.md`](./NAVIGATION-GUIDE.md) for a deep dive into directory structure, conventions, architecture, and common development tasks.

@@ -1,5 +1,7 @@
 # AGENTS.MD — Agentic Development Guide for mofé
 
+> **🚧 Development Status:** This project is in active development and has not been deployed to production. No real payment processing is active — Zarinpal runs in sandbox/mock mode. The subscription system (Plan/Subscription/Invoice models, billing UI, feature gating) is implemented but untested with real payments.
+
 ## Project Overview
 
 Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + Prisma v7 + PostgreSQL. Two surfaces: admin web app + static public QR menus. Paper-and-ink design language (#f5f0e6 / #111111).
