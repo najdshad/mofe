@@ -98,10 +98,24 @@ export async function changePlan(
 
   const oldPlan = sub.plan;
   const now = new Date();
+  const isExpired = sub.status === "expired" || sub.currentPeriodEnd <= now;
+  const wasFree = oldPlan.priceToman === 0;
+
+  if (wasFree || isExpired) {
+    await prisma.subscription.update({
+      where: { id: sub.id },
+      data: {
+        planId: newPlan.id,
+        status: "trial",
+      },
+    });
+
+    return { immediate: true, proratedAmount: newPlan.priceToman };
+  }
 
   if (newPlan.priceToman > oldPlan.priceToman) {
     const msInPeriod = sub.currentPeriodEnd.getTime() - sub.currentPeriodStart.getTime();
-    const msRemaining = sub.currentPeriodEnd.getTime() - now.getTime();
+    const msRemaining = Math.max(0, sub.currentPeriodEnd.getTime() - now.getTime());
     const ratio = msRemaining / msInPeriod;
     const priceDiff = newPlan.priceToman - oldPlan.priceToman;
     const proratedAmount = Math.round(priceDiff * ratio);
@@ -130,7 +144,9 @@ export async function extendSubscription(venueId: string, months = 1) {
   if (!sub) throw new ApiError("اشتراکی یافت نشد", 404);
 
   const now = new Date();
-  const base = sub.currentPeriodEnd > now ? sub.currentPeriodEnd : now;
+  const alreadyActive = sub.status === "active" && sub.currentPeriodEnd > now;
+
+  const base = alreadyActive ? sub.currentPeriodEnd : now;
   const newEnd = new Date(base.getTime() + months * 30 * 24 * 60 * 60 * 1000);
 
   return prisma.subscription.update({

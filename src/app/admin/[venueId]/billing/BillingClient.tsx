@@ -150,10 +150,19 @@ export function BillingClient({
           setPlanError(data.error || "خطا در تغییر طرح");
           return;
         }
+
         if (data.immediate && data.proratedAmount && data.proratedAmount > 0) {
-          setSuccessMsg(
-            `طرح شما با موفقیت تغییر کرد. مبلغ ${formatCurrency(data.proratedAmount)} برای ادامه دوره جاری محاسبه شد. لطفاً پرداخت را انجام دهید.`
-          );
+          const payRes = await fetch("/api/billing/payments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ venueId }),
+          });
+          const payData = await payRes.json();
+          if (payRes.ok && payData.redirectUrl) {
+            window.location.href = payData.redirectUrl;
+            return;
+          }
+          setPlanError(payData.error || "خطا در ایجاد پرداخت");
         } else {
           setSuccessMsg("طرح شما با موفقیت تغییر کرد و در دوره بعدی اعمال خواهد شد.");
         }
@@ -257,7 +266,7 @@ export function BillingClient({
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-ink-muted">سفارش‌گیری آنلاین</span>
+              <span className="text-ink-muted">مدیریت سفارش میز</span>
               <span className={plan?.orderingEnabled ? "text-green-600" : "text-ink-muted"}>
                 {plan?.orderingEnabled ? "✅ فعال" : "❌ غیرفعال"}
               </span>
@@ -416,7 +425,7 @@ function PlanCard({
         <FeatureRow enabled={true} label={plan.maxMenuItems === -1 ? "آیتم‌های منو: نامحدود" : `حداکثر ${plan.maxMenuItems.toLocaleString("fa-IR")} آیتم منو`} />
         <FeatureRow enabled={true} label={plan.maxTables === -1 ? "میزها: نامحدود" : `حداکثر ${plan.maxTables.toLocaleString("fa-IR")} میز`} />
         <FeatureRow enabled={plan.customDomain} label="دامنه اختصاصی" />
-        <FeatureRow enabled={plan.orderingEnabled} label="سفارش‌گیری آنلاین" />
+        <FeatureRow enabled={plan.orderingEnabled} label="مدیریت سفارش میز" />
       </ul>
       {isCurrent ? (
         <p className="mt-3 text-xs text-green-600 font-medium">طرح فعلی شما</p>

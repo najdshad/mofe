@@ -5,7 +5,6 @@ import {
   getCurrentSubscription,
   getSubscriptionUsage,
   changePlan,
-  requireActiveSubscription,
 } from "@/lib/subscription";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
@@ -73,12 +72,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "طرح نامعتبر است" }, { status: 400 });
     }
 
-    const activeSub = await requireActiveSubscription(venueId);
-    if (activeSub.plan.slug === newPlan.slug) {
-      return NextResponse.json({ error: "طرح فعلی شما همین است" }, { status: 400 });
+    const sub = await getCurrentSubscription(venueId);
+    if (!sub) {
+      return NextResponse.json({ error: "اشتراکی یافت نشد" }, { status: 404 });
     }
 
-    const sub = activeSub;
+    if (sub.plan.id === planId) {
+      return NextResponse.json({ error: "طرح فعلی شما همین است" }, { status: 400 });
+    }
 
     const result = await changePlan(venueId, planId);
 

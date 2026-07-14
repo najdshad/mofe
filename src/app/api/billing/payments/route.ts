@@ -26,7 +26,8 @@ export async function POST(request: Request) {
 
     const amount = sub.plan.priceToman;
     const now = new Date();
-    const periodStart = sub.currentPeriodEnd > now ? sub.currentPeriodEnd : now;
+    const alreadyActive = sub.status === "active" && sub.currentPeriodEnd > now;
+    const periodStart = alreadyActive ? sub.currentPeriodEnd : now;
     const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const invoice = await prisma.invoice.create({
