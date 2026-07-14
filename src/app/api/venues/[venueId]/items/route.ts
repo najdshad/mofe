@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import type { Prisma } from "@/generated/prisma/client";
 import { VALID_STATIONS } from "@/lib/constants";
+import { checkItemLimit } from "@/lib/subscription";
 
 export async function GET(
   request: Request,
@@ -60,6 +61,16 @@ export async function POST(
     const { venueId } = await params;
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const limit = await checkItemLimit(venueId);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        {
+          error: `تعداد آیتم‌های منو به حداکثر ${limit.max.toLocaleString("fa-IR")} رسیده است. برای افزایش محدودیت، اشتراک خود را ارتقا دهید.`,
+        },
+        { status: 403 }
+      );
+    }
 
     const body = await request.json();
 

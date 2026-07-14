@@ -4,15 +4,31 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useMemo } from "react";
 
-export function NavClient({ venueId }: { venueId: string }) {
+interface NavSub {
+  status: string;
+  plan: { slug: string; orderingEnabled: boolean };
+}
+
+export function NavClient({ venueId, sub }: { venueId: string; sub: NavSub | null }) {
   const pathname = usePathname();
 
-  const links = useMemo(() => [
-    { href: `/admin/${venueId}/menu`, label: "منو" },
-    { href: `/admin/${venueId}/orders`, label: "سفارشات" },
-    { href: `/admin/${venueId}/sales`, label: "فروش" },
-    { href: `/admin/${venueId}/settings`, label: "تنظیمات" },
-  ], [venueId]);
+  const links = useMemo(() => {
+    const items = [
+      { href: `/admin/${venueId}/menu`, label: "منو" },
+    ];
+
+    if (sub?.plan?.orderingEnabled) {
+      items.push({ href: `/admin/${venueId}/orders`, label: "سفارشات" });
+    }
+
+    items.push(
+      { href: `/admin/${venueId}/sales`, label: "فروش" },
+      { href: `/admin/${venueId}/billing`, label: "اشتراک" },
+      { href: `/admin/${venueId}/settings`, label: "تنظیمات" }
+    );
+
+    return items;
+  }, [venueId, sub]);
 
   return (
     <div className="mx-auto flex max-w-5xl gap-4 px-4">

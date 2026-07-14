@@ -28,6 +28,27 @@ export const STATION_LABELS: Record<string, string> = {
   bar: "بار",
 };
 
+export const PLAN_LABELS: Record<string, string> = {
+  basic: "پایه",
+  pro: "حرفه‌ای",
+  premium: "پریمیوم",
+};
+
+export const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
+  trial: "دوره آزمایشی",
+  active: "فعال",
+  past_due: "سررسید شده",
+  canceled: "لغو شده",
+  expired: "منقضی شده",
+};
+
+export const INVOICE_STATUS_LABELS: Record<string, string> = {
+  pending: "در انتظار پرداخت",
+  paid: "پرداخت شده",
+  failed: "ناموفق",
+  refunded: "بازگشت وجه",
+};
+
 export const STATUS_LABELS: Record<string, string> = {
   draft: "پیش‌نویس",
   published: "منتشر شده",

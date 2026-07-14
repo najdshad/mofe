@@ -32,7 +32,7 @@ export async function ensureDemoData(prisma: PrismaClient) {
       nameFa: "کافه نقطه",
       nameEn: "Noghteh Cafe",
       slug: DEMO_VENUE_SLUG,
-      plan: "starter",
+      plan: "premium",
       timezone: "Asia/Tehran",
       welcomeMessage: "به منوی ما خوش آمدید. سفارش فقط حضوری.",
       publicStatus: "draft",
@@ -51,6 +51,22 @@ export async function ensureDemoData(prisma: PrismaClient) {
       role: "owner",
     },
   });
+
+  const premiumPlan = await prisma.plan.findUnique({ where: { slug: "premium" } });
+  if (premiumPlan) {
+    const farFuture = new Date("2100-01-01");
+    await prisma.subscription.upsert({
+      where: { venueId: venue.id },
+      update: {},
+      create: {
+        venueId: venue.id,
+        planId: premiumPlan.id,
+        status: "active",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: farFuture,
+      },
+    });
+  }
 
   return { user, venue };
 }

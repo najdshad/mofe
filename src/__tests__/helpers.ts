@@ -16,6 +16,10 @@ export async function cleanTestData() {
   await prisma.asset.deleteMany();
   // Rate-limit entries (no FK to venue/user)
   await prisma.rateLimitEntry.deleteMany();
+  // Invoice references Subscription
+  await prisma.invoice.deleteMany();
+  // Subscription references Venue + Plan
+  await prisma.subscription.deleteMany();
   // Sale references Venue
   await prisma.sale.deleteMany();
   // MenuPublication references Venue
@@ -30,8 +34,51 @@ export async function cleanTestData() {
   await prisma.session.deleteMany();
   // Venue (no remaining deps)
   await prisma.venue.deleteMany();
+  // Plan (no remaining deps)
+  await prisma.plan.deleteMany();
   // User (no remaining deps)
   await prisma.user.deleteMany();
+}
+
+export async function seedTestPlans() {
+  const plans = [
+    { slug: "basic", nameFa: "پایه", nameEn: "Basic", description: "طرح پایه", priceToman: 0, trialDays: 7, sortOrder: 1, purchasable: false, maxMenuItems: 10, maxTables: 3, customDomain: false, orderingEnabled: false },
+    { slug: "pro", nameFa: "حرفه‌ای", nameEn: "Pro", description: "طرح حرفه‌ای", priceToman: 1500000, trialDays: 0, sortOrder: 2, purchasable: true, maxMenuItems: 100, maxTables: 10, customDomain: true, orderingEnabled: true },
+    { slug: "premium", nameFa: "پریمیوم", nameEn: "Premium", description: "طرح پریمیوم", priceToman: 3000000, trialDays: 0, sortOrder: 3, purchasable: true, maxMenuItems: -1, maxTables: -1, customDomain: true, orderingEnabled: true },
+  ];
+
+  for (const plan of plans) {
+    await prisma.plan.upsert({
+      where: { slug: plan.slug },
+      update: plan,
+      create: plan,
+    });
+  }
+}
+
+export async function seedTestSubscription(
+  venueId: string,
+  planSlug = "premium",
+  overrides?: Partial<{ status: string; trialEndsAt: Date }>
+) {
+  const plan = await prisma.plan.findUnique({ where: { slug: planSlug } });
+  if (!plan) throw new Error(`Plan "${planSlug}" not found. Run seedTestPlans() first.`);
+
+  const now = new Date();
+  const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  return prisma.subscription.upsert({
+    where: { venueId },
+    update: {},
+    create: {
+      venueId,
+      planId: plan.id,
+      status: overrides?.status ?? "active",
+      currentPeriodStart: now,
+      currentPeriodEnd: overrides?.trialEndsAt ?? periodEnd,
+      trialEndsAt: overrides?.trialEndsAt ?? null,
+    },
+  });
 }
 
 export async function seedTestSale(
@@ -157,6 +204,9 @@ export async function seedTestData() {
       calories: 320,
     },
   });
+
+  await seedTestPlans();
+  await seedTestSubscription(venue.id, "premium");
 
   return { user, venue, categories: { cat1, cat2, cat3 }, items: { item1, item2, item3 } };
 }

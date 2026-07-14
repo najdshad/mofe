@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
+import { getCurrentSubscription } from "@/lib/subscription";
 import { QRIconButton } from "./QRIconButton";
 import { NavClient } from "./NavClient";
 
@@ -18,14 +19,29 @@ export default async function AdminLayout({
   if (!user) redirect("/login");
 
   const { venueId } = await params;
-  const [membership, venue] = await Promise.all([
+  const [membership, venue, sub] = await Promise.all([
     getVenueMembership(user.id, venueId),
     prisma.venue.findUnique({ where: { id: venueId }, select: { nameFa: true, slug: true, publicStatus: true } }),
+    getCurrentSubscription(venueId),
   ]);
 
   if (!membership) redirect("/venues");
   if (membership.role === "staff") redirect("/venues");
   if (!venue) redirect("/venues");
+
+  if (sub && sub.status === "expired") {
+    redirect(`/admin/${venueId}/billing`);
+  }
+
+  const serializedSub = sub
+    ? {
+        status: sub.status,
+        plan: {
+          slug: sub.plan.slug,
+          orderingEnabled: sub.plan.orderingEnabled,
+        },
+      }
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -60,7 +76,7 @@ export default async function AdminLayout({
       </header>
 
       <nav className="border-b border-line bg-paper">
-        <NavClient venueId={venueId} />
+        <NavClient venueId={venueId} sub={serializedSub} />
       </nav>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-4">

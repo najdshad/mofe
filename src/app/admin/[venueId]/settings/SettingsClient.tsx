@@ -23,13 +23,13 @@ interface SettingsClientProps {
   nameEn: string | null;
   slug: string;
   timezone: string;
-  plan: string;
   welcomeMessage: string | null;
   logoUrl: string | null;
   members: Member[];
   currentUserRole: string;
   currentUserId: string;
   publicMenuDomain: string;
+  subscription: { plan: { customDomain: boolean; orderingEnabled: boolean } } | null;
 }
 
 export function SettingsClient({
@@ -38,13 +38,13 @@ export function SettingsClient({
   nameEn: initialNameEn,
   slug,
   timezone: initialTimezone,
-  plan,
   welcomeMessage: initialWelcomeMessage,
   logoUrl: initialLogoUrl,
   members: initialMembers,
   currentUserRole,
   currentUserId,
   publicMenuDomain,
+  subscription,
 }: SettingsClientProps) {
   const router = useRouter();
   const [nameFa, setNameFa] = useState(initialNameFa);
@@ -387,9 +387,13 @@ export function SettingsClient({
             {publicMenuDomain}
           </span>
         </p>
-        {plan !== "starter" && (
+        {subscription?.plan?.customDomain ? (
           <p className="mt-2 text-sm text-ink-muted">
             برای تنظیم دامنه اختصاصی با پشتیبانی تماس بگیرید.
+          </p>
+        ) : (
+          <p className="mt-2 text-sm text-orange-600">
+            دامنه اختصاصی فقط در طرح‌های حرفه‌ای و پریمیوم در دسترس است.
           </p>
         )}
       </Panel>

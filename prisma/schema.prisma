@@ -57,6 +57,7 @@ model Venue {
   sales            Sale[]
   stationSchedules StationSchedule[]
   tables           VenueTable[]
+  subscription     Subscription?
 }
 
 model VenueMember {
@@ -344,6 +345,68 @@ model Sale {
 
   @@index([venueId, completedAt])
   @@map("Sale")
+}
+
+model Plan {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  nameFa    String
+  nameEn    String
+  description String?
+  priceToman Int
+  trialDays Int      @default(7)
+  sortOrder Int      @default(0)
+  purchasable Boolean @default(true)
+
+  maxMenuItems    Int     @default(-1)
+  maxTables       Int     @default(-1)
+  customDomain    Boolean @default(false)
+  orderingEnabled Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id                 String    @id @default(uuid())
+  venueId            String    @unique
+  planId             String
+  status             String    @default("trial")
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  trialEndsAt        DateTime?
+  canceledAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  plan  Plan  @relation(fields: [planId], references: [id])
+  invoices Invoice[]
+
+  @@index([status])
+}
+
+model Invoice {
+  id              String    @id @default(uuid())
+  subscriptionId  String
+  amountToman     Int
+  status          String    @default("pending")
+  authority       String?   @unique
+  refId           String?   @unique
+  cardPan         String?
+  paidAt          DateTime?
+  periodStart     DateTime
+  periodEnd       DateTime
+  description     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([status])
 }
 
 model AuditLog {

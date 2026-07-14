@@ -10,6 +10,20 @@ const adapter = new PrismaPg(
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  const plans = [
+    { slug: "basic", nameFa: "پایه", nameEn: "Basic", description: "طرح رایگان با امکانات پایه", priceToman: 0, trialDays: 7, sortOrder: 1, purchasable: false, maxMenuItems: 10, maxTables: 3, customDomain: false, orderingEnabled: false },
+    { slug: "pro", nameFa: "حرفه‌ای", nameEn: "Pro", description: "طرح حرفه‌ای با امکانات کامل", priceToman: 1500000, trialDays: 0, sortOrder: 2, purchasable: true, maxMenuItems: 100, maxTables: 10, customDomain: true, orderingEnabled: true },
+    { slug: "premium", nameFa: "پریمیوم", nameEn: "Premium", description: "طرح پریمیوم بدون محدودیت", priceToman: 3000000, trialDays: 0, sortOrder: 3, purchasable: true, maxMenuItems: -1, maxTables: -1, customDomain: true, orderingEnabled: true },
+  ];
+
+  for (const plan of plans) {
+    await prisma.plan.upsert({
+      where: { slug: plan.slug },
+      update: plan,
+      create: plan,
+    });
+  }
+
   const { venue } = await ensureDemoData(prisma);
 
   const categories = [
