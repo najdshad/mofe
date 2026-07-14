@@ -152,21 +152,11 @@ export function BillingClient({
         }
 
         if (data.immediate && data.proratedAmount && data.proratedAmount > 0) {
-          const payRes = await fetch("/api/billing/payments", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ venueId }),
-          });
-          const payData = await payRes.json();
-          if (payRes.ok && payData.redirectUrl) {
-            window.location.href = payData.redirectUrl;
-            return;
-          }
-          setPlanError(payData.error || "خطا در ایجاد پرداخت");
+          router.push(`/admin/${venueId}/billing/pay?planId=${planId}`);
         } else {
           setSuccessMsg("طرح شما با موفقیت تغییر کرد و در دوره بعدی اعمال خواهد شد.");
+          router.refresh();
         }
-        router.refresh();
       } catch {
         setPlanError("خطا در ارتباط با سرور");
       } finally {

@@ -16,8 +16,10 @@ export async function cleanTestData() {
   await prisma.asset.deleteMany();
   // Rate-limit entries (no FK to venue/user)
   await prisma.rateLimitEntry.deleteMany();
-  // Invoice references Subscription
+  // Invoice references Subscription + Coupon
   await prisma.invoice.deleteMany();
+  // Coupon (no remaining deps)
+  await prisma.coupon.deleteMany();
   // Subscription references Venue + Plan
   await prisma.subscription.deleteMany();
   // Sale references Venue
