@@ -32,9 +32,10 @@ mofe-menu/
 │   ├── import-csv.ts      # CLI tool to import items from CSV
 │   └── seed-sales.ts      # Seed 60 days of synthetic sales data
 ├── src/
-│   ├── __tests__/
-│   │   ├── api/            # Integration tests (75 tests — auth, CRUD, publish, permissions, table CRUD, table status, sales aggregation)
-│   │   ├── lib/            # Unit tests — auth (8) + renderer (48) + rate-limit (8) + ordering-proxy (12) + api-helpers (12) + config (8)
+│   ├── __tests__/           # 17 files, 374 tests (371 pass)
+│   │   ├── api/            # Integration tests (114 tests — auth, CRUD, publish, permissions, table CRUD, table status, sales, sales aggregation, concurrent, slug)
+│   │   ├── lib/            # Unit tests — auth (8) + renderer (48) + publication (14) + rate-limit (8) + ordering-proxy (12) + api-helpers (12) + config (8) + offline-queue (6)
+│   │   ├── components/     # Component helper tests — SalesClient (10)
 │   │   ├── proxy/          # Proxy routing tests (9 tests)
 │   │   ├── global-setup.ts # Creates test DB before all tests, cleans up after
 │   │   ├── setup.ts        # Per-file setup (NODE_ENV=test)
@@ -278,7 +279,7 @@ Enforced via `requireRole(userId, venueId, allowedRoles)` or `canManageCategorie
 
 - Vitest v4 with `singleFork` pool
 - `global-setup.ts` pushes schema to PostgreSQL test DB via `prisma db push`
-- `helpers.ts` provides `cleanTestData()` + `seedTestData()`
+- `helpers.ts` provides `cleanTestData()` + `seedTestData()` + `seedTestPlans()` + `seedTestSubscription()` + `seedTestSale()`
 - Run: `npm test` (vitest run), `npm run test:watch`
 
 ### Public Menu Renderer
@@ -329,7 +330,7 @@ npx prisma migrate dev --name describe_change
 
 ### Running tests
 ```bash
-npm test                # Run all 180 tests
+npm test                # Run all 374 tests (3 pre-existing billing/zarinpal failures tolerated)
 npm run test:watch      # Watch mode
 ```
 

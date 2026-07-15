@@ -11,7 +11,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (212 tests; use --no-file-parallelism for reliable runs)
+npm test             # Vitest run (374 tests; use --no-file-parallelism for reliable runs)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -25,6 +25,7 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 - after each successful implementation, commit to git
 - **⚠ NEVER run `npx prisma db push --accept-data-loss`** — it destroys Go-managed tables (`orders`, `order_items`). The `@@ignore` Prisma models prevent table drops but column type mismatches (ENUM→TEXT) can still destroy NOT NULL constraints, defaults, and FKs.
 - **Safe `prisma db push` workflow:** `psql "${DATABASE_URL}" -c "DROP TABLE IF EXISTS schema_migrations;" && npx prisma db push && psql "${DATABASE_URL}" -c "CREATE TABLE IF NOT EXISTS schema_migrations (version bigint PRIMARY KEY, dirty boolean NOT NULL); INSERT INTO schema_migrations (version, dirty) VALUES (4, false) ON CONFLICT (version) DO NOTHING;"`
+- **After `prisma db push`**, the Go ordering service automatically recreates dropped indexes and FK constraints on startup (`verifyTables()` + unconditionally `CREATE INDEX IF NOT EXISTS`).
 
 ### Internal Auth
 - `requireInternalAuth()` from `@/lib/api-helpers` — checks `user.role === "internal"` in internal API routes
@@ -67,7 +68,7 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 212 tests pass
+3. `npm test` — all 374 tests pass (3 pre-existing billing/zarinpal failures tolerated)
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas
@@ -128,7 +129,9 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 ### Public Menu Renderer (`src/lib/public-menu/renderer.ts`)
 - Pure functions: `renderPublicMenu(snapshot)` and `renderUnavailablePage(venueName)`
 - Snapshot shape: `{ venue: { id, nameFa, nameEn, welcomeMessage, accentColor, slug, publicUrl }, categories: [{ id, nameFa, items: [{ id, nameFa, nameEn, description, priceToman, station, calories, soldOut, variants: [{ nameFa, nameEn, priceModifier }], allergenCodes: string[] }] }], generatedAt }`
-- All user content HTML-escaped via `esc()` function
+- All user content HTML-escaped via `esc()` function (also strips Unicode bidi control characters)
+- `accentColor` validated as hex CSS color (`sanitizeCssColor()`) — NOT passed through `esc()`
+- Allergen code fallback uses `esc(code)` for defense-in-depth
 - Prices formatted with `toLocaleString("fa-IR")`
 - Font @font-face repeated inline in rendered HTML
 - RTL, mobile-first, inline CSS
@@ -161,7 +164,7 @@ All use `forwardRef` where applicable. Variants:
 ```bash
 cd ordering-service
 go build ./cmd/server   # Build binary
-go test ./...           # Run tests (43 total: 37 pass, 6 pre-existing failures)
+go test ./...           # Run tests (handlers package)
 go vet ./...            # Static analysis
 go mod tidy             # Sync dependencies
 ```

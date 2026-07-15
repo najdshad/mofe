@@ -26,7 +26,7 @@ Persian-first cafe menu management: manage menu categories, items, appearance, a
 | Image Processing | sharp |
 | Email | nodemailer (SMTP) |
 | Storage | Local filesystem / S3-compatible (configurable) |
-| Testing | Vitest v4 (180 tests) |
+| Testing | Vitest v4 (374 tests, 17 files) |
 | Runtime | Node 22 |
 | **Ordering Service** | |
 | Framework | Go 1.23 (chi v5) |
@@ -67,7 +67,7 @@ Venue "کافه نقطه" with 4 categories (3 active, 1 inactive) and 9 items (
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint (Next.js core-web-vitals + TypeScript rules) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Run 180 tests (vitest run) |
+| `npm test` | Run 374 tests (vitest run) |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run db:studio` | Prisma Studio |
 | `npm run db:seed` | Seed demo data (upsert) |
@@ -284,20 +284,26 @@ Full design system in [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md).
 
 ## Testing
 
-180 tests across 8 files with real PostgreSQL test DB:
+374 tests across 17 files with real PostgreSQL test DB (371 pass, 3 pre-existing billing/zarinpal failures):
 
 ```
-src/__tests__/api/integration.test.ts           — 75 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
-│                                                    permissions, CSV import, publication edge cases,
-│                                                    cross-venue isolation, table CRUD, table status validation,
-│                                                    sales aggregation)
-src/__tests__/lib/public-menu/renderer.test.ts  — 48 tests (HTML structure, Persian formatting, escaping, edge cases)
-src/__tests__/proxy/proxy.test.ts               —  9 tests (subdomain routing, auth guards, localhost bypass)
-src/__tests__/lib/api-helpers.test.ts           — 12 tests (ApiError, errorResponse, requireAuth)
-src/__tests__/lib/auth.test.ts                  —  8 tests (hashToken, generateToken, hashPassword, verifyPassword)
-src/__tests__/lib/config.test.ts                —  8 tests (getPublicMenuUrl)
-src/__tests__/lib/rate-limit.test.ts            —  8 tests (rateLimit helper — DB-backed)
-src/__tests__/lib/ordering-proxy.test.ts        — 12 tests (proxy forwarding, release-table, error handling)
+src/__tests__/api/integration.test.ts              —  75 tests (auth, CRUD, reorder, bulk visibility, publish workflow,
+│                                                       permissions, CSV import, publication edge cases,
+│                                                       cross-venue isolation, table CRUD, table status validation,
+│                                                       sales aggregation)
+src/__tests__/api/sales.test.ts                    —  19 tests (sales auth, aggregation, isolation, response format)
+src/__tests__/api/concurrent.test.ts               —  12 tests (concurrent request handling, race detection)
+src/__tests__/api/menu-slug.test.ts                —   8 tests (slug generation, uniqueness)
+src/__tests__/lib/public-menu/renderer.test.ts     —  48 tests (HTML structure, Persian formatting, escaping, edge cases)
+src/__tests__/lib/public-menu/publication.test.ts  —  14 tests (snapshot building, publish/unpublish workflow)
+src/__tests__/lib/auth.test.ts                     —   8 tests (hashToken, generateToken, hashPassword, verifyPassword)
+src/__tests__/lib/api-helpers.test.ts              —  12 tests (ApiError, errorResponse, requireAuth)
+src/__tests__/lib/config.test.ts                   —   8 tests (getPublicMenuUrl)
+src/__tests__/lib/rate-limit.test.ts               —   8 tests (rateLimit helper — DB-backed)
+src/__tests__/lib/ordering-proxy.test.ts           —  12 tests (proxy forwarding, release-table, error handling)
+src/__tests__/lib/offline-queue.test.ts            --   6 tests (queue add/remove/replay)
+src/__tests__/components/SalesClient.test.ts       --  10 tests (toPersianDate, formatCurrency helpers)
+src/__tests__/proxy/proxy.test.ts                  --   9 tests (subdomain routing, auth guards, localhost bypass)
 ```
 
 Run: `npm test` (pushes schema to test database, runs tests).
@@ -332,9 +338,10 @@ mofe-menu/
 │   ├── import-csv.ts           # CLI tool: import items from CSV file
 │   └── seed-sales.ts           # Seed 60 days of synthetic sales data
 ├── src/
-│   ├── __tests__/              # Vitest test suite (8 files, 180 tests)
-│   │   ├── api/                # Integration tests (75)
-│   │   ├── lib/                # Unit tests (auth, renderer, rate-limit, config, api-helpers, ordering-proxy)
+│   ├── __tests__/              # Vitest test suite (17 files, 374 tests)
+│   │   ├── api/                # Integration tests (114)
+│   │   ├── lib/                # Unit tests (auth, renderer, publication, rate-limit, config, api-helpers, ordering-proxy, offline-queue)
+│   │   ├── components/         # Component helper tests (SalesClient)
 │   │   ├── proxy/              # Proxy routing tests (9)
 │   │   ├── helpers.ts          # Test data helpers
 │   │   ├── setup.ts            # Per-file setup
@@ -485,6 +492,7 @@ mofe-menu/
 - **Email:** Configurable SMTP via `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` env vars; logs to console when unconfigured
 - **Storage:** Local filesystem by default; set `S3_*` env vars to use S3-compatible object storage
 - **CSV import:** Formula injection sanitized — cells starting with `=`, `+`, `-`, `@`, `\t` are prefixed with `'`
+- **CSV export:** Formula injection sanitized — cells starting with `=`, `+`, `-`, `@`, `\t` are prefixed with `'`
 - **Boot guard:** Production startup warns if `admin@mofe.ir` still uses default password
 - **Design tokens:** CSS vars `--paper`, `--ink`, `--ink-strong`, `--ink-muted`, `--line`, `--surface`
 - **Radii:** Panel 28px, Card 24px, Control 16px (CSS vars)
