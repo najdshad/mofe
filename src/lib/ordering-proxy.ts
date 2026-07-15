@@ -18,13 +18,14 @@ export async function proxyToOrdering(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10_000);
     try {
+      const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       res = await fetch(`${ORDERING_SERVICE_URL}${path}`, {
         method: options.method || "GET",
         headers: {
           "Content-Type": "application/json",
           "X-Venue-ID": options.venueId,
           Cookie: options.cookie,
-          Origin: "http://localhost:3000",
+          Origin: origin,
         },
         body: options.body ? JSON.stringify(options.body) : undefined,
         signal: controller.signal,

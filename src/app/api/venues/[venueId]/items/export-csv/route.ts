@@ -20,14 +20,22 @@ export async function GET(
 
     const BOM = "\uFEFF";
     const headers = "nameFa,nameEn,categoryNameFa,priceToman,station,description,calories,isSoldOut";
+    const FORMULA_INJECTION_RE = /^[=+\-@\t]/;
+    const sanitizeCsvField = (value: string): string => {
+      if (FORMULA_INJECTION_RE.test(value)) {
+        return "'" + value;
+      }
+      return value;
+    };
+
     const rows = items.map((item) => {
       const row = [
-        item.nameFa,
-        item.nameEn ?? "",
-        item.category.nameFa,
+        sanitizeCsvField(item.nameFa),
+        sanitizeCsvField(item.nameEn ?? ""),
+        sanitizeCsvField(item.category.nameFa),
         String(item.priceToman),
         item.station,
-        item.description ?? "",
+        sanitizeCsvField(item.description ?? ""),
         item.calories != null ? String(item.calories) : "",
         item.isSoldOut ? "true" : "false",
       ];

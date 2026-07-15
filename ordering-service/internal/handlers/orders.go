@@ -47,6 +47,8 @@ func (h *OrderHandler) queryContext(ctx context.Context, query string, args ...i
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
+
 	var req struct {
 		TableNumber string `json:"tableNumber"`
 		GuestCount  int    `json:"guestCount"`
@@ -74,8 +76,15 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 
+	tx, err := h.db.BeginTx(ctx, nil)
+	if err != nil {
+		models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+		return
+	}
+	defer tx.Rollback()
+
 	var waiterName string
-	err := h.db.QueryRowContext(ctx,
+	err = tx.QueryRowContext(ctx,
 		`SELECT name FROM "User" WHERE id = $1`, session.UserID,
 	).Scan(&waiterName)
 	if err != nil {
@@ -94,7 +103,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		tableNumber = &req.TableNumber
 	}
 
-	_, err = h.execContext(ctx, `
+	_, err = tx.ExecContext(ctx, `
 		INSERT INTO orders (
 			id, venue_id, waiter_id, table_number,
 			guest_count, notes, status, subtotal, total, created_by_name
@@ -109,6 +118,12 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 			"userId", session.UserID,
 		)
 		models.WriteError(w, http.StatusInternalServerError, "Failed to create order", "CREATE_FAILED")
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		slog.Error("Failed to commit transaction", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to commit", "DB_ERROR")
 		return
 	}
 
@@ -138,6 +153,8 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 	orderID := chi.URLParam(r, "id")
+
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 
 	var req struct {
 		MenuItemID string  `json:"menuItemId"`
@@ -275,6 +292,7 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		slog.Error("Failed to update order totals", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to update order totals", "DB_ERROR")
 		return
 	}
 
@@ -357,7 +375,8 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 		var o OrderRow
 		if err := rows.Scan(&o.ID, &o.TableNumber, &o.Status, &o.Total, &o.CreatedAt, &o.CreatedByName); err != nil {
 			slog.Error("Failed to scan order row", "error", err)
-			continue
+			models.WriteError(w, http.StatusInternalServerError, "Failed to read orders", "DB_ERROR")
+			return
 		}
 
 		orders = append(orders, map[string]interface{}{
@@ -566,6 +585,8 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	orderID := chi.URLParam(r, "id")
 	itemID := chi.URLParam(r, "itemId")
 
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
+
 	var req struct {
 		Quantity *int    `json:"quantity"`
 		Notes    *string `json:"notes"`
@@ -667,6 +688,7 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	middleware.ObserveDBQuery(time.Since(start))
 	if err != nil {
 		slog.Error("Failed to recalculate order total", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to recalculate order total", "DB_ERROR")
 		return
 	}
 
@@ -759,6 +781,7 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 	middleware.ObserveDBQuery(time.Since(start))
 	if err != nil {
 		slog.Error("Failed to recalculate after cancel", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to recalculate order total", "DB_ERROR")
 		return
 	}
 
@@ -769,6 +792,7 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 	`, orderID).Scan(&activeItems)
 	if err != nil {
 		slog.Error("Failed to count active items", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to count active items", "DB_ERROR")
 		return
 	}
 
@@ -780,6 +804,7 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 		middleware.ObserveDBQuery(time.Since(start))
 		if err != nil {
 			slog.Error("Failed to cancel order", "error", err, "orderId", orderID)
+			models.WriteError(w, http.StatusInternalServerError, "Failed to cancel order", "DB_ERROR")
 			return
 		}
 		slog.Info("Order cancelled (all items cancelled)", "orderId", orderID)
@@ -885,6 +910,7 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 	middleware.ObserveDBQuery(time.Since(start))
 	if err != nil {
 		slog.Error("Failed to update item statuses", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to send items to kitchen", "DB_ERROR")
 		return
 	}
 
@@ -898,6 +924,7 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 	middleware.ObserveDBQuery(time.Since(start))
 	if err != nil {
 		slog.Error("Failed to recalculate order total on send", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to recalculate order total", "DB_ERROR")
 		return
 	}
 
@@ -931,6 +958,8 @@ func (h *OrderHandler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) 
 	session := middleware.GetSession(r.Context())
 	orderID := chi.URLParam(r, "id")
 	itemID := chi.URLParam(r, "itemId")
+
+	r.Body = http.MaxBytesReader(w, r.Body, 256)
 
 	var req struct {
 		Status string `json:"status"`
@@ -1021,7 +1050,12 @@ func (h *OrderHandler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	rows, _ := res.RowsAffected()
+	rows, err := res.RowsAffected()
+	if err != nil {
+		slog.Error("Failed to get rows affected", "error", err, "itemId", itemID)
+		models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+		return
+	}
 	if rows == 0 {
 		models.WriteError(w, http.StatusConflict,
 			"Item status was changed by another request, please refresh",
@@ -1038,6 +1072,7 @@ func (h *OrderHandler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) 
 	`, orderID).Scan(&undelivered)
 	if err != nil {
 		slog.Error("Failed to count undelivered items", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to count undelivered items", "DB_ERROR")
 		return
 	}
 
@@ -1050,6 +1085,7 @@ func (h *OrderHandler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) 
 		middleware.ObserveDBQuery(time.Since(start))
 		if err != nil {
 			slog.Error("Failed to promote order to DELIVERED", "error", err, "orderId", orderID)
+			models.WriteError(w, http.StatusInternalServerError, "Failed to promote order", "DB_ERROR")
 			return
 		}
 	}
@@ -1199,7 +1235,7 @@ func (h *OrderHandler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
 	if tableNumber.Valid {
 		tn = &tableNumber.String
 	}
-	h.hub.BroadcastToVenue(session.VenueID, EventOrderCompleted, map[string]interface{}{
+	go h.hub.BroadcastToVenue(session.VenueID, EventOrderCompleted, map[string]interface{}{
 		"orderId":     orderID,
 		"venueId":     session.VenueID,
 		"tableNumber": tn,
@@ -1218,6 +1254,24 @@ func (h *OrderHandler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
 func (h *OrderHandler) ReleaseTable(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 	tableNumber := chi.URLParam(r, "tableNumber")
+
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
+	var activeCount int
+	err := h.db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM orders
+		WHERE venue_id = $1 AND table_number = $2 AND status NOT IN ('COMPLETED', 'CANCELLED')
+	`, session.VenueID, tableNumber).Scan(&activeCount)
+	if err != nil {
+		slog.Error("Failed to check active orders for table", "error", err, "tableNumber", tableNumber)
+		models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
+		return
+	}
+	if activeCount > 0 {
+		models.WriteError(w, http.StatusBadRequest, "Table has active orders", "TABLE_HAS_ACTIVE_ORDERS")
+		return
+	}
 
 	h.hub.BroadcastToVenue(session.VenueID, EventTableReleased, map[string]interface{}{
 		"venueId":     session.VenueID,

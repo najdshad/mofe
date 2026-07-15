@@ -80,6 +80,12 @@ export async function POST(
     if (!body.categoryId) {
       return NextResponse.json({ error: "دسته الزامی است" }, { status: 400 });
     }
+    const category = await prisma.category.findFirst({
+      where: { id: body.categoryId, venueId, deletedAt: null },
+    });
+    if (!category) {
+      return NextResponse.json({ error: "دسته مورد نظر در این فروشگاه یافت نشد" }, { status: 400 });
+    }
     if (body.priceToman == null || isNaN(Number(body.priceToman)) || Number(body.priceToman) < 0) {
       return NextResponse.json({ error: "قیمت معتبر وارد کنید" }, { status: 400 });
     }

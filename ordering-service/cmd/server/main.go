@@ -54,7 +54,20 @@ func main() {
 		slog.Error("Failed to verify tables", "error", err)
 		os.Exit(1)
 	}
-	// Always ensure order_items FK exists (Prisma may have dropped it)
+	// Ensure indexes exist unconditionally (Prisma push may have dropped them)
+	if _, err := db.Exec("CREATE INDEX IF NOT EXISTS idx_orders_venue_status ON orders(venue_id, status, created_at DESC)"); err != nil {
+		slog.Warn("failed to create idx_orders_venue_status", "error", err)
+	}
+	if _, err := db.Exec("CREATE INDEX IF NOT EXISTS idx_orders_waiter ON orders(waiter_id, created_at DESC)"); err != nil {
+		slog.Warn("failed to create idx_orders_waiter", "error", err)
+	}
+	if _, err := db.Exec("CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)"); err != nil {
+		slog.Warn("failed to create idx_order_items_order", "error", err)
+	}
+	if _, err := db.Exec("CREATE INDEX IF NOT EXISTS idx_order_items_station_status ON order_items(station, status)"); err != nil {
+		slog.Warn("failed to create idx_order_items_station_status", "error", err)
+	}
+	// Ensure order_items FK exists (Prisma may have dropped it)
 	if _, err := db.Exec(`
 		DO $$ BEGIN
 			ALTER TABLE order_items ADD CONSTRAINT order_items_order_id_fkey
@@ -184,7 +197,7 @@ func verifyTables(db *sql.DB) error {
 		if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS orders (
 			id TEXT PRIMARY KEY,
 			venue_id TEXT NOT NULL REFERENCES "Venue"(id) ON DELETE CASCADE,
-			waiter_id TEXT NOT NULL REFERENCES "User"(id),
+			waiter_id TEXT REFERENCES "User"(id) ON DELETE SET NULL,
 			table_number TEXT,
 			guest_count INT DEFAULT 1,
 			status TEXT DEFAULT 'PENDING',
@@ -201,12 +214,6 @@ func verifyTables(db *sql.DB) error {
 			CONSTRAINT valid_totals CHECK (total >= 0 AND subtotal >= 0)
 		)`); err != nil {
 			return fmt.Errorf("failed to recreate orders table: %w", err)
-		}
-		if _, err := db.Exec("CREATE INDEX IF NOT EXISTS idx_orders_venue_status ON orders(venue_id, status, created_at DESC)"); err != nil {
-			slog.Warn("failed to create idx_orders_venue_status", "error", err)
-		}
-		if _, err := db.Exec("CREATE INDEX IF NOT EXISTS idx_orders_waiter ON orders(waiter_id, created_at DESC)"); err != nil {
-			slog.Warn("failed to create idx_orders_waiter", "error", err)
 		}
 	}
 	return nil

@@ -12,7 +12,7 @@ export default async function SalesPage({
   if (!user) redirect("/login");
 
   const { venueId } = await params;
-  const membership = await requireVenueAccess(user.id, venueId);
+  await requireVenueAccess(user.id, venueId);
 
-  return <SalesClient venueId={venueId} currentUserRole={membership.role} />;
+  return <SalesClient venueId={venueId} />;
 }

@@ -102,9 +102,14 @@ export async function POST(
 
   const results: { row: number; status: string; nameFa: string; message?: string }[] = [];
 
-  // Phase 1: soft-delete existing items and categories (small transaction)
+  // Wrap everything in a single transaction so a failure rolls back all changes
   const now = new Date();
+  const categoryMap = new Map<string, string>();
+  const categoryOrderCounters = new Map<string, number>();
+  const BATCH_SIZE = 50;
+
   await prisma.$transaction(async (tx) => {
+    // Phase 1: soft-delete existing items and categories
     await tx.menuItem.updateMany({
       where: { venueId, deletedAt: null },
       data: { deletedAt: now },
@@ -113,11 +118,8 @@ export async function POST(
       where: { venueId, deletedAt: null },
       data: { deletedAt: now },
     });
-  });
 
-  // Phase 2: create categories (small transaction)
-  const categoryMap = new Map<string, string>();
-  await prisma.$transaction(async (tx) => {
+    // Phase 2: create categories
     for (let i = 0; i < uniqueCategoryNames.length; i++) {
       const cat = await tx.category.create({
         data: {
@@ -128,17 +130,12 @@ export async function POST(
       });
       categoryMap.set(uniqueCategoryNames[i].toLowerCase(), cat.id);
     }
-  });
 
-  // Phase 3: batch create items (50 per transaction)
-  const BATCH_SIZE = 50;
-  const categoryOrderCounters = new Map<string, number>();
+    // Phase 3: create items (processed in batches within the same transaction)
+    for (let batchStart = 0; batchStart < dataRows.length; batchStart += BATCH_SIZE) {
+      const batchEnd = Math.min(batchStart + BATCH_SIZE, dataRows.length);
+      const batchRows = dataRows.slice(batchStart, batchEnd);
 
-  for (let batchStart = 0; batchStart < dataRows.length; batchStart += BATCH_SIZE) {
-    const batchEnd = Math.min(batchStart + BATCH_SIZE, dataRows.length);
-    const batchRows = dataRows.slice(batchStart, batchEnd);
-
-    await prisma.$transaction(async (tx) => {
       for (let j = 0; j < batchRows.length; j++) {
         const row = batchRows[j];
         const i = batchStart + j;
@@ -207,8 +204,8 @@ export async function POST(
           results.push({ row: rowNum, status: "error", nameFa, message });
         }
       }
-    });
-  }
+    }
+  });
 
   await logAudit({
     venueId,

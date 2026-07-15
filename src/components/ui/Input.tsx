@@ -10,6 +10,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, className = "", id, ...props }, ref) => {
     const generatedId = useId();
     const inputId = id ?? generatedId;
+    const errorId = `${inputId}-error`;
+    const helperId = `${inputId}-helper`;
+    const describedBy = error ? errorId : helperText ? helperId : undefined;
     return (
       <div className="space-y-1.5">
         <label
@@ -21,14 +24,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           id={inputId}
           ref={ref}
+          aria-invalid={!!error}
+          aria-describedby={describedBy}
           className={`w-full rounded-[var(--radius-control)] border bg-surface px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 transition-colors focus:border-ink focus:outline-none ${
             error ? "border-red-500" : "border-line"
           } ${className}`}
           {...props}
         />
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && <p id={errorId} className="text-xs text-red-600" role="alert">{error}</p>}
         {helperText && !error && (
-          <p className="text-xs text-ink-muted">{helperText}</p>
+          <p id={helperId} className="text-xs text-ink-muted">{helperText}</p>
         )}
       </div>
     );

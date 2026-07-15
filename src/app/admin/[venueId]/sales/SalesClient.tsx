@@ -83,7 +83,6 @@ export function SalesClient({
   venueId,
 }: {
   venueId: string;
-  currentUserRole: string;
 }) {
   const [range, setRange] = useState<RangeKey>("daily");
   const [startDate, setStartDate] = useState("");

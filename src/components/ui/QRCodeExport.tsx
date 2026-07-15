@@ -117,12 +117,18 @@ export function QRCodeExport({
     const w = window.open("", "_blank");
     if (!w) return;
 
+    const safeName = venueName
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
     w.document.write(`
 <!DOCTYPE html>
 <html dir="rtl" lang="fa">
 <head>
   <meta charset="utf-8">
-  <title>QR Code — ${venueName}</title>
+  <title>QR Code</title>
   <style>
     @page { margin: 0; size: auto; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -152,7 +158,7 @@ export function QRCodeExport({
 </head>
 <body>
   <div class="card">
-    <div class="name">${venueName}</div>
+    <div class="name">${safeName}</div>
     <div class="divider"></div>
     <img class="qr" src="${qrDataUrl}" alt="QR Code" />
     <div class="footer">Powered by mofé</div>

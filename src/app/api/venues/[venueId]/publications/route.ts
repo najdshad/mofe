@@ -16,6 +16,17 @@ export async function GET(
       where: { venueId },
       orderBy: { createdAt: "desc" },
       take: 5,
+      select: {
+        id: true,
+        venueId: true,
+        status: true,
+        trigger: true,
+        errorMessage: true,
+        createdByUserId: true,
+        createdAt: true,
+        completedAt: true,
+        staticAssetId: true,
+      },
     });
 
     return NextResponse.json(publications);

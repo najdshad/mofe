@@ -112,11 +112,12 @@ model MenuItem {
   deletedAt           DateTime?
 
   venue    Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   variants MenuItemVariant[]
   prices MenuItemPrice[]
   allergens MenuItemAllergen[]
 
+  @@index([categoryId])
   @@index([venueId, categoryId, displayOrder])
   @@index([venueId, station])
   @@index([venueId, isSoldOut])
@@ -139,7 +140,11 @@ model Asset {
   createdAt       DateTime @default(now())
 
   venue    Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  uploader User?  @relation("UploadedAssets", fields: [createdByUserId], references: [id])
+  uploader User?  @relation("UploadedAssets", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([venueId])
+  @@index([createdByUserId])
+  @@index([kind])
 }
 
 model MenuPublication {
@@ -155,7 +160,7 @@ model MenuPublication {
   completedAt     DateTime?
 
   venue   Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  creator User? @relation("PublicationCreator", fields: [createdByUserId], references: [id])
+  creator User? @relation("PublicationCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([venueId])
 }
@@ -169,9 +174,10 @@ model Domain {
   verificationToken String?
   verifiedAt        DateTime?
   createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId])
 }
 
 model StationSchedule {
@@ -382,7 +388,7 @@ model Subscription {
   updatedAt          DateTime  @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  plan  Plan  @relation(fields: [planId], references: [id])
+  plan  Plan  @relation(fields: [planId], references: [id], onDelete: Restrict)
   invoices Invoice[]
 
   @@index([status])
@@ -408,7 +414,7 @@ model Invoice {
   updatedAt       DateTime  @updatedAt
 
   subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  coupon       Coupon?      @relation(fields: [couponId], references: [id])
+  coupon       Coupon?      @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   @@index([subscriptionId])
   @@index([status])
@@ -434,7 +440,7 @@ model Coupon {
 
   invoices Invoice[]
 
-  @@index([code])
+  // @@index([code]) is redundant — code has @unique which already creates an index
 }
 
 model AuditLog {
@@ -447,8 +453,8 @@ model AuditLog {
   metadata    String?
   createdAt   DateTime @default(now())
 
-  venue Venue? @relation(fields: [venueId], references: [id])
-  actor User?  @relation("ActorLogs", fields: [actorUserId], references: [id])
+  venue  Venue? @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  actor  User?  @relation("ActorLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([venueId])
   @@index([actorUserId])

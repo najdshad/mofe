@@ -31,8 +31,12 @@ export function QRIconButton({ venueName, publicUrl, isUnpublished }: QRIconButt
       </button>
       {open && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="خروجی QR"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
+          onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
         >
           <div className="flex w-full max-w-md flex-col items-center rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-lg">
             <div className="flex w-full items-center justify-between mb-5">

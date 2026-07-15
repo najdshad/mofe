@@ -85,12 +85,21 @@ export const FONT_FACE_DECLARATIONS = `    @font-face {
 
 function esc(s: string): string {
   return s
+    .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+function sanitizeCssColor(color: string): string {
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) return color;
+  if (/^#[0-9a-fA-F]{3}$/.test(color)) return color;
+  return "#111111";
+}
+
+
 
 export { formatPrice } from "@/lib/format";
 
@@ -118,7 +127,7 @@ function renderItemCard(item: SnapshotCategoryItem): string {
                   ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
                   ${allergenCodes.length > 0 ? `
                   <div class="allergen-badges">
-                    ${allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || code}</span>`).join("")}
+                    ${allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || esc(code)}</span>`).join("")}
                   </div>` : ""}
                   ${variants.length > 0 ? `
                   <div class="item-variants">
@@ -192,7 +201,7 @@ export function renderPublicMenu(snapshot: Snapshot): string {
   const { venue, categories } = snapshot;
   const accent = venue.accentColor && venue.accentColor !== "#111111" ? venue.accentColor : null;
   const categoriesWithItems = categories.filter((cat) => cat.items.length > 0);
-  const accentValue = accent ? esc(accent) : "#111111";
+  const accentValue = accent ? sanitizeCssColor(accent) : "#111111";
 
   const categoryNav =
     categoriesWithItems.length > 0

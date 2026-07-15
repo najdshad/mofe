@@ -1,13 +1,14 @@
 import "dotenv/config";
+import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../src/generated/prisma/client.js";
+import { PrismaClient } from "../src/generated/prisma/client";
 import { DEMO_EMAIL, DEMO_PASSWORD, ensureDemoData } from "../src/lib/demo";
 import bcrypt from "bcryptjs";
 
-const adapter = new PrismaPg(
-  process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe"
-);
-const prisma = new PrismaClient({ adapter });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe",
+});
+const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 async function main() {
   const plans = [

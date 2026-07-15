@@ -17,7 +17,9 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json(snapshot);
+    return NextResponse.json(snapshot, {
+      headers: { "Cache-Control": "private, max-age=30" },
+    });
   } catch (e) {
     return errorResponse(e);
   }

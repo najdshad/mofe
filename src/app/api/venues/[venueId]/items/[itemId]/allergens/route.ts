@@ -14,6 +14,14 @@ export async function GET(
     const { venueId, itemId } = await params;
     await requireVenueAccess(user.id, venueId);
 
+    const item = await prisma.menuItem.findFirst({
+      where: { id: itemId, venueId },
+      select: { id: true },
+    });
+    if (!item) {
+      return NextResponse.json({ error: "آیتم مورد نظر یافت نشد" }, { status: 404 });
+    }
+
     const allergens = await prisma.menuItemAllergen.findMany({
       where: { menuItemId: itemId },
     });
@@ -33,6 +41,14 @@ export async function POST(
     const { venueId, itemId } = await params;
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const item = await prisma.menuItem.findFirst({
+      where: { id: itemId, venueId },
+      select: { id: true },
+    });
+    if (!item) {
+      return NextResponse.json({ error: "آیتم مورد نظر یافت نشد" }, { status: 404 });
+    }
 
     const body = await request.json();
     if (!Array.isArray(body.allergenCodes)) {
