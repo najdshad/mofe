@@ -1,5 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type { NextRequest } from "next/server";
+
+vi.mock("@/lib/csrf", () => ({
+  generateCsrfToken: () => "abc123",
+  CSRF_COOKIE_NAME: "mofe_csrf",
+  csrfCookieOptions: {
+    httpOnly: false,
+    secure: false,
+    sameSite: "strict",
+    path: "/",
+    maxAge: 3600,
+  },
+}));
 
 function createMockRequest({
   pathname,

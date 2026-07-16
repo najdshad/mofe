@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { generateCsrfToken, CSRF_COOKIE_NAME, csrfCookieOptions } from "@/lib/csrf";
 
 const DASHBOARD_PATHS = ["/login", "/forgot-password", "/reset-password", "/venues", "/admin", "/api"];
 
@@ -13,6 +14,18 @@ function addSecurityHeaders(response: NextResponse, pathname: string): NextRespo
     response.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
   }
   return response;
+}
+
+function ensureCsrfCookie(request: NextRequest, response: NextResponse): NextResponse {
+  const existing = request.cookies.get(CSRF_COOKIE_NAME);
+  if (!existing?.value) {
+    response.cookies.set(CSRF_COOKIE_NAME, generateCsrfToken(), csrfCookieOptions);
+  }
+  return response;
+}
+
+function htmlResponse(request: NextRequest, pathname: string): NextResponse {
+  return ensureCsrfCookie(request, addSecurityHeaders(NextResponse.next(), pathname));
 }
 
 function isValidSessionToken(value: string): boolean {
@@ -50,13 +63,13 @@ export function proxy(request: NextRequest) {
   const isIpAddress = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
 
   if (isLocalhost || isIpAddress) {
-    return authGuard(pathname, sessionCookie, request.nextUrl) ?? addSecurityHeaders(NextResponse.next(), pathname);
+    return authGuard(pathname, sessionCookie, request.nextUrl) ?? htmlResponse(request, pathname);
   }
 
   if (hostname.startsWith("menu.")) {
     const response = NextResponse.next();
     response.headers.set("X-Robots-Tag", "noindex");
-    return response;
+    return ensureCsrfCookie(request, response);
   }
 
   if (hostname.startsWith("app.")) {
@@ -65,11 +78,11 @@ export function proxy(request: NextRequest) {
         new URL(sessionCookie?.value ? "/venues" : "/login", request.nextUrl.origin),
       );
     }
-    return authGuard(pathname, sessionCookie, request.nextUrl) ?? addSecurityHeaders(NextResponse.next(), pathname);
+    return authGuard(pathname, sessionCookie, request.nextUrl) ?? htmlResponse(request, pathname);
   }
 
   if (pathname === "/") {
-    return NextResponse.next();
+    return htmlResponse(request, pathname);
   }
 
   if (matchesDashboard(pathname)) {
@@ -80,7 +93,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(pathname, `https://menu.${hostname}`), 301);
   }
 
-  return addSecurityHeaders(NextResponse.next(), pathname);
+  return htmlResponse(request, pathname);
 }
 
 export const config = {

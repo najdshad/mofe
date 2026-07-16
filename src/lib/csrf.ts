@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 
-const CSRF_COOKIE_NAME = "mofe_csrf";
-const CSRF_HEADER_NAME = "X-CSRF-Token";
+export const CSRF_COOKIE_NAME = "mofe_csrf";
+export const CSRF_HEADER_NAME = "X-CSRF-Token";
 
 export function generateCsrfToken(): string {
   const bytes = new Uint8Array(32);
@@ -11,18 +11,13 @@ export function generateCsrfToken(): string {
     .join("");
 }
 
-export async function setCsrfCookie(): Promise<string> {
-  const token = generateCsrfToken();
-  const cookieStore = await cookies();
-  cookieStore.set(CSRF_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    maxAge: 60 * 60,
-  });
-  return token;
-}
+export const csrfCookieOptions = {
+  httpOnly: false,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+  path: "/",
+  maxAge: 60 * 60,
+};
 
 export async function validateCsrf(): Promise<void> {
   const cookieStore = await cookies();
