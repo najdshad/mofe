@@ -197,12 +197,17 @@ describe("Items CRUD", () => {
 
   it("updates an item", async () => {
     const item = data.items.item1;
+    const original = await prisma.menuItem.findUnique({ where: { id: item.id } });
     const updated = await prisma.menuItem.update({
       where: { id: item.id },
       data: { priceToman: 80000, nameEn: "Fresh Mint Tea" },
     });
     expect(updated.priceToman).toBe(80000);
     expect(updated.nameEn).toBe("Fresh Mint Tea");
+    await prisma.menuItem.update({
+      where: { id: item.id },
+      data: { priceToman: original!.priceToman, nameEn: original!.nameEn },
+    });
   });
 
   it("soft-deletes an item", async () => {

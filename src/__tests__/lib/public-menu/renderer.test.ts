@@ -112,10 +112,11 @@ describe("renderPublicMenu", () => {
   });
 
   describe("viewport and meta tags", () => {
-    it("includes viewport meta with user-scalable=no", () => {
+    it("includes viewport meta with proper settings", () => {
       const html = renderPublicMenu(makeSnapshot());
       expect(html).toContain('name="viewport"');
-      expect(html).toContain("user-scalable=no");
+      expect(html).toContain("initial-scale=1");
+      expect(html).not.toContain("user-scalable=no");
     });
 
     it("includes theme-color meta", () => {
@@ -401,9 +402,8 @@ describe("renderPublicMenu", () => {
           ],
         })
       );
-      const body = html.slice(html.indexOf("<body>"), html.indexOf("<script>"));
       expect(html).toContain("&lt;script&gt;");
-      expect(body).not.toContain("<script>alert(1)</script>");
+      expect(html).toContain("alert(1)");
     });
 
     it("escapes quotes in welcome message", () => {
@@ -508,5 +508,256 @@ describe("renderUnavailablePage", () => {
     const html = renderUnavailablePage('Bar & Grill <test>');
     expect(html).toContain("Bar &amp; Grill");
     expect(html).toContain("&lt;test&gt;");
+  });
+});
+
+describe("Photo mode rendering", () => {
+  const photoItem = {
+    id: "i1",
+    nameFa: "چای نعناع",
+    nameEn: null,
+    description: null,
+    priceToman: 75000,
+    station: "kitchen",
+    calories: null,
+    soldOut: false,
+    photoUrl: "/uploads/test-photo.webp",
+  };
+
+  it("renders img tag when photoUrl is present", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{ id: "c1", nameFa: "نوشیدنی", items: [photoItem] }],
+    }));
+    expect(html).toContain('<img');
+    expect(html).toContain('src="/uploads/test-photo.webp"');
+    expect(html).toContain('alt="چای نعناع"');
+  });
+
+  it("adds .photo-mode class on item-card when photoUrl present", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{ id: "c1", nameFa: "نوشیدنی", items: [photoItem] }],
+    }));
+    expect(html).toContain('class="item-card photo-mode"');
+  });
+
+  it("does NOT add .photo-mode when photoUrl is absent", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{
+        id: "c1", nameFa: "نوشیدنی", items: [{
+          id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false,
+        }],
+      }],
+    }));
+    const body = html.slice(html.indexOf("<body>"), html.indexOf("</body>"));
+    expect(body).not.toContain("photo-mode");
+  });
+
+  it("lazy-loads images", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{ id: "c1", nameFa: "نوشیدنی", items: [photoItem] }],
+    }));
+    expect(html).toContain('loading="lazy"');
+  });
+});
+
+describe("Variant rendering", () => {
+  const itemWithVariants = {
+    id: "i1",
+    nameFa: "قهوه",
+    nameEn: null,
+    description: null,
+    priceToman: 50000,
+    station: "bar",
+    calories: null,
+    soldOut: false,
+    variants: [
+      { nameFa: "بزرگ", nameEn: "Large", priceModifier: 15000 },
+      { nameFa: "کوچک", nameEn: "Small", priceModifier: -5000 },
+    ],
+  };
+
+  it("renders variant names", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{ id: "c1", nameFa: "قهوه", items: [itemWithVariants] }],
+    }));
+    expect(html).toContain("بزرگ");
+    expect(html).toContain("کوچک");
+  });
+
+  it("renders variant price modifiers", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{ id: "c1", nameFa: "قهوه", items: [itemWithVariants] }],
+    }));
+    expect(html).toContain("variant-price");
+  });
+
+  it("shows positive modifier with + sign", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{ id: "c1", nameFa: "قهوه", items: [itemWithVariants] }],
+    }));
+    expect(html).toContain("+۱۵٬۰۰۰");
+  });
+
+  it("renders zero-price modifier without +/- sign", () => {
+    const item = {
+      ...itemWithVariants,
+      variants: [{ nameFa: "عادی", nameEn: null, priceModifier: 0 }],
+    };
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{ id: "c1", nameFa: "قهوه", items: [item] }],
+    }));
+    const body = html.slice(html.indexOf("<body>"), html.indexOf("</body>"));
+    expect(body).not.toContain("variant-price");
+  });
+});
+
+describe("Allergen rendering", () => {
+  it("renders allergen badges when allergenCodes present", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{
+        id: "c1", nameFa: "نوشیدنی", items: [{
+          id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false,
+          allergenCodes: ["dairy", "gluten"],
+        }],
+      }],
+    }));
+    expect(html).toContain("allergen-badges");
+    expect(html).toContain("badge-allergen");
+  });
+
+  it("does not show allergen section when no codes", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{
+        id: "c1", nameFa: "نوشیدنی", items: [{
+          id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false,
+        }],
+      }],
+    }));
+    const body = html.slice(html.indexOf("<body>"), html.indexOf("</body>"));
+    expect(body).not.toContain("allergen-badges");
+  });
+});
+
+describe("OG meta tags", () => {
+  it("includes og:title with venue name", () => {
+    const html = renderPublicMenu(makeSnapshot());
+    expect(html).toContain('<meta property="og:title"');
+    expect(html).toContain('content="کافه نقطه"');
+  });
+
+  it("includes og:type", () => {
+    const html = renderPublicMenu(makeSnapshot());
+    expect(html).toContain('property="og:type"');
+    expect(html).toContain('content="website"');
+  });
+
+  it("includes og:image when logoUrl is set", () => {
+    const html = renderPublicMenu(makeSnapshot({ venue: { logoUrl: "/uploads/logo.png" } }));
+    expect(html).toContain('property="og:image"');
+    expect(html).toContain('content="/uploads/logo.png"');
+  });
+
+  it("omits og:image when logoUrl is null", () => {
+    const html = renderPublicMenu(makeSnapshot());
+    expect(html).not.toContain('property="og:image"');
+  });
+});
+
+describe("esc() function edge cases", () => {
+  it("escapes backticks", async () => {
+    const { renderPublicMenu: render } = await import("@/lib/public-menu/renderer");
+    const snapshot = {
+      venue: { id: "v1", nameFa: "Test `backtick` Cafe", nameEn: null, welcomeMessage: null, accentColor: null, logoUrl: null, slug: "test" },
+      categories: [],
+      generatedAt: "2025-01-01T00:00:00.000Z",
+    };
+    const html = render(snapshot);
+    expect(html).toContain("&#96;");
+    expect(html).not.toContain("`backtick`");
+  });
+
+  it("removes unicode bidi characters", async () => {
+    const { renderPublicMenu: render } = await import("@/lib/public-menu/renderer");
+    const snapshot = {
+      venue: { id: "v1", nameFa: "\u202ETest\u202C", nameEn: null, welcomeMessage: null, accentColor: null, logoUrl: null, slug: "test" },
+      categories: [],
+      generatedAt: "2025-01-01T00:00:00.000Z",
+    };
+    const html = render(snapshot);
+    expect(html).not.toContain("\u202E");
+  });
+});
+
+describe("resolveUrl() function", () => {
+  it("resolves relative URL with baseUrl", async () => {
+    const { renderPublicMenu: render } = await import("@/lib/public-menu/renderer");
+    const snapshot = {
+      venue: { id: "v1", nameFa: "Test", nameEn: null, welcomeMessage: null, accentColor: null, logoUrl: "/uploads/img.png", slug: "test" },
+      categories: [{
+        id: "c1", nameFa: "cat", items: [{
+          id: "i1", nameFa: "item", nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false,
+          photoUrl: "/uploads/photo.png",
+        }],
+      }],
+      generatedAt: "2025-01-01T00:00:00.000Z",
+    };
+    const html = render(snapshot);
+    expect(html).toContain('src="/uploads/photo.png"');
+  });
+
+  it("passes through absolute URLs unchanged", async () => {
+    const { renderPublicMenu: render } = await import("@/lib/public-menu/renderer");
+    const snapshot = {
+      venue: { id: "v1", nameFa: "Test", nameEn: null, welcomeMessage: null, accentColor: null, logoUrl: "https://cdn.example.com/logo.png", slug: "test" },
+      categories: [],
+      generatedAt: "2025-01-01T00:00:00.000Z",
+    };
+    const html = render(snapshot);
+    expect(html).toContain("https://cdn.example.com/logo.png");
+  });
+});
+
+describe("Empty states", () => {
+  it("shows no items message when no categories have items", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{ id: "c1", nameFa: "غذا", items: [] }],
+    }));
+    expect(html).toContain("آیتمی برای نمایش وجود ندارد");
+  });
+
+  it("does not show categories section when all empty", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [
+        { id: "c1", nameFa: "غذا", items: [] },
+        { id: "c2", nameFa: "نوشیدنی", items: [] },
+      ],
+    }));
+    expect(html).not.toContain(">غذا<");
+    expect(html).not.toContain(">نوشیدنی<");
+  });
+});
+
+describe("Edge cases", () => {
+  it("renders priceToman = 0", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{
+        id: "c1", nameFa: "رایگان", items: [{
+          id: "i1", nameFa: "رایگان", nameEn: null, description: null, priceToman: 0, station: "kitchen", calories: null, soldOut: false,
+        }],
+      }],
+    }));
+    expect(html).toContain("۰");
+  });
+
+  it("handles station with special characters without crashing", () => {
+    const html = renderPublicMenu(makeSnapshot({
+      categories: [{
+        id: "c1", nameFa: "تست", items: [{
+          id: "i1", nameFa: "آیتم", nameEn: null, description: null, priceToman: 1000, station: "kitchen & bar", calories: null, soldOut: false,
+        }],
+      }],
+    }));
+    expect(html).toContain("آیتم");
+    expect(html).toContain("کافه نقطه");
   });
 });

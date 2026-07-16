@@ -11,6 +11,10 @@ vi.mock("@/lib/permissions", () => ({
   canManage: vi.fn(),
 }));
 
+vi.mock("@/lib/csrf", () => ({
+  validateCsrf: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { requireAuth } from "@/lib/api-helpers";
 import { canManage } from "@/lib/permissions";
 import { PATCH as itemPATCH } from "@/app/api/venues/[venueId]/items/[itemId]/route";
