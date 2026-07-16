@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import QRCode from "qrcode";
 import { Button } from "./Button";
 
@@ -41,16 +41,23 @@ export function QRCodeExport({
   isUnpublished,
 }: QRCodeExportProps) {
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const generate = useCallback(() => {
+    setError(null);
+    setQrDataUrl("");
     QRCode.toDataURL(publicUrl, {
       width: L.qrSize * 3, // 600 — high-res for crisp exports
       margin: 1,
       color: { dark: "#111111", light: "#f5f0e6" },
     })
       .then(setQrDataUrl)
-      .catch(console.error);
+      .catch(() => setError("خطا در تولید QR"));
   }, [publicUrl]);
+
+  useEffect(() => {
+    generate();
+  }, [generate]);
 
   const handleDownloadPng = () => {
     if (!qrDataUrl) return;
@@ -188,7 +195,12 @@ export function QRCodeExport({
         </Button>
       </div>
       <div className="mt-4 flex justify-center">
-        {qrDataUrl ? (
+        {error ? (
+          <div className="flex flex-col items-center gap-3 py-8">
+            <p className="text-sm text-red-600">{error}</p>
+            <Button variant="secondary" size="sm" onClick={generate}>تلاش مجدد</Button>
+          </div>
+        ) : qrDataUrl ? (
           <div
             className="inline-block rounded-[var(--radius-panel)] border border-line bg-paper p-6 text-center shadow-sm"
             style={{ padding: `${L.pad}px` }}

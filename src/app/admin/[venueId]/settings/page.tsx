@@ -22,7 +22,7 @@ export default async function SettingsPage({
       where: { id: venueId },
       select: {
         id: true, nameFa: true, nameEn: true, slug: true, timezone: true,
-        plan: true, welcomeMessage: true, logoAssetId: true,
+        plan: true, welcomeMessage: true, logoUrl: true,
       },
     }),
     prisma.venueMember.findMany({
@@ -42,7 +42,7 @@ export default async function SettingsPage({
       slug={venue.slug}
       timezone={venue.timezone}
       welcomeMessage={venue.welcomeMessage}
-      logoUrl={venue.logoAssetId}
+      logoUrl={venue.logoUrl}
       members={members.map((m) => ({
         id: m.id,
         userId: m.userId,

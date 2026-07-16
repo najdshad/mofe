@@ -22,7 +22,7 @@ export async function POST(
 
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId, venueId },
-      select: { photoAssetId: true },
+      select: { photoUrl: true },
     });
     if (!item) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
@@ -50,8 +50,8 @@ export async function POST(
       );
     }
 
-    if (item.photoAssetId) {
-      const oldPath = path.join(process.cwd(), "public", item.photoAssetId);
+    if (item.photoUrl) {
+      const oldPath = path.join(process.cwd(), "public", item.photoUrl);
       try { await fs.unlink(oldPath); } catch { /* ok */ }
     }
 
@@ -67,7 +67,7 @@ export async function POST(
 
     await prisma.menuItem.update({
       where: { id: itemId },
-      data: { photoAssetId: photoUrl },
+      data: { photoUrl: photoUrl },
     });
 
     await logAudit({
@@ -97,20 +97,20 @@ export async function DELETE(
 
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId, venueId },
-      select: { photoAssetId: true },
+      select: { photoUrl: true },
     });
     if (!item) {
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
 
-    if (item.photoAssetId) {
-      const filePath = path.join(process.cwd(), "public", item.photoAssetId);
+    if (item.photoUrl) {
+      const filePath = path.join(process.cwd(), "public", item.photoUrl);
       try { await fs.unlink(filePath); } catch { /* ok */ }
     }
 
     await prisma.menuItem.update({
       where: { id: itemId },
-      data: { photoAssetId: null },
+      data: { photoUrl: null },
     });
 
     await logAudit({

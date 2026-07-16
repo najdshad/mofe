@@ -123,6 +123,10 @@ func (r *RedisPubSub) UnsubscribeFromChannel(channel string) error {
 	return r.pubsub.Unsubscribe(r.ctx, channel)
 }
 
+func (r *RedisPubSub) UnsubscribeAll() {
+	r.pubsub.Close()
+}
+
 func (r *RedisPubSub) Close() error {
 	if err := r.pubsub.Close(); err != nil {
 		return err

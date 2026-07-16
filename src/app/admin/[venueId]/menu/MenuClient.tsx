@@ -48,7 +48,7 @@ interface Item {
   description: string | null;
   calories: number | null;
   displayOrder: number;
-  photoAssetId: string | null;
+  photoUrl: string | null;
 }
 
 interface Publication {
@@ -360,7 +360,7 @@ function ItemModal({
   const [description, setDescription] = useState(initial?.description ?? "");
   const [calories, setCalories] = useState(String(initial?.calories ?? ""));
   const [isSoldOut] = useState(initial?.isSoldOut ?? false);
-  const [photoAssetId, setPhotoAssetId] = useState(initial?.photoAssetId ?? null);
+  const [photoUrl, setPhotoAssetId] = useState(initial?.photoUrl ?? null);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [variants, setVariants] = useState<{ nameFa: string; nameEn: string; priceModifier: number }[] | null>(null);
   const [prices, setPrices] = useState<{ description: string; priceToman: number }[] | null>(null);
@@ -599,16 +599,16 @@ function ItemModal({
               عکس
             </label>
             <div className="flex items-center gap-3">
-              {photoAssetId && (
+              {photoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={photoAssetId}
+                  src={photoUrl}
                   alt=""
                   className="h-16 w-16 rounded-xl border border-line object-cover"
                 />
               )}
               <label className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs text-ink-muted hover:border-ink hover:text-ink transition-colors">
-                {photoLoading ? "..." : photoAssetId ? "تغییر عکس" : "افزودن عکس"}
+                {photoLoading ? "..." : photoUrl ? "تغییر عکس" : "افزودن عکس"}
                 <input
                   type="file"
                   accept="image/*"
@@ -617,7 +617,7 @@ function ItemModal({
                   disabled={photoLoading}
                 />
               </label>
-              {photoAssetId && (
+              {photoUrl && (
                 <button
                   onClick={handlePhotoDelete}
                   disabled={photoLoading}
@@ -1036,7 +1036,7 @@ export function MenuClient({
         description: created.description,
         calories: created.calories,
         displayOrder: created.displayOrder,
-        photoAssetId: created.photoAssetId ?? null,
+        photoUrl: created.photoUrl ?? null,
       },
     ]);
     setCategories((prev) =>

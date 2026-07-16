@@ -39,7 +39,7 @@ model Venue {
   timezone        String    @default("Asia/Tehran")
   accentColor     String?
   welcomeMessage  String?
-  logoAssetId     String?
+  logoUrl     String?
   menuPhotoMode   Boolean   @default(false)
   publicStatus    String    @default("draft")
   publishedAt    DateTime?
@@ -80,7 +80,7 @@ model Category {
   id           String    @id @default(uuid())
   venueId      String
   nameFa       String
-  displayOrder Int
+  displayOrder Int @default(0)
   active       Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -89,6 +89,7 @@ model Category {
   venue     Venue      @relation(fields: [venueId], references: [id], onDelete: Cascade)
   menuItems MenuItem[]
 
+  @@unique([venueId, nameFa])
   @@index([venueId, displayOrder])
   @@index([venueId, active])
   @@index([venueId, updatedAt])
@@ -101,12 +102,12 @@ model MenuItem {
   nameFa              String
   nameEn              String?
   description         String?
-  priceToman          Int
+  priceToman          Int @default(0)
   station             String
   calories            Int?
-  photoAssetId String?
-  isSoldOut    Boolean   @default(false)
-  displayOrder        Int       @default(0)
+  photoUrl        String?
+  isSoldOut       Boolean   @default(false)
+  displayOrder    Int       @default(0)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   deletedAt           DateTime?
@@ -117,6 +118,7 @@ model MenuItem {
   prices MenuItemPrice[]
   allergens MenuItemAllergen[]
 
+  @@unique([categoryId, nameFa])
   @@index([categoryId])
   @@index([venueId, categoryId, displayOrder])
   @@index([venueId, station])
@@ -153,7 +155,7 @@ model MenuPublication {
   status          String    @default("queued")
   trigger         String
   snapshot        String?
-  staticAssetId   String?
+  staticAssetUrl   String?
   errorMessage    String?
   createdByUserId String?
   createdAt       DateTime  @default(now())
@@ -163,6 +165,8 @@ model MenuPublication {
   creator User? @relation("PublicationCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
 
   @@index([venueId])
+  @@index([status])
+  @@index([createdByUserId])
 }
 
 model Domain {
@@ -195,6 +199,10 @@ model StationSchedule {
 
   @@index([venueId, station])
   @@index([venueId, dayOfWeek])
+  @@index([venueId])
+  @@index([station])
+  @@index([dayOfWeek])
+  @@unique([venueId, station, dayOfWeek])
 }
 
 model MenuItemVariant {
@@ -216,7 +224,7 @@ model MenuItemPrice {
   id          String   @id @default(uuid())
   menuItemId  String
   description String
-  priceToman  Int
+  priceToman  Int @default(0)
   displayOrder Int     @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -295,7 +303,7 @@ enum ItemStatusGo {
 model orders {
   id                String          @id
   venue_id          String
-  waiter_id         String
+  waiter_id         String?
   table_number      String?
   guest_count       Int?            @default(1)
   status            OrderStatusGo?  @default(PENDING)
@@ -342,8 +350,8 @@ model Sale {
   id          String   @id @default(uuid())
   venueId     String   @map("venue_id")
   orderId     String   @unique @map("order_id")
-  total       Int      @default(0)
-  itemCount   Int      @default(0) @map("item_count")
+  total       Int      @map("total")
+  itemCount   Int      @map("item_count")
   completedAt DateTime @default(now()) @map("completed_at")
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -372,6 +380,8 @@ model Plan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([purchasable])
+
   subscriptions Subscription[]
 }
 
@@ -392,6 +402,7 @@ model Subscription {
   invoices Invoice[]
 
   @@index([status])
+  @@index([planId])
 }
 
 model Invoice {
@@ -440,6 +451,9 @@ model Coupon {
 
   invoices Invoice[]
 
+  @@index([isActive])
+  @@index([expiresAt])
+  @@index([appliesToPlanSlug])
   // @@index([code]) is redundant — code has @unique which already creates an index
 }
 
@@ -460,6 +474,9 @@ model AuditLog {
   @@index([actorUserId])
   @@index([createdAt])
   @@index([venueId, createdAt])
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
 }
 
 model PasswordResetToken {

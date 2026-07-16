@@ -1,3 +1,5 @@
+"use client";
+
 import { forwardRef } from "react";
 
 type Variant = "primary" | "secondary" | "tertiary" | "destructive";
@@ -25,7 +27,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        className={`inline-flex items-center justify-center gap-2 rounded-full transition-all duration-150 font-serif ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+        className={`inline-flex items-center justify-center gap-2 rounded-full transition-all duration-150 ${variantStyles[variant]} ${sizeStyles[size]} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 ${className}`}
         {...props}
       >
         {children}

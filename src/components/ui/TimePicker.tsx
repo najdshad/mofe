@@ -16,8 +16,9 @@ export function TimePicker({ value, onChange, className = "" }: TimePickerProps)
     <div dir="ltr" className={`flex items-center gap-0.5 ${className}`}>
       <select
         value={h}
+        aria-label="ساعت"
         onChange={(e) => onChange(`${e.target.value}:${m}`)}
-        className="w-14 rounded-lg border border-line bg-surface px-1 py-1 text-xs text-ink text-center focus:border-ink focus:outline-none appearance-none"
+        className="w-14 rounded-lg border border-line bg-surface px-1 py-1 text-xs text-ink text-center focus:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 appearance-none"
       >
         {HOURS.map((hour) => (
           <option key={hour} value={hour}>{hour}</option>
@@ -26,8 +27,9 @@ export function TimePicker({ value, onChange, className = "" }: TimePickerProps)
       <span className="text-xs text-ink-muted">:</span>
       <select
         value={m}
+        aria-label="دقیقه"
         onChange={(e) => onChange(`${h}:${e.target.value}`)}
-        className="w-14 rounded-lg border border-line bg-surface px-1 py-1 text-xs text-ink text-center focus:border-ink focus:outline-none appearance-none"
+        className="w-14 rounded-lg border border-line bg-surface px-1 py-1 text-xs text-ink text-center focus:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 appearance-none"
       >
         {MINUTES.map((min) => (
           <option key={min} value={min}>{min}</option>

@@ -1,3 +1,5 @@
+"use client";
+
 import { forwardRef, useId } from "react";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -26,7 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           aria-invalid={!!error}
           aria-describedby={describedBy}
-          className={`w-full rounded-[var(--radius-control)] border bg-surface px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 transition-colors focus:border-ink focus:outline-none ${
+          className={`w-full rounded-[var(--radius-control)] border bg-surface px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 transition-colors focus:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 ${
             error ? "border-red-500" : "border-line"
           } ${className}`}
           {...props}

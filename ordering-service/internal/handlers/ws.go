@@ -4,22 +4,35 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/mofe-menu/ordering-service/internal/config"
 	"github.com/mofe-menu/ordering-service/internal/middleware"
 	"github.com/mofe-menu/ordering-service/internal/models"
 )
 
-var allowedOrigins = map[string]bool{
-	"https://admin.mofe.ir":     true,
-	"http://localhost:3000":     true,
-	"https://admin.noghteh.ir":  true,
+func wsAllowedOrigins() map[string]bool {
+	origins := map[string]bool{
+		"https://admin.mofe.ir":    true,
+		"http://localhost:3000":    true,
+		"https://admin.noghteh.ir": true,
+	}
+	if env := os.Getenv("WS_ALLOWED_ORIGINS"); env != "" {
+		for _, o := range strings.Split(env, ",") {
+			origins[strings.TrimSpace(o)] = true
+		}
+	}
+	return origins
 }
 
+var wsAllowedOriginsMap = wsAllowedOrigins()
+
 func isAllowedOrigin(origin string) bool {
-	return allowedOrigins[origin]
+	return wsAllowedOriginsMap[origin]
 }
 
 var upgrader = websocket.Upgrader{
@@ -48,6 +61,12 @@ type Hub struct {
 	mu          sync.RWMutex
 	redisPubSub *RedisPubSub
 	redisCh     <-chan *Message
+
+	clientSendBuf int
+	writeWait     time.Duration
+	pongWait      time.Duration
+	pingPeriod    time.Duration
+	maxMessageSize int64
 }
 
 type Message struct {
@@ -56,8 +75,8 @@ type Message struct {
 	Payload json.RawMessage `json:"payload"`
 }
 
-func NewHubWithRedis(rps *RedisPubSub) *Hub {
-	h := NewHub()
+func NewHubWithRedis(rps *RedisPubSub, cfg *config.Config) *Hub {
+	h := NewHub(cfg)
 	h.redisPubSub = rps
 	h.redisCh = rps.Channel()
 	return h
@@ -75,13 +94,38 @@ const (
 	EventTableReleased      = "table_released"
 )
 
-func NewHub() *Hub {
+func NewHub(cfg *config.Config) *Hub {
 	return &Hub{
-		clients:    make(map[string]map[*Client]bool),
-		broadcast:  make(chan *Message, 256),
-		register:   make(chan *Client),
-		unregister: make(chan *Client, 1000),
-		stop:       make(chan struct{}),
+		clients:       make(map[string]map[*Client]bool),
+		broadcast:     make(chan *Message, 256),
+		register:      make(chan *Client),
+		unregister:    make(chan *Client, 256),
+		stop:          make(chan struct{}),
+		clientSendBuf: 256,
+		writeWait:     10 * time.Second,
+		pongWait:      60 * time.Second,
+		pingPeriod:    30 * time.Second,
+		maxMessageSize: 4096,
+	}
+}
+
+func (h *Hub) removeSlowClients(venueID string, slowClients []*Client) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for _, client := range slowClients {
+		client.closeOnce.Do(func() { close(client.send) })
+		delete(h.clients[venueID], client)
+	}
+
+	if h.clients[venueID] != nil && len(h.clients[venueID]) == 0 {
+		delete(h.clients, venueID)
+		if h.redisPubSub != nil {
+			if err := h.redisPubSub.Unsubscribe(venueID); err != nil {
+				slog.Error("Failed to unsubscribe from Redis channel after slow client removal",
+					"venueId", venueID, "error", err)
+			}
+		}
 	}
 }
 
@@ -90,7 +134,7 @@ func (h *Hub) Shutdown() {
 }
 
 func (h *Hub) Run() {
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(h.pingPeriod)
 	defer ticker.Stop()
 
 	for {
@@ -108,14 +152,13 @@ func (h *Hub) Run() {
 			}
 			h.clients[client.venueID][client] = true
 			venueID := client.venueID
-			h.mu.Unlock()
-
 			if wasEmpty && h.redisPubSub != nil {
 				if err := h.redisPubSub.Subscribe(venueID); err != nil {
 					slog.Error("Failed to subscribe to Redis channel",
 						"venueId", venueID, "error", err)
 				}
 			}
+			h.mu.Unlock()
 
 			slog.Info("WebSocket client connected",
 				"venueId", venueID,
@@ -124,8 +167,8 @@ func (h *Hub) Run() {
 
 		case client := <-h.unregister:
 			h.mu.Lock()
-			var venueEmpty bool
 			venueID := client.venueID
+			var venueEmpty bool
 			if clients, ok := h.clients[venueID]; ok {
 				if _, exists := clients[client]; exists {
 					delete(clients, client)
@@ -136,14 +179,13 @@ func (h *Hub) Run() {
 					delete(h.clients, venueID)
 				}
 			}
-			h.mu.Unlock()
-
 			if venueEmpty && h.redisPubSub != nil {
 				if err := h.redisPubSub.Unsubscribe(venueID); err != nil {
 					slog.Error("Failed to unsubscribe from Redis channel",
 						"venueId", venueID, "error", err)
 				}
 			}
+			h.mu.Unlock()
 
 			slog.Info("WebSocket client disconnected",
 				"venueId", venueID,
@@ -179,12 +221,7 @@ func (h *Hub) Run() {
 			h.mu.RUnlock()
 
 			if len(slowClients) > 0 {
-				h.mu.Lock()
-				for _, client := range slowClients {
-					client.closeOnce.Do(func() { close(client.send) })
-					delete(h.clients[message.VenueID], client)
-				}
-				h.mu.Unlock()
+				h.removeSlowClients(message.VenueID, slowClients)
 			}
 
 		case redisMsg := <-redisCh:
@@ -206,12 +243,7 @@ func (h *Hub) Run() {
 			h.mu.RUnlock()
 
 			if len(slowClients) > 0 {
-				h.mu.Lock()
-				for _, client := range slowClients {
-					client.closeOnce.Do(func() { close(client.send) })
-					delete(h.clients[redisMsg.VenueID], client)
-				}
-				h.mu.Unlock()
+				h.removeSlowClients(redisMsg.VenueID, slowClients)
 			}
 
 		case <-ticker.C:
@@ -225,7 +257,7 @@ func (h *Hub) Run() {
 			h.mu.RUnlock()
 
 			for _, client := range allClients {
-				client.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				client.conn.SetWriteDeadline(time.Now().Add(h.writeWait))
 				if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 					slog.Debug("WebSocket ping failed, unregistering client",
 						"userId", client.userID,
@@ -243,6 +275,18 @@ func (h *Hub) Run() {
 
 		case <-h.stop:
 			slog.Info("Hub shutting down")
+			h.mu.Lock()
+			for _, clients := range h.clients {
+				for client := range clients {
+					client.closeOnce.Do(func() { close(client.send) })
+					client.conn.Close()
+				}
+			}
+			h.clients = make(map[string]map[*Client]bool)
+			h.mu.Unlock()
+			if h.redisPubSub != nil {
+				h.redisPubSub.UnsubscribeAll()
+			}
 			return
 		}
 	}
@@ -254,10 +298,14 @@ func (h *Hub) BroadcastToVenue(venueID, msgType string, payload interface{}) {
 		slog.Error("Failed to marshal broadcast payload", "error", err)
 		return
 	}
-	h.broadcast <- &Message{
+	select {
+	case h.broadcast <- &Message{
 		VenueID: venueID,
 		Type:    msgType,
 		Payload: data,
+	}:
+	default:
+		slog.Warn("broadcast channel full, dropping message", "venue", venueID, "event", msgType)
 	}
 }
 
@@ -276,7 +324,7 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	client := &Client{
 		conn:    conn,
-		send:    make(chan []byte, 256),
+		send:    make(chan []byte, h.clientSendBuf),
 		venueID: session.VenueID,
 		userID:  session.UserID,
 		hub:     h,
@@ -294,10 +342,10 @@ func (c *Client) readPump() {
 		c.conn.Close()
 	}()
 
-	c.conn.SetReadLimit(4096)
-	c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	c.conn.SetReadLimit(c.hub.maxMessageSize)
+	c.conn.SetReadDeadline(time.Now().Add(c.hub.pongWait))
 	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		c.conn.SetReadDeadline(time.Now().Add(c.hub.pongWait))
 		return nil
 	})
 
@@ -321,11 +369,11 @@ func (c *Client) writePump() {
 		select {
 		case message, ok := <-c.send:
 			if !ok {
-				c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+				c.conn.SetWriteDeadline(time.Now().Add(c.hub.writeWait))
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			c.conn.SetWriteDeadline(time.Now().Add(c.hub.writeWait))
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}

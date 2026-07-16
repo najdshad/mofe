@@ -38,10 +38,10 @@ export async function GET(
     });
   }
 
-  if (publication.staticAssetId?.startsWith("http")) {
+  if (publication.staticAssetUrl?.startsWith("http")) {
     return new Response(null, {
       status: 302,
-      headers: { Location: publication.staticAssetId },
+      headers: { Location: publication.staticAssetUrl },
     });
   }
 

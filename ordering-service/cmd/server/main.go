@@ -33,7 +33,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	db, err := database.NewPostgresPool(ctx, cfg.DatabaseURL)
+	db, err := database.NewPostgresPool(ctx, cfg.DatabaseURL, cfg)
 	if err != nil {
 		slog.Error("Failed to connect to database", "error", err)
 		os.Exit(1)
@@ -89,18 +89,18 @@ func main() {
 			os.Exit(1)
 		}
 		defer rps.Close()
-		hub = handlers.NewHubWithRedis(rps)
+		hub = handlers.NewHubWithRedis(rps, cfg)
 		slog.Info("Redis pub/sub enabled for WebSocket scaling")
 	} else {
-		hub = handlers.NewHub()
+		hub = handlers.NewHub(cfg)
 		slog.Info("Redis not configured, using local WebSocket hub only")
 	}
 	go hub.Run()
 
-	orderHandler := handlers.NewOrderHandler(db, hub)
-	analyticsHandler := handlers.NewAnalyticsHandler(db)
+	orderHandler := handlers.NewOrderHandler(db, hub, cfg.HandlerTimeout, cfg.HandlerCriticalTimeout)
+	analyticsHandler := handlers.NewAnalyticsHandler(db, cfg.HandlerCriticalTimeout)
 
-	rl := middleware.NewRateLimiter(100, 200)
+	rl := middleware.NewRateLimiter(cfg.RateLimitRPS, cfg.RateLimitBurst, cfg.RateLimitMaxEntries, cfg.RateLimitCleanupInterval, cfg.RateLimitVisitorTTL)
 
 	r := chi.NewRouter()
 
@@ -150,9 +150,9 @@ func main() {
 	srv := &http.Server{
 		Addr:           fmt.Sprintf(":%d", cfg.Port),
 		Handler:        r,
-		ReadTimeout:    15 * time.Second,
-		WriteTimeout:   15 * time.Second,
-		IdleTimeout:    60 * time.Second,
+		ReadTimeout:    cfg.ServerReadTimeout,
+		WriteTimeout:   cfg.ServerWriteTimeout,
+		IdleTimeout:    cfg.ServerIdleTimeout,
 		MaxHeaderBytes: 65536,
 	}
 
@@ -169,6 +169,12 @@ func main() {
 	<-quit
 
 	slog.Info("Shutting down server...")
+
+	// Stop rate limiter cleanup goroutine
+	rl.Stop()
+
+	// Stop WebSocket hub
+	hub.Shutdown()
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownCancel()

@@ -138,7 +138,7 @@ export function OrderPanel({
 
       <div className="border-t border-line px-4 py-3">
         {error && (
-          <div className="mb-3 rounded-[var(--radius-control)] bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
+          <div role="alert" aria-live="polite" className="mb-3 rounded-[var(--radius-control)] bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
             {error}
           </div>
         )}

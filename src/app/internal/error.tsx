@@ -1,6 +1,6 @@
 "use client";
 
-export default function AdminError({
+export default function InternalError({
   error,
   reset,
 }: {

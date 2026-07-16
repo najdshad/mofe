@@ -67,7 +67,7 @@ export default function RegistrationForm() {
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
       {serverError && (
-        <div className="rounded-[var(--radius-control)] border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div role="alert" className="rounded-[var(--radius-control)] border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
           {serverError}
         </div>
       )}

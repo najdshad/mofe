@@ -18,12 +18,20 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
+func skipHealthMetrics(path string) bool {
+	return path == "/health" || path == "/metrics"
+}
+
 func Logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
 		next.ServeHTTP(rw, r)
+
+		if skipHealthMetrics(r.URL.Path) {
+			return
+		}
 
 		reqID := middleware.GetReqID(r.Context())
 		slog.Info("request",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { QRCodeExport } from "@/components/ui/QRCodeExport";
 
 interface QRIconButtonProps {
@@ -11,10 +11,73 @@ interface QRIconButtonProps {
 
 export function QRIconButton({ venueName, publicUrl, isUnpublished }: QRIconButtonProps) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  const getFocusableElements = useCallback((container: HTMLElement): HTMLElement[] => {
+    const selectors = [
+      "a[href]",
+      "button:not([disabled])",
+      "textarea:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ];
+    return Array.from(container.querySelectorAll<HTMLElement>(selectors.join(",")));
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      triggerRef.current = document.activeElement as HTMLButtonElement;
+      requestAnimationFrame(() => {
+        if (dialogRef.current) {
+          const focusable = getFocusableElements(dialogRef.current);
+          if (focusable.length > 0) focusable[0].focus();
+          else dialogRef.current.focus();
+        }
+      });
+    } else if (triggerRef.current) {
+      triggerRef.current.focus();
+      triggerRef.current = null;
+    }
+  }, [open, getFocusableElements]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      if (e.key === "Tab" && dialogRef.current) {
+        const focusable = getFocusableElements(dialogRef.current);
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, getFocusableElements]);
 
   return (
     <>
       <button
+        ref={triggerRef}
         onClick={() => setOpen(true)}
         className="p-1.5 text-ink-muted hover:text-ink transition-colors rounded-lg hover:bg-surface"
         title="خروجی QR"
@@ -31,9 +94,11 @@ export function QRIconButton({ venueName, publicUrl, isUnpublished }: QRIconButt
       </button>
       {open && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="خروجی QR"
+          tabIndex={-1}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
           onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}

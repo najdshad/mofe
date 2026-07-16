@@ -97,13 +97,13 @@ describe("publishVenueMenu", () => {
     expect(html).toContain("کیک هویج");
   });
 
-  it("sets staticAssetId on the publication record", async () => {
+  it("sets staticAssetUrl on the publication record", async () => {
     const result = await publishVenueMenu(data.venue.id, data.user.id);
 
     const publication = await prisma.menuPublication.findUnique({
       where: { id: result!.publication.id },
     });
-    expect(publication?.staticAssetId).toBe("https://cdn.mofe.ir/menus/test-cafe.html");
+    expect(publication?.staticAssetUrl).toBe("https://cdn.mofe.ir/menus/test-cafe.html");
   });
 
   it("handles upload failure gracefully without breaking publish", async () => {
@@ -117,7 +117,7 @@ describe("publishVenueMenu", () => {
     const publication = await prisma.menuPublication.findUnique({
       where: { id: result!.publication.id },
     });
-    expect(publication?.staticAssetId).toBeNull();
+    expect(publication?.staticAssetUrl).toBeNull();
   });
 
   it("includes item details in the snapshot", async () => {

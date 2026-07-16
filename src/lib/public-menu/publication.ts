@@ -10,7 +10,7 @@ export async function buildPublicSnapshot(venueId: string) {
     where: { id: venueId },
     select: {
       id: true, slug: true, nameFa: true, nameEn: true,
-      welcomeMessage: true, accentColor: true, logoAssetId: true,
+      welcomeMessage: true, accentColor: true, logoUrl: true,
       publicStatus: true,
     },
   });
@@ -43,7 +43,7 @@ export async function buildPublicSnapshot(venueId: string) {
       nameEn: venue.nameEn,
       welcomeMessage: venue.welcomeMessage,
       accentColor: venue.accentColor,
-      logoUrl: venue.logoAssetId ?? null,
+      logoUrl: venue.logoUrl ?? null,
       slug: venue.slug,
       publicUrl,
       publicStatus: venue.publicStatus,
@@ -72,7 +72,7 @@ export async function buildPublicSnapshot(venueId: string) {
             priceToman: p.priceToman,
           })),
           allergenCodes: item.allergens.map((a) => a.allergenCode),
-          photoUrl: item.photoAssetId ?? null,
+          photoUrl: item.photoUrl ?? null,
         })),
       })),
     generatedAt: new Date().toISOString(),
@@ -116,7 +116,7 @@ export async function publishVenueMenu(venueId: string, userId: string) {
     const result = await storage.save(key, Buffer.from(html, "utf-8"), "text/html; charset=utf-8");
     await prisma.menuPublication.update({
       where: { id: publication.id },
-      data: { staticAssetId: result.url },
+      data: { staticAssetUrl: result.url },
     });
   } catch {
     // CDN upload failure is non-critical — menu still served from origin

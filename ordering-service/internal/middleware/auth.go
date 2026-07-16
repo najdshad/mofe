@@ -28,18 +28,23 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 
 			var session models.Session
 			var venueCount int
+			var venueID, role sql.NullString
 
 			err = db.QueryRowContext(r.Context(), `
 				SELECT
 					s."userId",
 					s."expiresAt",
+					vm."venueId",
+					vm."role",
 					(SELECT COUNT(*) FROM "VenueMember" WHERE "userId" = s."userId") as venue_count
 				FROM "Session" s
+				LEFT JOIN "VenueMember" vm ON vm."userId" = s."userId"
 				WHERE s."tokenHash" = $1
 				  AND s."expiresAt" > NOW()
 				  AND s."revokedAt" IS NULL
+				ORDER BY vm."venueId"
 				LIMIT 1
-			`, hashedToken).Scan(&session.UserID, &session.ExpiresAt, &venueCount)
+			`, hashedToken).Scan(&session.UserID, &session.ExpiresAt, &venueID, &role, &venueCount)
 
 			if err != nil {
 				if err == sql.ErrNoRows {
@@ -70,13 +75,10 @@ func AuthMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 					return
 				}
 			} else {
-				// Single-venue user: use the already-fetched UserID from the first query
-				err = db.QueryRowContext(r.Context(), `
-					SELECT "venueId", role FROM "VenueMember"
-					WHERE "userId" = $1
-					LIMIT 1
-				`, session.UserID).Scan(&session.VenueID, &session.Role)
-				if err != nil {
+				if venueID.Valid {
+					session.VenueID = venueID.String
+					session.Role = role.String
+				} else {
 					models.WriteError(w, http.StatusInternalServerError, "Failed to get venue", "DB_ERROR")
 					return
 				}

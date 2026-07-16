@@ -19,12 +19,12 @@ export async function POST(
 
     const items = await prisma.menuItem.findMany({
       where: { id: { in: body.itemIds }, venueId, deletedAt: null },
-      select: { id: true, photoAssetId: true },
+      select: { id: true, photoUrl: true },
     });
 
     for (const item of items) {
-      if (item.photoAssetId) {
-        const filePath = path.join(process.cwd(), "public", item.photoAssetId);
+      if (item.photoUrl) {
+        const filePath = path.join(process.cwd(), "public", item.photoUrl);
         try { await fs.unlink(filePath); } catch { /* ok */ }
       }
     }

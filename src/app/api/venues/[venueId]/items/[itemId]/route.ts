@@ -83,11 +83,11 @@ export async function DELETE(
 
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId, venueId },
-      select: { photoAssetId: true, nameFa: true },
+      select: { photoUrl: true, nameFa: true },
     });
 
-    if (item?.photoAssetId) {
-      const filePath = path.join(process.cwd(), "public", item.photoAssetId);
+    if (item?.photoUrl) {
+      const filePath = path.join(process.cwd(), "public", item.photoUrl);
       try { await fs.unlink(filePath); } catch { /* ok */ }
     }
 

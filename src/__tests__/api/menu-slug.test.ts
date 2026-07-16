@@ -26,14 +26,14 @@ afterEach(async () => {
 });
 
 describe("GET /m/[slug] — CDN redirect", () => {
-  it("redirects to CDN when staticAssetId is an HTTP URL", async () => {
+  it("redirects to CDN when staticAssetUrl is an HTTP URL", async () => {
     await prisma.menuPublication.create({
       data: {
         venueId: data.venue.id,
         status: "published",
         trigger: "manual_publish",
         snapshot: JSON.stringify({ venue: { nameFa: "test" }, categories: [], generatedAt: new Date().toISOString() }),
-        staticAssetId: "https://cdn.mofe.ir/menus/test-cafe.html",
+        staticAssetUrl: "https://cdn.mofe.ir/menus/test-cafe.html",
         completedAt: new Date(),
       },
     });
@@ -51,7 +51,7 @@ describe("GET /m/[slug] — CDN redirect", () => {
     expect(res.headers.get("Location")).toBe("https://cdn.mofe.ir/menus/test-cafe.html");
   });
 
-  it("serves rendered HTML when staticAssetId is null", async () => {
+  it("serves rendered HTML when staticAssetUrl is null", async () => {
     await prisma.menuPublication.create({
       data: {
         venueId: data.venue.id,
@@ -62,7 +62,7 @@ describe("GET /m/[slug] — CDN redirect", () => {
           categories: [],
           generatedAt: new Date().toISOString(),
         }),
-        staticAssetId: null,
+        staticAssetUrl: null,
         completedAt: new Date(),
       },
     });
@@ -82,7 +82,7 @@ describe("GET /m/[slug] — CDN redirect", () => {
     expect(html).toContain("کافه تست");
   });
 
-  it("serves rendered HTML when staticAssetId is a local path (not HTTP)", async () => {
+  it("serves rendered HTML when staticAssetUrl is a local path (not HTTP)", async () => {
     await prisma.menuPublication.create({
       data: {
         venueId: data.venue.id,
@@ -93,7 +93,7 @@ describe("GET /m/[slug] — CDN redirect", () => {
           categories: [],
           generatedAt: new Date().toISOString(),
         }),
-        staticAssetId: "/uploads/menus/test-cafe.html",
+        staticAssetUrl: "/uploads/menus/test-cafe.html",
         completedAt: new Date(),
       },
     });
@@ -170,7 +170,7 @@ describe("GET /m/[slug] — CDN redirect", () => {
         status: "published",
         trigger: "manual_publish",
         snapshot: JSON.stringify({ venue: { nameFa: "test" }, categories: [], generatedAt: new Date().toISOString() }),
-        staticAssetId: "https://cdn.mofe.ir/menus/test-cafe-v2.html",
+        staticAssetUrl: "https://cdn.mofe.ir/menus/test-cafe-v2.html",
         completedAt: new Date(),
       },
     });
@@ -192,7 +192,7 @@ describe("GET /m/[slug] — CDN redirect", () => {
   });
 });
 
-describe("GET /m/[slug] — staticAssetId edge cases", () => {
+describe("GET /m/[slug] — staticAssetUrl edge cases", () => {
   it("redirects for https URLs", async () => {
     await prisma.menuPublication.create({
       data: {
@@ -200,7 +200,7 @@ describe("GET /m/[slug] — staticAssetId edge cases", () => {
         status: "published",
         trigger: "manual_publish",
         snapshot: "{}",
-        staticAssetId: "https://cdn.example.com/menu.html",
+        staticAssetUrl: "https://cdn.example.com/menu.html",
         completedAt: new Date(),
       },
     });
@@ -228,7 +228,7 @@ describe("GET /m/[slug] — staticAssetId edge cases", () => {
           categories: [],
           generatedAt: new Date().toISOString(),
         }),
-        staticAssetId: "/uploads/menus/menu.html",
+        staticAssetUrl: "/uploads/menus/menu.html",
         completedAt: new Date(),
       },
     });
@@ -244,7 +244,7 @@ describe("GET /m/[slug] — staticAssetId edge cases", () => {
     expect(res.status).toBe(200);
   });
 
-  it("does NOT redirect for empty staticAssetId", async () => {
+  it("does NOT redirect for empty staticAssetUrl", async () => {
     await prisma.menuPublication.create({
       data: {
         venueId: data.venue.id,
@@ -255,7 +255,7 @@ describe("GET /m/[slug] — staticAssetId edge cases", () => {
           categories: [],
           generatedAt: new Date().toISOString(),
         }),
-        staticAssetId: "",
+        staticAssetUrl: "",
         completedAt: new Date(),
       },
     });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import type { CategoryData, MenuItemData, VariantData } from "./types";
 
@@ -24,6 +24,67 @@ export function MenuItemBrowser({
   );
 
   const [selectedItem, setSelectedItem] = useState<MenuItemData | null>(null);
+  const variantOverlayRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const variantFirstFocusableRef = useRef<HTMLButtonElement | null>(null);
+
+  const getFocusableElements = useCallback((container: HTMLElement): HTMLElement[] => {
+    const selectors = [
+      "a[href]",
+      "button:not([disabled])",
+      "textarea:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ];
+    return Array.from(container.querySelectorAll<HTMLElement>(selectors.join(",")));
+  }, []);
+
+  useEffect(() => {
+    if (selectedItem) {
+      triggerRef.current = document.activeElement as HTMLButtonElement;
+      requestAnimationFrame(() => {
+        if (variantFirstFocusableRef.current) {
+          variantFirstFocusableRef.current.focus();
+        }
+      });
+    } else if (triggerRef.current) {
+      triggerRef.current.focus();
+      triggerRef.current = null;
+    }
+  }, [selectedItem]);
+
+  useEffect(() => {
+    if (!selectedItem) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedItem(null);
+        return;
+      }
+      if (e.key === "Tab" && variantOverlayRef.current) {
+        const focusable = getFocusableElements(variantOverlayRef.current);
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [selectedItem, getFocusableElements]);
 
   function handleItemClick(item: MenuItemData) {
     if (item.variants.length > 0) {
@@ -55,9 +116,10 @@ export function MenuItemBrowser({
           <input
             type="text"
             placeholder="جستجو..."
+            aria-label="جستجوی آیتم‌ها"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-ink"
+            className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-ink focus-visible:ring-2 focus-visible:ring-ink/20"
           />
         </div>
 
@@ -65,8 +127,9 @@ export function MenuItemBrowser({
           {categories.map((cat) => (
             <button
               key={cat.id}
+              aria-selected={activeCategoryId === cat.id}
               onClick={() => { setActiveCategoryId(cat.id); setSearch(""); }}
-              className={`whitespace-nowrap rounded-full px-3 py-1 text-xs transition-all duration-200 ${
+              className={`whitespace-nowrap rounded-full px-3 py-1 text-xs transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 ${
                 activeCategoryId === cat.id
                   ? "bg-ink text-paper"
                   : "bg-surface text-ink-muted hover:text-ink"
@@ -82,8 +145,9 @@ export function MenuItemBrowser({
             {items.map((item) => (
               <button
                 key={item.id}
+                aria-label={`${item.nameFa} — ${item.priceToman.toLocaleString("fa-IR")} تومان`}
                 onClick={() => handleItemClick(item)}
-                className="rounded-[var(--radius-control)] border border-line bg-surface p-3 text-right transition-all duration-200 hover:border-ink hover:shadow-sm"
+                className="rounded-[var(--radius-control)] border border-line bg-surface p-3 text-right transition-all duration-200 hover:border-ink hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
               >
                 <p className="text-sm font-medium text-ink">{item.nameFa}</p>
                 {item.nameEn && (
@@ -104,18 +168,24 @@ export function MenuItemBrowser({
       </div>
 
       {selectedItem && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => setSelectedItem(null)}>
+        <div
+          ref={variantOverlayRef}
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
+          onClick={() => setSelectedItem(null)}
+          onKeyDown={(e) => { if (e.key === "Escape") setSelectedItem(null); }}
+        >
           <div
             className="mx-4 w-full max-w-sm rounded-[var(--radius-panel)] border border-line bg-paper p-4 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-serif text-ink-strong">{selectedItem.nameFa}</h3>
             <div className="mt-3 flex flex-col gap-2">
-              {selectedItem.variants.map((v) => (
+              {selectedItem.variants.map((v, i) => (
                 <button
                   key={v.id}
+                  ref={i === 0 ? variantFirstFocusableRef : undefined}
                   onClick={() => handleVariantSelect(v)}
-                  className="flex items-center justify-between rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-right transition-all duration-200 hover:border-ink"
+                  className="flex items-center justify-between rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-right transition-all duration-200 hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
                 >
                   <span className="text-sm text-ink">{v.nameFa}</span>
                   <span className="text-sm font-medium text-ink">

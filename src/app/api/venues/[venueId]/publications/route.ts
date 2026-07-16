@@ -25,7 +25,7 @@ export async function GET(
         createdByUserId: true,
         createdAt: true,
         completedAt: true,
-        staticAssetId: true,
+        staticAssetUrl: true,
       },
     });
 

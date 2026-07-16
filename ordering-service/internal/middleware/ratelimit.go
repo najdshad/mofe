@@ -10,28 +10,32 @@ import (
 	"golang.org/x/time/rate"
 )
 
-const maxRateLimiterEntries = 100000
-
 type visitor struct {
 	limiter  *rate.Limiter
 	lastSeen time.Time
 }
 
 type RateLimiter struct {
-	visitors   map[string]*visitor
-	mu         sync.Mutex
-	rate       rate.Limit
-	burst      int
-	stopCh     chan struct{}
-	stopOnce   sync.Once
+	visitors       map[string]*visitor
+	mu             sync.Mutex
+	rate           rate.Limit
+	burst          int
+	maxEntries     int
+	cleanupInt     time.Duration
+	visitorTTL     time.Duration
+	stopCh         chan struct{}
+	stopOnce       sync.Once
 }
 
-func NewRateLimiter(rps int, burst int) *RateLimiter {
+func NewRateLimiter(rps int, burst int, maxEntries int, cleanupInterval time.Duration, visitorTTL time.Duration) *RateLimiter {
 	rl := &RateLimiter{
-		visitors: make(map[string]*visitor),
-		rate:     rate.Limit(rps),
-		burst:    burst,
-		stopCh:   make(chan struct{}),
+		visitors:   make(map[string]*visitor),
+		rate:       rate.Limit(rps),
+		burst:      burst,
+		maxEntries: maxEntries,
+		cleanupInt: cleanupInterval,
+		visitorTTL: visitorTTL,
+		stopCh:     make(chan struct{}),
 	}
 	go rl.cleanup()
 	return rl
@@ -47,10 +51,15 @@ func (rl *RateLimiter) getVisitor(key string) *rate.Limiter {
 		return v.limiter
 	}
 
-	if len(rl.visitors) >= maxRateLimiterEntries {
+	if len(rl.visitors) >= rl.maxEntries {
+		evictCount := 1000
+		if evictCount > len(rl.visitors) {
+			evictCount = len(rl.visitors)
+		}
 		for k := range rl.visitors {
 			delete(rl.visitors, k)
-			if len(rl.visitors) < maxRateLimiterEntries/2 {
+			evictCount--
+			if evictCount <= 0 {
 				break
 			}
 		}
@@ -62,7 +71,7 @@ func (rl *RateLimiter) getVisitor(key string) *rate.Limiter {
 }
 
 func (rl *RateLimiter) cleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(rl.cleanupInt)
 	defer ticker.Stop()
 
 	for {
@@ -74,7 +83,7 @@ func (rl *RateLimiter) cleanup() {
 
 		rl.mu.Lock()
 		for key, v := range rl.visitors {
-			if time.Since(v.lastSeen) > 10*time.Minute {
+			if time.Since(v.lastSeen) > rl.visitorTTL {
 				delete(rl.visitors, key)
 			}
 		}

@@ -1,6 +1,6 @@
 "use client";
 
-export default function AdminError({
+export default function RootError({
   error,
   reset,
 }: {
@@ -8,7 +8,7 @@ export default function AdminError({
   reset: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-paper px-4 text-center">
       <h1 className="font-serif text-2xl text-ink">خطایی رخ داده است</h1>
       <p className="text-sm text-ink-muted">متأسفانه مشکلی پیش آمده. لطفاً دوباره تلاش کنید.</p>
       <button

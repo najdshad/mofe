@@ -120,7 +120,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="w-full max-w-md rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-lg focus:outline-none"
+        className="w-full max-w-md rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
       >
         <h3 id={titleId} className="font-serif text-xl text-ink">{title}</h3>
         <div className="mt-3 max-h-[55vh] overflow-y-auto text-sm leading-relaxed text-ink-muted">

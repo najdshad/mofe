@@ -13,11 +13,12 @@ import (
 )
 
 type AnalyticsHandler struct {
-	db *sql.DB
+	db              *sql.DB
+	criticalTimeout time.Duration
 }
 
-func NewAnalyticsHandler(db *sql.DB) *AnalyticsHandler {
-	return &AnalyticsHandler{db: db}
+func NewAnalyticsHandler(db *sql.DB, criticalTimeout time.Duration) *AnalyticsHandler {
+	return &AnalyticsHandler{db: db, criticalTimeout: criticalTimeout}
 }
 
 func (h *AnalyticsHandler) queryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
@@ -56,7 +57,7 @@ type TopItem struct {
 func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.criticalTimeout)
 	defer cancel()
 
 	dateStr := r.URL.Query().Get("date")
@@ -140,19 +141,21 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		slog.Error("Failed to query top items", "error", err)
-	} else {
-		defer rows.Close()
-		for rows.Next() {
-			var item TopItem
-			if err := rows.Scan(&item.MenuItemID, &item.MenuItemName, &item.Quantity, &item.Revenue); err != nil {
-				slog.Error("Failed to scan top item row", "error", err)
-				continue
-			}
-			topItems = append(topItems, item)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to fetch top items", "DB_ERROR")
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var item TopItem
+		if err := rows.Scan(&item.MenuItemID, &item.MenuItemName, &item.Quantity, &item.Revenue); err != nil {
+			slog.Error("Failed to scan top item row", "error", err)
+			continue
 		}
-		if err := rows.Err(); err != nil {
-			slog.Error("Error iterating top item rows", "error", err)
-		}
+		topItems = append(topItems, item)
+	}
+	if err := rows.Err(); err != nil {
+		slog.Error("Error iterating top item rows", "error", err)
 	}
 
 	if topItems == nil {

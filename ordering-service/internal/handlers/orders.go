@@ -22,12 +22,19 @@ const (
 )
 
 type OrderHandler struct {
-	db  *sql.DB
-	hub *Hub
+	db                  *sql.DB
+	hub                 *Hub
+	handlerTimeout      time.Duration
+	criticalTimeout     time.Duration
 }
 
-func NewOrderHandler(db *sql.DB, hub *Hub) *OrderHandler {
-	return &OrderHandler{db: db, hub: hub}
+func NewOrderHandler(db *sql.DB, hub *Hub, handlerTimeout, criticalTimeout time.Duration) *OrderHandler {
+	return &OrderHandler{
+		db:              db,
+		hub:             hub,
+		handlerTimeout:  handlerTimeout,
+		criticalTimeout: criticalTimeout,
+	}
 }
 
 func (h *OrderHandler) execContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
@@ -73,7 +80,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	tx, err := h.db.BeginTx(ctx, nil)
@@ -168,8 +175,8 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Quantity <= 0 {
-		models.WriteError(w, http.StatusBadRequest, "Quantity must be positive", "INVALID_QUANTITY")
+	if req.Quantity <= 0 || req.Quantity > 9999 {
+		models.WriteError(w, http.StatusBadRequest, "Quantity must be between 1 and 9999", "INVALID_QUANTITY")
 		return
 	}
 
@@ -183,7 +190,7 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	tx, err := h.db.BeginTx(ctx, nil)
@@ -332,7 +339,7 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 	status := r.URL.Query().Get("status")
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	query := `
@@ -407,7 +414,7 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 	orderID := chi.URLParam(r, "id")
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	type OrderRow struct {
@@ -511,6 +518,27 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		var sentAt *time.Time
+		if i.SentAt.Valid {
+			sentAt = &i.SentAt.Time
+		}
+		var preparingAt *time.Time
+		if i.PreparingAt.Valid {
+			preparingAt = &i.PreparingAt.Time
+		}
+		var itemReadyAt *time.Time
+		if i.ReadyAt.Valid {
+			itemReadyAt = &i.ReadyAt.Time
+		}
+		var itemDeliveredAt *time.Time
+		if i.DeliveredAt.Valid {
+			itemDeliveredAt = &i.DeliveredAt.Time
+		}
+		var itemCancelledAt *time.Time
+		if i.CancelledAt.Valid {
+			itemCancelledAt = &i.CancelledAt.Time
+		}
+
 		item := map[string]interface{}{
 			"id":           i.ID,
 			"orderId":      i.OrderID,
@@ -524,11 +552,11 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 			"station":      i.Station,
 			"status":       i.Status,
 			"notes":        i.Notes.String,
-			"sentAt":       i.SentAt.Time,
-			"preparingAt":  i.PreparingAt.Time,
-			"readyAt":      i.ReadyAt.Time,
-			"deliveredAt":  i.DeliveredAt.Time,
-			"cancelledAt":  i.CancelledAt.Time,
+			"sentAt":       sentAt,
+			"preparingAt":  preparingAt,
+			"readyAt":      itemReadyAt,
+			"deliveredAt":  itemDeliveredAt,
+			"cancelledAt":  itemCancelledAt,
 			"courseNumber": i.CourseNumber,
 		}
 		if i.VariantID.String == "" {
@@ -556,6 +584,27 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		notes = &o.Notes.String
 	}
 
+	var sentToKitchenAt *time.Time
+	if o.SentToKitchenAt.Valid {
+		sentToKitchenAt = &o.SentToKitchenAt.Time
+	}
+	var readyAt *time.Time
+	if o.ReadyAt.Valid {
+		readyAt = &o.ReadyAt.Time
+	}
+	var deliveredAt *time.Time
+	if o.DeliveredAt.Valid {
+		deliveredAt = &o.DeliveredAt.Time
+	}
+	var cancelledAt *time.Time
+	if o.CancelledAt.Valid {
+		cancelledAt = &o.CancelledAt.Time
+	}
+	var completedAt *time.Time
+	if o.CompletedAt.Valid {
+		completedAt = &o.CompletedAt.Time
+	}
+
 	order := map[string]interface{}{
 		"id":          o.ID,
 		"venueId":     o.VenueID,
@@ -567,11 +616,11 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		"total":       o.Total,
 		"notes":       notes,
 		"createdAt":   o.CreatedAt,
-		"sentToKitchenAt": o.SentToKitchenAt.Time,
-		"readyAt":     o.ReadyAt.Time,
-		"deliveredAt": o.DeliveredAt.Time,
-		"cancelledAt": o.CancelledAt.Time,
-		"completedAt": o.CompletedAt.Time,
+		"sentToKitchenAt": sentToKitchenAt,
+		"readyAt":     readyAt,
+		"deliveredAt": deliveredAt,
+		"cancelledAt": cancelledAt,
+		"completedAt": completedAt,
 		"createdBy":   o.CreatedByName,
 		"items":       items,
 	}
@@ -602,7 +651,7 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	tx, err := h.db.BeginTx(ctx, nil)
@@ -659,6 +708,12 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 
 	if len(updates) == 0 {
 		models.WriteError(w, http.StatusBadRequest, "No fields to update", "NO_FIELDS")
+		return
+	}
+
+	if argCount > 65535 {
+		slog.Error("Too many query arguments in UpdateItem", "argCount", argCount, "itemId", itemID)
+		models.WriteError(w, http.StatusInternalServerError, "Internal error", "DB_ERROR")
 		return
 	}
 
@@ -720,7 +775,7 @@ func (h *OrderHandler) CancelItem(w http.ResponseWriter, r *http.Request) {
 	orderID := chi.URLParam(r, "id")
 	itemID := chi.URLParam(r, "itemId")
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	tx, err := h.db.BeginTx(ctx, nil)
@@ -836,7 +891,7 @@ func (h *OrderHandler) SendToKitchen(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 	orderID := chi.URLParam(r, "id")
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	tx, err := h.db.BeginTx(ctx, nil)
@@ -985,7 +1040,7 @@ func (h *OrderHandler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) 
 		"READY":     "DELIVERED",
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	tx, err := h.db.BeginTx(ctx, nil)
@@ -1034,6 +1089,9 @@ func (h *OrderHandler) UpdateItemStatus(w http.ResponseWriter, r *http.Request) 
 		timeField = "ready_at = NOW()"
 	case "DELIVERED":
 		timeField = "delivered_at = NOW()"
+	default:
+		models.WriteError(w, http.StatusInternalServerError, "Unknown status for time field", "INTERNAL_ERROR")
+		return
 	}
 
 	start := time.Now()
@@ -1117,7 +1175,7 @@ func (h *OrderHandler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 	orderID := chi.URLParam(r, "id")
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	tx, err := h.db.BeginTx(ctx, nil)
@@ -1255,7 +1313,7 @@ func (h *OrderHandler) ReleaseTable(w http.ResponseWriter, r *http.Request) {
 	session := middleware.GetSession(r.Context())
 	tableNumber := chi.URLParam(r, "tableNumber")
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), h.handlerTimeout)
 	defer cancel()
 
 	tx, err := h.db.BeginTx(ctx, nil)

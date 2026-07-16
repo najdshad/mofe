@@ -38,6 +38,7 @@ export function TableGrid({
       {editMode && onAddTable && (
         <button
           onClick={onAddTable}
+          aria-label="افزودن میز جدید"
           className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-paper p-6 transition-all hover:border-ink/50"
         >
           <span className="text-3xl font-serif text-ink-muted">+</span>
@@ -47,8 +48,9 @@ export function TableGrid({
       {tables.map((t) => (
         <div key={t.tableId} className="relative">
           <button
+            aria-label={`میز ${t.tableNumber}`}
             onClick={() => onSelectTable(t.tableNumber)}
-            className={`flex w-full flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 p-6 transition-all duration-200 ${
+            className={`flex w-full flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 p-6 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 ${
               selectedTable === t.tableNumber
                 ? "border-ink bg-surface shadow-sm"
                 : "border-line bg-paper hover:border-ink/50 hover:shadow-sm"

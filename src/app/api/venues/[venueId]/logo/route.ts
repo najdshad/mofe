@@ -41,9 +41,9 @@ export async function POST(
       );
     }
 
-    const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoAssetId: true } });
-    if (venue?.logoAssetId) {
-      const oldPath = path.join(process.cwd(), "public", venue.logoAssetId);
+    const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoUrl: true } });
+    if (venue?.logoUrl) {
+      const oldPath = path.join(process.cwd(), "public", venue.logoUrl);
       try { await fs.unlink(oldPath); } catch { /* ok */ }
     }
 
@@ -59,7 +59,7 @@ export async function POST(
 
     await prisma.venue.update({
       where: { id: venueId },
-      data: { logoAssetId: logoUrl },
+      data: { logoUrl: logoUrl },
     });
 
     return NextResponse.json({ logoUrl });
@@ -78,13 +78,13 @@ export async function DELETE(
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoAssetId: true } });
+    const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoUrl: true } });
     if (!venue) {
       return NextResponse.json({ error: "Venue not found" }, { status: 404 });
     }
 
-    if (venue.logoAssetId) {
-      const filePath = path.join(process.cwd(), "public", venue.logoAssetId);
+    if (venue.logoUrl) {
+      const filePath = path.join(process.cwd(), "public", venue.logoUrl);
       try {
         await fs.unlink(filePath);
       } catch {
@@ -94,7 +94,7 @@ export async function DELETE(
 
     await prisma.venue.update({
       where: { id: venueId },
-      data: { logoAssetId: null },
+      data: { logoUrl: null },
     });
 
     return NextResponse.json({ success: true });

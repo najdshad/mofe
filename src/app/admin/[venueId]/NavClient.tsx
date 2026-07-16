@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useMemo } from "react";
 
 interface NavSub {
   status: string;
@@ -12,7 +11,7 @@ interface NavSub {
 export function NavClient({ venueId, sub }: { venueId: string; sub: NavSub | null }) {
   const pathname = usePathname();
 
-  const links = useMemo(() => {
+  const links = (() => {
     const items = [
       { href: `/admin/${venueId}/menu`, label: "منو" },
     ];
@@ -28,7 +27,7 @@ export function NavClient({ venueId, sub }: { venueId: string; sub: NavSub | nul
     );
 
     return items;
-  }, [venueId, sub]);
+  })();
 
   return (
     <div className="mx-auto flex max-w-5xl gap-4 px-4">
