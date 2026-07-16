@@ -24,9 +24,13 @@ export function MenuItemBrowser({
   );
 
   const [selectedItem, setSelectedItem] = useState<MenuItemData | null>(null);
+  const [confirmItem, setConfirmItem] = useState<{ item: MenuItemData; variant?: VariantData } | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const variantOverlayRef = useRef<HTMLDivElement>(null);
+  const confirmOverlayRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const variantFirstFocusableRef = useRef<HTMLButtonElement | null>(null);
+  const confirmFirstFocusableRef = useRef<HTMLButtonElement | null>(null);
 
   const getFocusableElements = useCallback((container: HTMLElement): HTMLElement[] => {
     const selectors = [
@@ -48,21 +52,30 @@ export function MenuItemBrowser({
           variantFirstFocusableRef.current.focus();
         }
       });
+    } else if (confirmItem) {
+      triggerRef.current = document.activeElement as HTMLButtonElement;
+      requestAnimationFrame(() => {
+        if (confirmFirstFocusableRef.current) {
+          confirmFirstFocusableRef.current.focus();
+        }
+      });
     } else if (triggerRef.current) {
       triggerRef.current.focus();
       triggerRef.current = null;
     }
-  }, [selectedItem]);
+  }, [selectedItem, confirmItem]);
 
   useEffect(() => {
-    if (!selectedItem) return;
+    if (!selectedItem && !confirmItem) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setSelectedItem(null);
+        setConfirmItem(null);
         return;
       }
-      if (e.key === "Tab" && variantOverlayRef.current) {
-        const focusable = getFocusableElements(variantOverlayRef.current);
+      const container = selectedItem ? variantOverlayRef.current : confirmOverlayRef.current;
+      if (e.key === "Tab" && container) {
+        const focusable = getFocusableElements(container);
         if (focusable.length === 0) {
           e.preventDefault();
           return;
@@ -84,23 +97,33 @@ export function MenuItemBrowser({
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [selectedItem, getFocusableElements]);
+  }, [selectedItem, confirmItem, getFocusableElements]);
 
   function handleItemClick(item: MenuItemData) {
     if (item.variants.length > 0) {
       setSelectedItem(item);
     } else {
-      onSelect(item.id, undefined, 1);
-      onClose();
+      setConfirmItem({ item });
+      setQuantity(1);
     }
   }
 
   function handleVariantSelect(variant: VariantData) {
     if (!selectedItem) return;
-    onSelect(selectedItem.id, variant.id, 1);
     setSelectedItem(null);
+    setConfirmItem({ item: selectedItem, variant });
+    setQuantity(1);
+  }
+
+  function handleConfirmAdd() {
+    if (!confirmItem) return;
+    onSelect(confirmItem.item.id, confirmItem.variant?.id, quantity);
+    setConfirmItem(null);
     onClose();
   }
+
+  const getUnitPrice = (item: MenuItemData, variant?: VariantData) =>
+    item.priceToman + (variant?.priceModifier || 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -172,7 +195,6 @@ export function MenuItemBrowser({
           ref={variantOverlayRef}
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
           onClick={() => setSelectedItem(null)}
-          onKeyDown={(e) => { if (e.key === "Escape") setSelectedItem(null); }}
         >
           <div
             className="mx-4 w-full max-w-sm rounded-[var(--radius-panel)] border border-line bg-paper p-4 shadow-xl"
@@ -201,6 +223,58 @@ export function MenuItemBrowser({
             >
               انصراف
             </Button>
+          </div>
+        </div>
+      )}
+
+      {confirmItem && (
+        <div
+          ref={confirmOverlayRef}
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
+          onClick={() => setConfirmItem(null)}
+        >
+          <div
+            className="mx-4 w-full max-w-sm rounded-[var(--radius-panel)] border border-line bg-paper p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-serif text-ink-strong">{confirmItem.item.nameFa}</h3>
+            {confirmItem.variant && (
+              <p className="mt-1 text-sm text-ink-muted">{confirmItem.variant.nameFa}</p>
+            )}
+            <div className="mt-6 flex items-center justify-center gap-4">
+              <button
+                ref={confirmFirstFocusableRef}
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface text-lg text-ink transition-colors hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+                aria-label="کاهش تعداد"
+              >
+                −
+              </button>
+              <span className="min-w-[3rem] text-center text-2xl font-medium text-ink" aria-live="polite">
+                {quantity}
+              </span>
+              <button
+                onClick={() => setQuantity((q) => Math.min(9999, q + 1))}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface text-lg text-ink transition-colors hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+                aria-label="افزایش تعداد"
+              >
+                +
+              </button>
+            </div>
+            <p className="mt-4 text-center text-sm text-ink-muted">
+              قیمت واحد: {getUnitPrice(confirmItem.item, confirmItem.variant).toLocaleString("fa-IR")} تومان
+            </p>
+            <p className="text-center text-base font-medium text-ink">
+              مجموع: {(quantity * getUnitPrice(confirmItem.item, confirmItem.variant)).toLocaleString("fa-IR")} تومان
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Button variant="primary" onClick={handleConfirmAdd} className="flex-1">
+                افزودن
+              </Button>
+              <Button variant="secondary" onClick={() => setConfirmItem(null)} className="flex-1">
+                انصراف
+              </Button>
+            </div>
           </div>
         </div>
       )}
