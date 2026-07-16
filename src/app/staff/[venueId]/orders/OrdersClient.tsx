@@ -337,14 +337,14 @@ export function OrdersClient({
     }
   }
 
-  async function handleAddItem(menuItemId: string, variantId?: string, quantity: number = 1) {
+  async function handleAddItem(menuItemId: string, variantId?: string, quantity: number = 1, notes?: string) {
     if (!activeOrderId) return;
     setError(null);
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       addToQueue(
         `/api/venues/${venueId}/orders/${activeOrderId}/items`,
         "POST",
-        { menuItemId, variantId, quantity },
+        { menuItemId, variantId, quantity, notes },
       );
       setShowMenuBrowser(false);
       setError("عملیات در صف همگام‌سازی قرار گرفت");
@@ -354,7 +354,7 @@ export function OrdersClient({
       await fetchApi(`/api/venues/${venueId}/orders/${activeOrderId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ menuItemId, variantId, quantity }),
+        body: JSON.stringify({ menuItemId, variantId, quantity, notes }),
       });
       setShowMenuBrowser(false);
       await refreshOrder();

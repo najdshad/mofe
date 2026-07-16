@@ -10,7 +10,7 @@ export function MenuItemBrowser({
   onClose,
 }: {
   categories: CategoryData[];
-  onSelect: (menuItemId: string, variantId?: string, quantity?: number) => void;
+  onSelect: (menuItemId: string, variantId?: string, quantity?: number, notes?: string) => void;
   onClose: () => void;
 }) {
   const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || "");
@@ -26,6 +26,7 @@ export function MenuItemBrowser({
   const [selectedItem, setSelectedItem] = useState<MenuItemData | null>(null);
   const [confirmItem, setConfirmItem] = useState<{ item: MenuItemData; variant?: VariantData } | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [notes, setNotes] = useState("");
   const variantOverlayRef = useRef<HTMLDivElement>(null);
   const confirmOverlayRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -105,6 +106,7 @@ export function MenuItemBrowser({
     } else {
       setConfirmItem({ item });
       setQuantity(1);
+      setNotes("");
     }
   }
 
@@ -113,11 +115,12 @@ export function MenuItemBrowser({
     setSelectedItem(null);
     setConfirmItem({ item: selectedItem, variant });
     setQuantity(1);
+    setNotes("");
   }
 
   function handleConfirmAdd() {
     if (!confirmItem) return;
-    onSelect(confirmItem.item.id, confirmItem.variant?.id, quantity);
+    onSelect(confirmItem.item.id, confirmItem.variant?.id, quantity, notes || undefined);
     setConfirmItem(null);
     onClose();
   }
@@ -267,7 +270,17 @@ export function MenuItemBrowser({
             <p className="text-center text-base font-medium text-ink">
               مجموع: {(quantity * getUnitPrice(confirmItem.item, confirmItem.variant)).toLocaleString("fa-IR")} تومان
             </p>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4">
+              <textarea
+                placeholder="توضیحات (اختیاری)"
+                aria-label="توضیحات آیتم"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+                className="w-full resize-none rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-ink focus-visible:ring-2 focus-visible:ring-ink/20"
+              />
+            </div>
+            <div className="mt-3 flex gap-2">
               <Button variant="primary" onClick={handleConfirmAdd} className="flex-1">
                 افزودن
               </Button>
