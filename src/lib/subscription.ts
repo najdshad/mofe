@@ -69,7 +69,10 @@ export async function ensureTrialSubscription(venueId: string) {
   const now = new Date();
   const trialEnd = new Date(now.getTime() + basicPlan.trialDays * 24 * 60 * 60 * 1000);
 
-  const existing = await prisma.subscription.findUnique({ where: { venueId } });
+  const existing = await prisma.subscription.findUnique({
+    where: { venueId },
+    include: { plan: true },
+  });
   if (existing) return existing;
 
   return prisma.subscription.create({

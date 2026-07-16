@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -88,11 +89,7 @@ func (r *RedisPubSub) Channel() <-chan *Message {
 }
 
 func venueIDFromChannel(channel string) string {
-	prefix := redisChannelPrefix
-	if len(channel) > len(prefix) {
-		return channel[len(prefix):]
-	}
-	return channel
+	return strings.TrimPrefix(channel, redisChannelPrefix)
 }
 
 func channelForVenue(venueID string) string {

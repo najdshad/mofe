@@ -48,12 +48,11 @@ func (rl *RateLimiter) getVisitor(key string) *rate.Limiter {
 	}
 
 	if len(rl.visitors) >= maxRateLimiterEntries {
-		for k, evict := range rl.visitors {
+		for k := range rl.visitors {
 			delete(rl.visitors, k)
 			if len(rl.visitors) < maxRateLimiterEntries/2 {
 				break
 			}
-			_ = evict
 		}
 	}
 

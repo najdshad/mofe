@@ -116,6 +116,8 @@ func (h *AnalyticsHandler) DailySummary(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		slog.Error("Failed to query total items", "error", err)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to fetch analytics", "DB_ERROR")
+		return
 	}
 
 	var topItems []TopItem
