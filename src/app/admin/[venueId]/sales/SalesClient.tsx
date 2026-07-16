@@ -500,9 +500,9 @@ export function SalesClient({ venueId }: { venueId: string }) {
           {/* Horizontal bar chart */}
           {!loading && !error && top10.length > 0 && (
             <div className="rounded-2xl border border-line bg-surface p-4" style={{ overflow: "visible" }}>
-              <style>{`.items-chart svg { overflow: visible !important; }`}</style>
+              <style>{`.items-chart { overflow: visible !important; } .items-chart svg { overflow: visible !important; }`}</style>
               <ResponsiveContainer width="100%" height={400} className="items-chart">
-                <BarChart data={top10} layout="vertical" margin={{ left: 100, right: 24, top: 8, bottom: 8 }}>
+                <BarChart data={top10} layout="vertical" margin={{ left: 180, right: 24, top: 8, bottom: 8 }}>
                   <XAxis
                     type="number"
                     tick={{ fontSize: 11, fill: "#5f5a52" }}

@@ -347,18 +347,40 @@ model order_items {
 }
 
 model Sale {
-  id          String   @id @default(uuid())
-  venueId     String   @map("venue_id")
-  orderId     String   @unique @map("order_id")
-  total       Int      @map("total")
-  itemCount   Int      @map("item_count")
-  completedAt DateTime @default(now()) @map("completed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id          String      @id @default(uuid())
+  venueId     String      @map("venue_id")
+  orderId     String      @unique @map("order_id")
+  total       Int         @map("total")
+  itemCount   Int         @map("item_count")
+  completedAt DateTime    @default(now()) @map("completed_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
 
-  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  venue Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  items SaleItem[]
 
   @@index([venueId, completedAt])
   @@map("Sale")
+}
+
+model SaleItem {
+  id           String   @id @default(uuid())
+  saleId       String   @map("sale_id")
+  menuItemId   String   @map("menu_item_id")
+  menuItemName String   @map("menu_item_name")
+  variantId    String?  @map("variant_id")
+  variantName  String?  @map("variant_name")
+  quantity     Int
+  unitPrice    Int      @map("unit_price")
+  totalPrice   Int      @map("total_price")
+  station      String   @default("kitchen")
+  completedAt  DateTime @map("completed_at")
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+  @@index([menuItemId, completedAt])
+  @@index([completedAt])
+  @@map("SaleItem")
 }
 
 model Plan {

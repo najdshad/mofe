@@ -272,6 +272,7 @@ func setupLifecycleTest(t *testing.T) (*OrderHandler, *sql.DB, func()) {
 
 	clean := func() {
 		hub.Shutdown()
+		db.Exec(`DELETE FROM "SaleItem"`)
 		db.Exec(`DELETE FROM "Sale"`)
 		db.Exec("DELETE FROM order_items")
 		db.Exec("DELETE FROM orders")
@@ -763,6 +764,25 @@ func TestCompleteOrder_Successful(t *testing.T) {
 	}
 	if saleItemCount != 1 {
 		t.Errorf("expected sale item_count 1, got %d", saleItemCount)
+	}
+
+	// Verify SaleItem records were created
+	var saleItemCountVerified int
+	err = db.QueryRow(`SELECT COUNT(*) FROM "SaleItem" WHERE sale_id = (SELECT id FROM "Sale" WHERE order_id = $1)`, orderID).Scan(&saleItemCountVerified)
+	if err != nil {
+		t.Fatalf("failed to query SaleItem count: %v", err)
+	}
+	if saleItemCountVerified == 0 {
+		t.Error("expected at least one SaleItem record")
+	}
+
+	var saleItemName string
+	err = db.QueryRow(`SELECT menu_item_name FROM "SaleItem" WHERE sale_id = (SELECT id FROM "Sale" WHERE order_id = $1) LIMIT 1`, orderID).Scan(&saleItemName)
+	if err != nil {
+		t.Fatalf("failed to query SaleItem name: %v", err)
+	}
+	if saleItemName != "Test Item 1" {
+		t.Errorf("expected SaleItem name 'Test Item 1', got '%s'", saleItemName)
 	}
 }
 

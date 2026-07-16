@@ -22,6 +22,8 @@ export async function cleanTestData() {
   await prisma.coupon.deleteMany();
   // Subscription references Venue + Plan
   await prisma.subscription.deleteMany();
+  // SaleItem references Sale
+  await prisma.saleItem.deleteMany();
   // Sale references Venue
   await prisma.sale.deleteMany();
   // MenuPublication references Venue
@@ -98,6 +100,36 @@ export async function seedTestSale(
       orderId: overrides?.orderId ?? `test-order-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       total: overrides?.total ?? 150000,
       itemCount: overrides?.itemCount ?? 2,
+      completedAt: overrides?.completedAt ?? new Date(),
+    },
+  });
+}
+
+export async function seedTestSaleItem(
+  saleId: string,
+  overrides?: Partial<{
+    menuItemId: string;
+    menuItemName: string;
+    variantId: string | null;
+    variantName: string | null;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    station: string;
+    completedAt: Date;
+  }>
+) {
+  return prisma.saleItem.create({
+    data: {
+      saleId,
+      menuItemId: overrides?.menuItemId ?? "test-item-1",
+      menuItemName: overrides?.menuItemName ?? "چای نعناع",
+      variantId: overrides?.variantId ?? null,
+      variantName: overrides?.variantName ?? null,
+      quantity: overrides?.quantity ?? 1,
+      unitPrice: overrides?.unitPrice ?? 75000,
+      totalPrice: overrides?.totalPrice ?? 75000,
+      station: overrides?.station ?? "kitchen",
       completedAt: overrides?.completedAt ?? new Date(),
     },
   });
