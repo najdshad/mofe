@@ -92,7 +92,7 @@ func main() {
 		hub = handlers.NewHubWithRedis(rps, cfg)
 		slog.Info("Redis pub/sub enabled for WebSocket scaling")
 	} else {
-		hub = handlers.NewHub(cfg)
+		hub = handlers.NewHubFromConfig(cfg)
 		slog.Info("Redis not configured, using local WebSocket hub only")
 	}
 	go hub.Run()

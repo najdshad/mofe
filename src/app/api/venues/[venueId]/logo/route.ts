@@ -2,12 +2,23 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 import path from "path";
 import fs from "fs/promises";
 import crypto from "crypto";
+import sharp from "sharp";
 import { compressToTarget, MAX_SIZE_BYTES } from "@/lib/compress-image";
 
 const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
+
+async function isValidImage(buffer: Buffer): Promise<boolean> {
+  try {
+    await sharp(buffer).metadata();
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(
   request: Request,
@@ -18,6 +29,11 @@ export async function POST(
     const { venueId } = await params;
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const rateCheck = await rateLimit(`logo-upload:${user.id}`, 10, 60000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json({ error: "حد مجاز آپلود را پر کرده‌اید. لطفاً کمی بعد تلاش کنید." }, { status: 429 });
+    }
 
     const formData = await request.formData();
     const file = formData.get("logo") as File | null;
@@ -30,6 +46,14 @@ export async function POST(
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    const valid = await isValidImage(buffer);
+    if (!valid) {
+      return NextResponse.json(
+        { error: "فایل ارسالی معتبر نیست. لطفاً یک تصویر ارسال کنید." },
+        { status: 400 }
+      );
+    }
 
     let resized: Buffer;
     try {
@@ -44,7 +68,11 @@ export async function POST(
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoUrl: true } });
     if (venue?.logoUrl) {
       const oldPath = path.join(process.cwd(), "public", venue.logoUrl);
-      try { await fs.unlink(oldPath); } catch { /* ok */ }
+      try { await fs.unlink(oldPath); } catch (err: unknown) {
+        if (err instanceof Error && (err as NodeJS.ErrnoException).code !== "ENOENT") {
+          console.error("[logo] failed to delete old file:", err.message);
+        }
+      }
     }
 
     await fs.mkdir(UPLOADS_DIR, { recursive: true });

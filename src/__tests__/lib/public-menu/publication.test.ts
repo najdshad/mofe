@@ -70,7 +70,7 @@ describe("publishVenueMenu", () => {
 
     expect(mockSave).toHaveBeenCalledOnce();
     const [key, buffer, contentType] = mockSave.mock.calls[0];
-    expect(key).toBe("menus/test-cafe.html");
+    expect(key).toMatch(/^menus\/test-cafe-[a-f0-9]+\.html$/);
     expect(buffer).toBeInstanceOf(Buffer);
     expect(contentType).toBe("text/html; charset=utf-8");
   });

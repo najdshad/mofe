@@ -90,7 +90,8 @@ function esc(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/'/g, "&#039;")
+    .replace(/`/g, "&#96;");
 }
 
 function sanitizeCssColor(color: string): string {
@@ -103,7 +104,14 @@ function sanitizeCssColor(color: string): string {
 
 export { formatPrice } from "@/lib/format";
 
-function renderItemCard(item: SnapshotCategoryItem): string {
+function resolveUrl(url: string, baseUrl?: string): string {
+  if (baseUrl && url.startsWith("/")) {
+    return `${baseUrl}${url}`;
+  }
+  return url;
+}
+
+function renderItemCard(item: SnapshotCategoryItem, baseUrl?: string): string {
   const variants = item.variants ?? [];
   const allergenCodes = item.allergenCodes ?? [];
   const photoUrl = item.photoUrl ?? null;
@@ -112,7 +120,7 @@ function renderItemCard(item: SnapshotCategoryItem): string {
     return `
           <article class="item-card${item.soldOut ? " sold-out" : ""} photo-mode">
             <div class="item-photo-wrap">
-              <img class="item-photo" src="${esc(photoUrl)}" alt="" loading="lazy" />
+              <img class="item-photo" src="${esc(resolveUrl(photoUrl, baseUrl))}" alt="${esc(item.nameFa)}" loading="lazy" />
               ${item.soldOut ? '<div class="item-photo-overlay">ناموجود</div>' : ""}
             </div>
             <div class="item-body">
@@ -169,7 +177,7 @@ function renderItemCard(item: SnapshotCategoryItem): string {
                 ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
                 ${allergenCodes.length > 0 ? `
                 <div class="allergen-badges">
-                  ${allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || code}</span>`).join("")}
+                  ${allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || esc(code)}</span>`).join("")}
                 </div>` : ""}
                 ${variants.length > 0 ? `
                 <div class="item-variants">
@@ -197,7 +205,7 @@ function renderItemCard(item: SnapshotCategoryItem): string {
           </article>`;
 }
 
-export function renderPublicMenu(snapshot: Snapshot): string {
+export function renderPublicMenu(snapshot: Snapshot, baseUrl?: string): string {
   const { venue, categories } = snapshot;
   const accent = venue.accentColor && venue.accentColor !== "#111111" ? venue.accentColor : null;
   const categoriesWithItems = categories.filter((cat) => cat.items.length > 0);
@@ -228,7 +236,7 @@ export function renderPublicMenu(snapshot: Snapshot): string {
         <div class="category-head">
           <h2 class="cat-title">${esc(cat.nameFa)}</h2>
         </div>
-        ${cat.items.map((item) => renderItemCard(item)).join("\n")}
+        ${cat.items.map((item) => renderItemCard(item, baseUrl)).join("\n")}
       </section>`
     )
     .join("\n");
@@ -241,9 +249,15 @@ export function renderPublicMenu(snapshot: Snapshot): string {
 <html dir="rtl" lang="fa">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#f5f0e6" />
   <meta name="format-detection" content="telephone=no" />
+  <meta name="description" content="${esc(venue.nameFa)} — منوی کافه" />
+  <meta property="og:title" content="${esc(venue.nameFa)}" />
+  <meta property="og:description" content="${esc(venue.welcomeMessage || venue.nameFa)} — منوی کافه" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  ${venue.logoUrl ? `<meta property="og:image" content="${esc(resolveUrl(venue.logoUrl, baseUrl))}" />` : ""}
   <title>${esc(venue.nameFa)} — منو</title>
   <style>
 ${FONT_FACE_DECLARATIONS}
@@ -676,7 +690,7 @@ ${FONT_FACE_DECLARATIONS}
               <h1 class="venue-name">${esc(venue.nameFa)}</h1>
             </div>
             ${venue.logoUrl ? `
-            <img class="logo-mark" src="${esc(venue.logoUrl)}" alt="" aria-hidden="true" />` : `
+            <img class="logo-mark" src="${esc(resolveUrl(venue.logoUrl, baseUrl))}" alt="" aria-hidden="true" />` : `
             <div class="qr-mark" aria-hidden="true">
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="1.5" y="1.5" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/>

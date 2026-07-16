@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mofe-menu/ordering-service/internal/middleware"
@@ -41,7 +42,7 @@ func setupTestHandler(t *testing.T) (*OrderHandler, func()) {
 		origClean()
 	}
 
-	return NewOrderHandler(db, hub), clean
+	return NewOrderHandler(db, hub, 2*time.Second, 5*time.Second), clean
 }
 
 func createTestSession() *models.Session {
@@ -267,7 +268,7 @@ func setupLifecycleTest(t *testing.T) (*OrderHandler, *sql.DB, func()) {
 	hub := NewHub()
 	go hub.Run()
 
-	handler := NewOrderHandler(db, hub)
+	handler := NewOrderHandler(db, hub, 2*time.Second, 5*time.Second)
 
 	clean := func() {
 		hub.Shutdown()

@@ -13,10 +13,6 @@ export function getCached(key: string): string | undefined {
 }
 
 export function setCache(key: string, html: string, slug: string) {
-  if (menuCache.size > 1000) {
-    const oldest = menuCache.entries().next().value;
-    if (oldest) menuCache.delete(oldest[0]);
-  }
   menuCache.set(key, { html, createdAt: Date.now() });
   if (!slugToKeys.has(slug)) {
     slugToKeys.set(slug, new Set());

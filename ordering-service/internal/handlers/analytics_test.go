@@ -40,7 +40,7 @@ func setupAnalyticsTest(t *testing.T) (*AnalyticsHandler, func()) {
 		db.Close()
 	}
 
-	return NewAnalyticsHandler(db), clean
+	return NewAnalyticsHandler(db, 5*time.Second), clean
 }
 
 func ensureTestSchema(db *sql.DB) error {

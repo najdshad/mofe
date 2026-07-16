@@ -4,6 +4,7 @@ import { logAudit } from "@/lib/audit";
 import { clearMenuCache } from "@/lib/menu-cache";
 import { renderPublicMenu } from "./renderer";
 import { getStorage } from "@/lib/storage";
+import crypto from "crypto";
 
 export async function buildPublicSnapshot(venueId: string) {
   const venue = await prisma.venue.findUnique({
@@ -85,34 +86,35 @@ export async function publishVenueMenu(venueId: string, userId: string) {
     return null;
   }
 
-  await prisma.venue.update({
-    where: { id: venueId },
-    data: {
-      publicStatus: "published",
-      publishedAt: new Date(),
-    },
-  });
-
-  const publication = await prisma.menuPublication.create({
-    data: {
-      venueId,
-      status: "published",
-      trigger: "manual_publish",
-      snapshot: JSON.stringify(snapshot),
-      createdByUserId: userId,
-      completedAt: new Date(),
-    },
-  });
+  const [publication] = await prisma.$transaction([
+    prisma.menuPublication.create({
+      data: {
+        venueId,
+        status: "published",
+        trigger: "manual_publish",
+        snapshot: JSON.stringify(snapshot),
+        createdByUserId: userId,
+        completedAt: new Date(),
+      },
+    }),
+    prisma.venue.update({
+      where: { id: venueId },
+      data: {
+        publicStatus: "published",
+        publishedAt: new Date(),
+      },
+    }),
+  ]);
 
   await trimPublications(venueId);
 
-  const pubVenue = await prisma.venue.findUnique({ where: { id: venueId }, select: { slug: true } });
-  if (pubVenue) clearMenuCache(pubVenue.slug);
+  clearMenuCache(snapshot.venue.slug);
 
   try {
     const html = renderPublicMenu(snapshot as Parameters<typeof renderPublicMenu>[0]);
     const storage = await getStorage();
-    const key = `menus/${snapshot.venue.slug}.html`;
+    const contentHash = crypto.createHash("sha256").update(JSON.stringify(snapshot)).digest("hex").slice(0, 12);
+    const key = `menus/${snapshot.venue.slug}-${contentHash}.html`;
     const result = await storage.save(key, Buffer.from(html, "utf-8"), "text/html; charset=utf-8");
     await prisma.menuPublication.update({
       where: { id: publication.id },
@@ -149,28 +151,33 @@ async function trimPublications(venueId: string) {
 }
 
 export async function unpublishVenueMenu(venueId: string, userId: string) {
-  await prisma.menuPublication.create({
-    data: {
-      venueId,
-      status: "unpublished",
-      trigger: "manual_unpublish",
-      createdByUserId: userId,
-      completedAt: new Date(),
-    },
+  const venue = await prisma.venue.findUnique({
+    where: { id: venueId },
+    select: { slug: true },
   });
 
-  await prisma.venue.update({
-    where: { id: venueId },
-    data: {
-      publicStatus: "unpublished",
-      unpublishedAt: new Date(),
-    },
-  });
+  await prisma.$transaction([
+    prisma.menuPublication.create({
+      data: {
+        venueId,
+        status: "unpublished",
+        trigger: "manual_unpublish",
+        createdByUserId: userId,
+        completedAt: new Date(),
+      },
+    }),
+    prisma.venue.update({
+      where: { id: venueId },
+      data: {
+        publicStatus: "unpublished",
+        unpublishedAt: new Date(),
+      },
+    }),
+  ]);
 
   await trimPublications(venueId);
 
-  const unpubVenue = await prisma.venue.findUnique({ where: { id: venueId }, select: { slug: true } });
-  if (unpubVenue) clearMenuCache(unpubVenue.slug);
+  if (venue) clearMenuCache(venue.slug);
 
   await logAudit({
     venueId,

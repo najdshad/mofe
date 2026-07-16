@@ -76,7 +76,7 @@ type Message struct {
 }
 
 func NewHubWithRedis(rps *RedisPubSub, cfg *config.Config) *Hub {
-	h := NewHub(cfg)
+	h := NewHubFromConfig(cfg)
 	h.redisPubSub = rps
 	h.redisCh = rps.Channel()
 	return h
@@ -94,7 +94,7 @@ const (
 	EventTableReleased      = "table_released"
 )
 
-func NewHub(cfg *config.Config) *Hub {
+func NewHub() *Hub {
 	return &Hub{
 		clients:       make(map[string]map[*Client]bool),
 		broadcast:     make(chan *Message, 256),
@@ -107,6 +107,10 @@ func NewHub(cfg *config.Config) *Hub {
 		pingPeriod:    30 * time.Second,
 		maxMessageSize: 4096,
 	}
+}
+
+func NewHubFromConfig(cfg *config.Config) *Hub {
+	return NewHub()
 }
 
 func (h *Hub) removeSlowClients(venueID string, slowClients []*Client) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { Button } from "./Button";
 
@@ -43,21 +43,29 @@ export function QRCodeExport({
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const generate = useCallback(() => {
+  useEffect(() => {
+    let cancelled = false;
+    QRCode.toDataURL(publicUrl, {
+      width: L.qrSize * 3,
+      margin: 1,
+      color: { dark: "#111111", light: "#f5f0e6" },
+    })
+      .then((url) => { if (!cancelled) setQrDataUrl(url); })
+      .catch(() => { if (!cancelled) setError("خطا در تولید QR"); });
+    return () => { cancelled = true; };
+  }, [publicUrl]);
+
+  const handleRetry = () => {
     setError(null);
     setQrDataUrl("");
     QRCode.toDataURL(publicUrl, {
-      width: L.qrSize * 3, // 600 — high-res for crisp exports
+      width: L.qrSize * 3,
       margin: 1,
       color: { dark: "#111111", light: "#f5f0e6" },
     })
       .then(setQrDataUrl)
       .catch(() => setError("خطا در تولید QR"));
-  }, [publicUrl]);
-
-  useEffect(() => {
-    generate();
-  }, [generate]);
+  };
 
   const handleDownloadPng = () => {
     if (!qrDataUrl) return;
@@ -198,7 +206,7 @@ export function QRCodeExport({
         {error ? (
           <div className="flex flex-col items-center gap-3 py-8">
             <p className="text-sm text-red-600">{error}</p>
-            <Button variant="secondary" size="sm" onClick={generate}>تلاش مجدد</Button>
+            <Button variant="secondary" size="sm" onClick={handleRetry}>تلاش مجدد</Button>
           </div>
         ) : qrDataUrl ? (
           <div
