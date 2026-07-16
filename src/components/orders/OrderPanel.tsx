@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { OrderData } from "./types";
 
@@ -30,12 +31,15 @@ export function OrderPanel({
   onSendToKitchen: () => void;
   onCompleteOrder: () => void;
   onItemStatus: (itemId: string, status: string) => void;
-  onUpdateItem: (itemId: string, quantity: number) => void;
+  onUpdateItem: (itemId: string, quantity: number, notes?: string) => void;
   onCancelItem: (itemId: string) => void;
   onReleaseTable?: () => void;
   loading?: { send?: boolean; complete?: boolean };
   error?: string | null;
 }) {
+  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
+  const [editNotesValue, setEditNotesValue] = useState("");
+
   const tableLabel = order.tableNumber ? `میز ${order.tableNumber}` : "";
   const badge = statusBadge[order.status] || statusBadge.PENDING;
   const items = order.items || [];
@@ -90,16 +94,58 @@ export function OrderPanel({
                   className="rounded-[var(--radius-control)] border border-line p-3 transition-colors hover:bg-surface/50"
                 >
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-ink">
                         {item.menuItemName}
                         {item.variantName ? ` (${item.variantName})` : ""}
                       </p>
-                      {item.notes && (
-                        <p className="mt-0.5 text-xs text-ink-muted">{item.notes}</p>
+                      {editingNotesId === item.id ? (
+                        <div className="mt-1 flex items-start gap-1">
+                          <textarea
+                            value={editNotesValue}
+                            onChange={(e) => setEditNotesValue(e.target.value)}
+                            rows={2}
+                            className="flex-1 resize-none rounded-[var(--radius-control)] border border-line bg-surface px-2 py-1 text-xs text-ink outline-none transition-colors focus:border-ink"
+                          />
+                          <div className="flex shrink-0 flex-col gap-1">
+                            <button
+                              onClick={() => {
+                                onUpdateItem(item.id, item.quantity, editNotesValue || undefined);
+                                setEditingNotesId(null);
+                              }}
+                              className="rounded border border-line px-2 py-0.5 text-[10px] text-ink transition-colors hover:bg-surface"
+                            >
+                              ذخیره
+                            </button>
+                            <button
+                              onClick={() => setEditingNotesId(null)}
+                              className="rounded border border-line px-2 py-0.5 text-[10px] text-ink-muted transition-colors hover:bg-surface"
+                            >
+                              لغو
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-0.5 flex items-start gap-1">
+                          {item.notes ? (
+                            <p className="flex-1 text-xs text-ink-muted">{item.notes}</p>
+                          ) : null}
+                          {canEdit && (
+                            <button
+                              onClick={() => {
+                                setEditingNotesId(item.id);
+                                setEditNotesValue(item.notes || "");
+                              }}
+                              className="shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px] text-ink-muted transition-colors hover:bg-surface"
+                              aria-label="ویرایش توضیحات"
+                            >
+                              {item.notes ? "ویرایش" : "+ توضیحات"}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${itemBadge.className}`}>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${itemBadge.className}`}>
                       {itemBadge.label}
                     </span>
                   </div>

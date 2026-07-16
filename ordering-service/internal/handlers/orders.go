@@ -292,7 +292,7 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	_, err = tx.ExecContext(ctx, `
 		UPDATE orders
 		SET subtotal = t.val, total = t.val
-		FROM (SELECT COALESCE(SUM(total_price), 0) AS val FROM order_items WHERE order_id = $1) t
+		FROM (SELECT COALESCE(SUM(total_price), 0) AS val FROM order_items WHERE order_id = $1 AND status != 'CANCELLED') t
 		WHERE id = $1
 	`, orderID)
 	middleware.ObserveDBQuery(time.Since(start))
@@ -737,7 +737,7 @@ func (h *OrderHandler) UpdateItem(w http.ResponseWriter, r *http.Request) {
 	_, err = tx.ExecContext(ctx, `
 		UPDATE orders
 		SET subtotal = t.val, total = t.val
-		FROM (SELECT COALESCE(SUM(total_price), 0) AS val FROM order_items WHERE order_id = $1) t
+		FROM (SELECT COALESCE(SUM(total_price), 0) AS val FROM order_items WHERE order_id = $1 AND status != 'CANCELLED') t
 		WHERE id = $1
 	`, orderID)
 	middleware.ObserveDBQuery(time.Since(start))
@@ -1271,16 +1271,83 @@ func (h *OrderHandler) CompleteOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	start = time.Now()
+	saleID := uuid.New().String()
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO "Sale" (id, venue_id, order_id, total, item_count, completed_at)
 		VALUES ($1, $2, $3, $4, $5, NOW())
 		ON CONFLICT (order_id) DO NOTHING
-	`, uuid.New().String(), session.VenueID, orderID, orderTotal, itemCount)
+	`, saleID, session.VenueID, orderID, orderTotal, itemCount)
 	middleware.ObserveDBQuery(time.Since(start))
 	if err != nil {
 		slog.Error("Failed to insert sale record", "error", err, "orderId", orderID)
 		models.WriteError(w, http.StatusInternalServerError, "Failed to record sale", "DB_ERROR")
 		return
+	}
+
+	// Insert SaleItem records for each non-cancelled order item
+	type orderItemRow struct {
+		menuItemID   string
+		menuItemName string
+		variantID    string
+		variantName  string
+		quantity     int
+		unitPrice    int
+		totalPrice   int
+		station      string
+	}
+
+	start = time.Now()
+	itemRows, err := tx.QueryContext(ctx, `
+		SELECT menu_item_id, menu_item_name, COALESCE(variant_id, ''), COALESCE(variant_name, ''), quantity, unit_price, total_price, station
+		FROM order_items
+		WHERE order_id = $1 AND status != 'CANCELLED'
+	`, orderID)
+	middleware.ObserveDBQuery(time.Since(start))
+	if err != nil {
+		slog.Error("Failed to query order items for sale items", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to read order items", "DB_ERROR")
+		return
+	}
+
+	var items []orderItemRow
+	for itemRows.Next() {
+		var row orderItemRow
+		err := itemRows.Scan(&row.menuItemID, &row.menuItemName, &row.variantID, &row.variantName, &row.quantity, &row.unitPrice, &row.totalPrice, &row.station)
+		if err != nil {
+			itemRows.Close()
+			slog.Error("Failed to scan order item row", "error", err, "orderId", orderID)
+			models.WriteError(w, http.StatusInternalServerError, "Failed to scan order item", "DB_ERROR")
+			return
+		}
+		items = append(items, row)
+	}
+	itemRows.Close()
+	if err := itemRows.Err(); err != nil {
+		slog.Error("Error iterating order item rows", "error", err, "orderId", orderID)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to iterate order items", "DB_ERROR")
+		return
+	}
+
+	for _, item := range items {
+		var variantIDPtr, variantNamePtr *string
+		if item.variantID != "" {
+			variantIDPtr = &item.variantID
+		}
+		if item.variantName != "" {
+			variantNamePtr = &item.variantName
+		}
+
+		start = time.Now()
+		_, err = tx.ExecContext(ctx, `
+			INSERT INTO "SaleItem" (id, sale_id, menu_item_id, menu_item_name, variant_id, variant_name, quantity, unit_price, total_price, station, completed_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+		`, uuid.New().String(), saleID, item.menuItemID, item.menuItemName, variantIDPtr, variantNamePtr, item.quantity, item.unitPrice, item.totalPrice, item.station)
+		middleware.ObserveDBQuery(time.Since(start))
+		if err != nil {
+			slog.Error("Failed to insert sale item record", "error", err, "orderId", orderID, "menuItemId", item.menuItemID)
+			models.WriteError(w, http.StatusInternalServerError, "Failed to record sale item", "DB_ERROR")
+			return
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

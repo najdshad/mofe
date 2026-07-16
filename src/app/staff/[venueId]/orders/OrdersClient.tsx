@@ -420,14 +420,17 @@ export function OrdersClient({
     }
   }
 
-  async function handleUpdateItem(itemId: string, quantity: number) {
+  async function handleUpdateItem(itemId: string, quantity: number, notes?: string) {
     if (!activeOrderId) return;
     setError(null);
+    const body: Record<string, unknown> = {};
+    body.quantity = quantity;
+    if (notes !== undefined) body.notes = notes;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       addToQueue(
         `/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}`,
         "PATCH",
-        { quantity },
+        body,
       );
       setError("عملیات در صف همگام‌سازی قرار گرفت");
       return;
@@ -436,7 +439,7 @@ export function OrdersClient({
       await fetchApi(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity }),
+        body: JSON.stringify(body),
       });
       await refreshOrder();
     } catch (e) {
