@@ -420,6 +420,30 @@ export function OrdersClient({
     }
   }
 
+  async function handleUpdateItem(itemId: string, quantity: number) {
+    if (!activeOrderId) return;
+    setError(null);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      addToQueue(
+        `/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}`,
+        "PATCH",
+        { quantity },
+      );
+      setError("عملیات در صف همگام‌سازی قرار گرفت");
+      return;
+    }
+    try {
+      await fetchApi(`/api/venues/${venueId}/orders/${activeOrderId}/items/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity }),
+      });
+      await refreshOrder();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا در ویرایش آیتم");
+    }
+  }
+
   async function handleCancelItem(itemId: string) {
     if (!activeOrderId) return;
     setError(null);
@@ -541,6 +565,7 @@ export function OrdersClient({
             onSendToKitchen={handleSendToKitchen}
             onCompleteOrder={handleCompleteOrder}
             onItemStatus={handleItemStatus}
+            onUpdateItem={handleUpdateItem}
             onCancelItem={handleCancelItem}
             onReleaseTable={handleReleaseTable}
             loading={{ send: loading.send, complete: loading.complete }}

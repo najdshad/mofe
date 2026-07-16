@@ -19,6 +19,7 @@ export function OrderPanel({
   onSendToKitchen,
   onCompleteOrder,
   onItemStatus,
+  onUpdateItem,
   onCancelItem,
   onReleaseTable,
   loading,
@@ -29,6 +30,7 @@ export function OrderPanel({
   onSendToKitchen: () => void;
   onCompleteOrder: () => void;
   onItemStatus: (itemId: string, status: string) => void;
+  onUpdateItem: (itemId: string, quantity: number) => void;
   onCancelItem: (itemId: string) => void;
   onReleaseTable?: () => void;
   loading?: { send?: boolean; complete?: boolean };
@@ -81,6 +83,7 @@ export function OrderPanel({
             {items.map((item) => {
               const next = nextStatus(item.status);
               const itemBadge = statusBadge[item.status] || statusBadge.PENDING;
+              const canEdit = item.status === "PENDING" || item.status === "SENT";
               return (
                 <div
                   key={item.id}
@@ -101,9 +104,40 @@ export function OrderPanel({
                     </span>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs text-ink-muted">
-                      {item.quantity} × {item.unitPrice.toLocaleString("fa-IR")}
-                    </span>
+                    {canEdit ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => onUpdateItem(item.id, item.quantity + 1)}
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-sm text-ink transition-colors hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+                          aria-label="افزایش تعداد"
+                        >
+                          +
+                        </button>
+                        <span className="min-w-[2rem] text-center text-sm font-medium text-ink" aria-live="polite">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => {
+                            if (item.quantity <= 1) {
+                              onCancelItem(item.id);
+                            } else {
+                              onUpdateItem(item.id, item.quantity - 1);
+                            }
+                          }}
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-sm text-ink transition-colors hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+                          aria-label="کاهش تعداد"
+                        >
+                          −
+                        </button>
+                        <span className="mr-2 text-xs text-ink-muted">
+                          × {item.unitPrice.toLocaleString("fa-IR")}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-ink-muted">
+                        {item.quantity} × {item.unitPrice.toLocaleString("fa-IR")}
+                      </span>
+                    )}
                     <span className="text-sm font-medium text-ink">
                       {item.totalPrice.toLocaleString("fa-IR")} تومان
                     </span>
@@ -118,7 +152,7 @@ export function OrderPanel({
                         {nextStatusLabel(next)}
                       </Button>
                     )}
-                    {(item.status === "SENT" || item.status === "PREPARING") && (
+                    {(canEdit || item.status === "PREPARING") && (
                       <Button
                         variant="tertiary"
                         size="sm"
