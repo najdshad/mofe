@@ -14,7 +14,7 @@ function createMockRequest({
   const request = new Request(url, { headers: { host } });
   (request as unknown as Record<string, unknown>).nextUrl = new URL(url);
   (request as unknown as Record<string, unknown>).cookies = {
-    get: () => (hasCookie ? { value: "session-token" } : undefined),
+    get: () => (hasCookie ? { value: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" } : undefined),
   };
   return request as unknown as NextRequest;
 }

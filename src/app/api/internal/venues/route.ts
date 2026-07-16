@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireInternalAuth, errorResponse, ApiError } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { validateCsrf } from "@/lib/csrf";
 
 export async function GET() {
   try {
@@ -22,6 +23,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     await requireInternalAuth();
+    await validateCsrf();
     const body = await request.json();
     const { nameFa, nameEn, slug, ownerEmail, welcomeMessage, timezone } = body;
 

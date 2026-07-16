@@ -3,6 +3,7 @@ import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { validateCsrf } from "@/lib/csrf";
 import path from "path";
 import fs from "fs/promises";
 
@@ -40,7 +41,13 @@ export async function PATCH(
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    await validateCsrf();
+
     const body = await request.json();
+
+    if (body.priceToman !== undefined && (typeof body.priceToman !== "number" || body.priceToman < 0)) {
+      return NextResponse.json({ error: "قیمت نامعتبر است" }, { status: 400 });
+    }
 
     const ALLOWED_FIELDS = [
       "nameFa", "nameEn", "description", "priceToman", "station",
@@ -80,6 +87,8 @@ export async function DELETE(
     const { venueId, itemId } = await params;
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    await validateCsrf();
 
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId, venueId },

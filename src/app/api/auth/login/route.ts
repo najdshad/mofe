@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createSession, verifyPassword } from "@/lib/auth";
+import { createSession, verifyPassword, destroyAllUserSessions } from "@/lib/auth";
 import { DEMO_EMAIL, ensureDemoData } from "@/lib/demo";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
@@ -57,8 +57,8 @@ export async function POST(request: Request) {
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
       return NextResponse.json(
-        { error: "حساب کاربری قفل شده است. لطفاً بعداً تلاش کنید." },
-        { status: 429 }
+        { error: "نام کاربری یا رمز عبور اشتباه است" },
+        { status: 401 }
       );
     }
 
@@ -76,6 +76,8 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
+    await destroyAllUserSessions(user.id);
 
     await createSession(user.id);
 
@@ -97,7 +99,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (e) {
+    console.error("[login] error:", e);
     return NextResponse.json(
       { error: "خطا در سرور" },
       { status: 500 }

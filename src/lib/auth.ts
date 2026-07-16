@@ -50,7 +50,7 @@ export async function createSession(userId: string) {
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     expires: expiresAt,
     path: "/",
   });
@@ -96,6 +96,13 @@ export async function getCurrentUser() {
   }
 
   return session.user;
+}
+
+export async function destroyAllUserSessions(userId: string): Promise<void> {
+  await prisma.session.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
 }
 
 export async function destroySession() {

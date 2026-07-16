@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validatePasswordResetToken, hashPassword } from "@/lib/auth";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
+import { validateCsrf } from "@/lib/csrf";
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +13,8 @@ export async function POST(request: Request) {
         { status: 429 }
       );
     }
+
+    await validateCsrf();
 
     const raw = await request.json();
     const token = (raw.token ?? "").trim();

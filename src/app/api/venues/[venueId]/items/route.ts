@@ -6,6 +6,7 @@ import { logAudit } from "@/lib/audit";
 import type { Prisma } from "@/generated/prisma/client";
 import { VALID_STATIONS } from "@/lib/constants";
 import { checkItemLimit } from "@/lib/subscription";
+import { validateCsrf } from "@/lib/csrf";
 
 export async function GET(
   request: Request,
@@ -62,6 +63,8 @@ export async function POST(
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    await validateCsrf();
+
     const limit = await checkItemLimit(venueId);
     if (!limit.allowed) {
       return NextResponse.json(
@@ -93,24 +96,26 @@ export async function POST(
       return NextResponse.json({ error: "ایستگاه معتبر وارد کنید" }, { status: 400 });
     }
 
-    const maxOrder = await prisma.menuItem.aggregate({
-      where: { venueId, categoryId: body.categoryId, deletedAt: null },
-      _max: { displayOrder: true },
-    });
+    const item = await prisma.$transaction(async (tx) => {
+      const agg = await tx.menuItem.aggregate({
+        where: { venueId, categoryId: body.categoryId, deletedAt: null },
+        _max: { displayOrder: true },
+      });
 
-    const item = await prisma.menuItem.create({
-      data: {
-        venueId,
-        categoryId: body.categoryId,
-        nameFa: body.nameFa,
-        nameEn: body.nameEn,
-        description: body.description,
-        priceToman: body.priceToman,
-        station: body.station,
-        calories: body.calories,
-        isSoldOut: body.isSoldOut ?? false,
-        displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
-      },
+      return tx.menuItem.create({
+        data: {
+          venueId,
+          categoryId: body.categoryId,
+          nameFa: body.nameFa,
+          nameEn: body.nameEn,
+          description: body.description,
+          priceToman: body.priceToman,
+          station: body.station,
+          calories: body.calories,
+          isSoldOut: body.isSoldOut ?? false,
+          displayOrder: (agg._max.displayOrder ?? 0) + 1,
+        },
+      });
     });
 
     await logAudit({

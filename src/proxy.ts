@@ -15,11 +15,15 @@ function addSecurityHeaders(response: NextResponse, pathname: string): NextRespo
   return response;
 }
 
+function isValidSessionToken(value: string): boolean {
+  return /^[0-9a-f]{64}$/.test(value);
+}
+
 function authGuard(pathname: string, sessionCookie: { value: string } | undefined, nextUrl: URL): NextResponse | null {
   if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/")) {
     return null;
   }
-  if (sessionCookie?.value) {
+  if (sessionCookie?.value && isValidSessionToken(sessionCookie.value)) {
     return null;
   }
   if (pathname.startsWith("/api/")) {

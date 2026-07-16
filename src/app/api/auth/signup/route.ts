@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     if (!name) {
       return NextResponse.json({ error: "نام الزامی است" }, { status: 400 });
     }
-    if (!email || !/^[^\s@]+@[^\s@]+$/.test(email)) {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "ایمیل نامعتبر است" }, { status: 400 });
     }
     if (!password || password.length < 8) {
@@ -72,8 +72,8 @@ export async function POST(request: Request) {
     const existingUser = await prisma.user.findUnique({ where: { email }, select: { id: true } });
     if (existingUser) {
       return NextResponse.json(
-        { error: "این ایمیل قبلاً ثبت شده است" },
-        { status: 409 }
+        { success: true, message: "ثبت‌نام با موفقیت انجام شد" },
+        { status: 200 }
       );
     }
 

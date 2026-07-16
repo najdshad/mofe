@@ -3,6 +3,7 @@ import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { validateCsrf } from "@/lib/csrf";
 
 export async function PATCH(
   request: Request,
@@ -11,7 +12,12 @@ export async function PATCH(
   try {
     const user = await requireAuth();
     const { venueId, categoryId } = await params;
-    await canManage(user.id, venueId);
+    const canManageResult = await canManage(user.id, venueId);
+    if (!canManageResult) {
+      return NextResponse.json({ error: "دسترسی محدود" }, { status: 403 });
+    }
+
+    await validateCsrf();
 
     const body = await request.json();
 
@@ -48,7 +54,12 @@ export async function DELETE(
   try {
     const user = await requireAuth();
     const { venueId, categoryId } = await params;
-    await canManage(user.id, venueId);
+    const canManageResult = await canManage(user.id, venueId);
+    if (!canManageResult) {
+      return NextResponse.json({ error: "دسترسی محدود" }, { status: 403 });
+    }
+
+    await validateCsrf();
 
     const itemCount = await prisma.menuItem.count({
       where: { categoryId, deletedAt: null },

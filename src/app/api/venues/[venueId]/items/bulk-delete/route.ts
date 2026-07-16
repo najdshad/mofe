@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { validateCsrf } from "@/lib/csrf";
 import path from "path";
 import fs from "fs/promises";
 
@@ -15,11 +16,18 @@ export async function POST(
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    await validateCsrf();
+
     const body: { itemIds: string[] } = await request.json();
 
     const items = await prisma.menuItem.findMany({
       where: { id: { in: body.itemIds }, venueId, deletedAt: null },
       select: { id: true, photoUrl: true },
+    });
+
+    const result = await prisma.menuItem.updateMany({
+      where: { id: { in: body.itemIds }, venueId, deletedAt: null },
+      data: { deletedAt: new Date() },
     });
 
     for (const item of items) {
@@ -28,11 +36,6 @@ export async function POST(
         try { await fs.unlink(filePath); } catch { /* ok */ }
       }
     }
-
-    const result = await prisma.menuItem.updateMany({
-      where: { id: { in: body.itemIds }, venueId, deletedAt: null },
-      data: { deletedAt: new Date() },
-    });
 
     return NextResponse.json({ deletedCount: result.count });
   } catch (e) {

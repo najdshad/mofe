@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { hashPassword } from "@/lib/auth";
+import { hashPassword, destroyAllUserSessions } from "@/lib/auth";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { validateCsrf } from "@/lib/csrf";
 
 export async function PATCH(
   request: Request,
@@ -17,6 +18,8 @@ export async function PATCH(
     if (membership.role !== "owner" && membership.role !== "manager") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    await validateCsrf();
 
     const target = await prisma.venueMember.findUnique({ where: { id: memberId }, select: { userId: true, role: true, venueId: true } });
     if (!target || target.venueId !== venueId) {
@@ -39,6 +42,7 @@ export async function PATCH(
       updateData.role = role;
     }
 
+    let passwordChanged = false;
     if (password) {
       if (membership.role !== "owner") {
         return NextResponse.json({ error: "Only owners can change passwords" }, { status: 403 });
@@ -52,15 +56,30 @@ export async function PATCH(
       }
 
       const passwordHash = await hashPassword(password);
-      await prisma.user.update({
-        where: { id: target.userId },
-        data: { passwordHash },
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: target.userId },
+          data: { passwordHash },
+        });
+        await tx.venueMember.update({
+          where: { id: memberId },
+          data: updateData,
+        });
+      });
+      passwordChanged = true;
+    } else {
+      await prisma.venueMember.update({
+        where: { id: memberId },
+        data: updateData,
       });
     }
 
-    const member = await prisma.venueMember.update({
+    if (passwordChanged) {
+      await destroyAllUserSessions(target.userId);
+    }
+
+    const member = await prisma.venueMember.findUnique({
       where: { id: memberId },
-      data: updateData,
       include: { user: true },
     });
 
@@ -70,7 +89,7 @@ export async function PATCH(
       action: "member.update",
       entityType: "member",
       entityId: memberId,
-      metadata: { changes: Object.keys(updateData) },
+      metadata: { changes: Object.keys({ ...updateData, ...(password ? { password: true } : {}) }) },
     });
 
     return NextResponse.json(member);
@@ -91,6 +110,8 @@ export async function DELETE(
     if (membership.role !== "owner" && membership.role !== "manager") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    await validateCsrf();
 
     const target = await prisma.venueMember.findUnique({ where: { id: memberId }, select: { userId: true, role: true, venueId: true } });
     if (!target || target.venueId !== venueId) {

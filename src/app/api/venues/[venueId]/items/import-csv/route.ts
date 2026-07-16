@@ -91,7 +91,7 @@ export async function POST(
   }
 
   const limit = await checkItemLimit(venueId);
-  if (limit.max !== -1 && dataRows.length > limit.max) {
+  if (limit.max !== -1 && (limit.current + dataRows.length) > limit.max) {
     return NextResponse.json(
       {
         error: `تعداد آیتم‌های CSV (${dataRows.length}) بیش از حداکثر مجاز (${limit.max}) است. لطفاً اشتراک خود را ارتقا دهید.`,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { validateCsrf } from "@/lib/csrf";
 
 export async function PATCH(
   request: Request,
@@ -11,6 +12,8 @@ export async function PATCH(
     const user = await requireAuth();
     const { venueId, tableId } = await params;
     await requireVenueAccess(user.id, venueId);
+
+    await validateCsrf();
 
     const body = await request.json();
     const table = await prisma.venueTable.findFirst({
@@ -45,6 +48,8 @@ export async function PUT(
     const { venueId, tableId } = await params;
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    await validateCsrf();
 
     const body = await request.json();
     const table = await prisma.venueTable.findFirst({
@@ -91,6 +96,8 @@ export async function DELETE(
     const hasAccess = await canManage(user.id, venueId);
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    await validateCsrf();
+
     const table = await prisma.venueTable.findFirst({
       where: { id: tableId, venueId },
     });
@@ -102,7 +109,7 @@ export async function DELETE(
       data: { isActive: false },
     });
 
-    return NextResponse.json({ status: "deleted" });
+    return NextResponse.json({ success: true });
   } catch (e) {
     return errorResponse(e);
   }
