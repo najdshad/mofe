@@ -1258,18 +1258,48 @@ func (h *OrderHandler) ReleaseTable(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 
-	var activeCount int
-	err := h.db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM orders
-		WHERE venue_id = $1 AND table_number = $2 AND status NOT IN ('COMPLETED', 'CANCELLED')
-	`, session.VenueID, tableNumber).Scan(&activeCount)
+	tx, err := h.db.BeginTx(ctx, nil)
 	if err != nil {
-		slog.Error("Failed to check active orders for table", "error", err, "tableNumber", tableNumber)
+		slog.Error("Failed to begin transaction", "error", err)
 		models.WriteError(w, http.StatusInternalServerError, "Database error", "DB_ERROR")
 		return
 	}
-	if activeCount > 0 {
-		models.WriteError(w, http.StatusBadRequest, "Table has active orders", "TABLE_HAS_ACTIVE_ORDERS")
+	defer tx.Rollback()
+
+	start := time.Now()
+	result, err := tx.ExecContext(ctx, `
+		UPDATE order_items
+		SET status = 'CANCELLED'
+		WHERE order_id IN (
+			SELECT id FROM orders
+			WHERE venue_id = $1 AND table_number = $2 AND status NOT IN ('COMPLETED', 'CANCELLED')
+		)
+	`, session.VenueID, tableNumber)
+	middleware.ObserveDBQuery(time.Since(start))
+	if err != nil {
+		slog.Error("Failed to cancel order items", "error", err, "tableNumber", tableNumber)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to cancel order items", "DB_ERROR")
+		return
+	}
+	cancelledItems, _ := result.RowsAffected()
+
+	start = time.Now()
+	result, err = tx.ExecContext(ctx, `
+		UPDATE orders
+		SET status = 'CANCELLED', cancelled_at = NOW()
+		WHERE venue_id = $1 AND table_number = $2 AND status NOT IN ('COMPLETED', 'CANCELLED')
+	`, session.VenueID, tableNumber)
+	middleware.ObserveDBQuery(time.Since(start))
+	if err != nil {
+		slog.Error("Failed to cancel orders", "error", err, "tableNumber", tableNumber)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to cancel orders", "DB_ERROR")
+		return
+	}
+	cancelledOrders, _ := result.RowsAffected()
+
+	if err := tx.Commit(); err != nil {
+		slog.Error("Failed to commit transaction", "error", err)
+		models.WriteError(w, http.StatusInternalServerError, "Failed to commit", "DB_ERROR")
 		return
 	}
 
@@ -1281,6 +1311,8 @@ func (h *OrderHandler) ReleaseTable(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Table released",
 		"tableNumber", tableNumber,
 		"venueId", session.VenueID,
+		"cancelledOrders", cancelledOrders,
+		"cancelledItems", cancelledItems,
 	)
 
 	w.WriteHeader(http.StatusOK)
