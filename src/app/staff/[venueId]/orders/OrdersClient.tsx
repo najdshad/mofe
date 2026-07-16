@@ -84,7 +84,9 @@ export function OrdersClient({
           if (isNaN(tn)) continue;
 
           if (order.status === "COMPLETED") {
-            statusMap.set(tn, "settled");
+            if (statusMap.get(tn) !== "free") {
+              statusMap.set(tn, "settled");
+            }
           } else if (order.status !== "CANCELLED") {
             orderMap.set(order.id, order);
             statusMap.set(tn, "active");
