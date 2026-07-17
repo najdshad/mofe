@@ -3,6 +3,28 @@
 import { Button } from "@/components/ui/Button";
 import type { TableInfo } from "./types";
 
+const tagColors = [
+  ["bg-green-50", "border-green-300", "text-green-700"],
+  ["bg-blue-50", "border-blue-300", "text-blue-700"],
+  ["bg-amber-50", "border-amber-300", "text-amber-700"],
+  ["bg-purple-50", "border-purple-300", "text-purple-700"],
+  ["bg-rose-50", "border-rose-300", "text-rose-700"],
+  ["bg-cyan-50", "border-cyan-300", "text-cyan-700"],
+  ["bg-orange-50", "border-orange-300", "text-orange-700"],
+  ["bg-teal-50", "border-teal-300", "text-teal-700"],
+] as const;
+
+const colorCache = new Map<string, typeof tagColors[number]>();
+
+function tagColor(tag: string) {
+  if (!colorCache.has(tag)) {
+    let h = 0;
+    for (let i = 0; i < tag.length; i++) h = tag.charCodeAt(i) + ((h << 5) - h);
+    colorCache.set(tag, tagColors[(h & 0x7fffffff) % tagColors.length]);
+  }
+  return colorCache.get(tag)!;
+}
+
 export function TableGrid({
   tables,
   selectedTable,
@@ -20,6 +42,7 @@ export function TableGrid({
   onDelete?: (id: string) => void;
   onAddTable?: () => void;
 }) {
+
   const statusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -50,32 +73,35 @@ export function TableGrid({
           <button
             aria-label={`میز ${t.tableNumber}`}
             onClick={() => onSelectTable(t.tableNumber)}
-            className={`flex w-full flex-col items-center justify-center gap-2 rounded-[var(--radius-card)] border-2 p-6 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 ${
+            className={`flex w-full flex-col items-center rounded-[var(--radius-card)] border-2 p-4 pt-3 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 ${
               selectedTable === t.tableNumber
                 ? "border-ink bg-surface shadow-sm"
                 : "border-line bg-paper hover:border-ink/50 hover:shadow-sm"
             }`}
           >
+            {t.tags && t.tags.length > 0 && (
+              <div className="flex w-full flex-wrap justify-center gap-1 mb-2">
+                {t.tags.map((tag) => {
+                  const [bg, border, text] = tagColor(tag);
+                  return (
+                    <span
+                      key={tag}
+                      className={`rounded-full border px-2 py-[1px] text-[10px] leading-relaxed ${bg} ${border} ${text}`}
+                    >
+                      {tag}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
             <span className="text-3xl font-serif text-ink-strong">
               {t.tableNumber}
             </span>
             {t.label && (
-              <span className="text-xs text-ink-muted">{t.label}</span>
-            )}
-            {t.tags && t.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {t.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-line bg-surface px-1.5 py-0.5 text-[10px] text-ink-muted"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+              <span className="mt-0.5 text-xs text-ink-muted">{t.label}</span>
             )}
             <span
-              className={`h-3 w-3 rounded-full transition-colors duration-300 ${statusColor(t.status)}`}
+              className={`mt-2 h-3 w-3 rounded-full transition-colors duration-300 ${statusColor(t.status)}`}
             />
           </button>
           {editMode && (
