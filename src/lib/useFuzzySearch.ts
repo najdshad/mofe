@@ -2,9 +2,16 @@ import { useState, useEffect, useMemo } from "react";
 import Fuse from "fuse.js";
 import type { TableInfo, OrderData } from "@/components/orders/types";
 
+const persianDigits = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+
+function toPersianNum(n: number): string {
+  return String(n).replace(/[0-9]/g, (d) => persianDigits[+d]);
+}
+
 interface FuseDocument {
   tableNumber: string;
   label: string;
+  tags: string[];
   menuItemNames: string[];
   waiterNames: string[];
   itemNotes: string[];
@@ -36,8 +43,9 @@ function buildDocuments(
     }
 
     return {
-      tableNumber: String(table.tableNumber),
+      tableNumber: `${table.tableNumber} ${toPersianNum(table.tableNumber)}`,
       label: table.label ?? "",
+      tags: table.tags ?? [],
       menuItemNames,
       waiterNames,
       itemNotes,
@@ -68,7 +76,8 @@ export function useFuzzySearch(
     const fuse = new Fuse<FuseDocument>(documents, {
       keys: [
         { name: "tableNumber", weight: 0.4 },
-        { name: "label", weight: 0.4 },
+        { name: "label", weight: 0.25 },
+        { name: "tags", weight: 0.25 },
         { name: "menuItemNames", weight: 0.1 },
         { name: "waiterNames", weight: 0.05 },
         { name: "itemNotes", weight: 0.05 },
