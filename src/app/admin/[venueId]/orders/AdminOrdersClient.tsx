@@ -8,6 +8,15 @@ import { Input } from "@/components/ui/Input";
 import { TagInput } from "@/components/orders/TagInput";
 import type { TableData, CategoryData } from "@/components/orders/types";
 
+const CSRF_COOKIE = "mofe_csrf";
+const CSRF_HEADER = "X-CSRF-Token";
+
+function csrfHeaders(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const match = document.cookie.match(new RegExp(`(^| )${CSRF_COOKIE}=([^;]+)`));
+  return match ? { [CSRF_HEADER]: match[2] } : {};
+}
+
 export function AdminOrdersClient({
   venueId,
   tables: initialTables,
@@ -67,7 +76,7 @@ export function AdminOrdersClient({
       if (modalMode === "add") {
         const res = await fetch(`/api/venues/${venueId}/tables`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...csrfHeaders() },
           body: JSON.stringify({ number: num, label: modalLabel || undefined, tags: modalTags }),
         });
         if (!res.ok) return;
@@ -88,7 +97,7 @@ export function AdminOrdersClient({
       } else if (modalMode === "edit" && editingTableId) {
         const res = await fetch(`/api/venues/${venueId}/tables/${editingTableId}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...csrfHeaders() },
           body: JSON.stringify({ number: num, label: modalLabel || null, tags: modalTags }),
         });
         if (!res.ok) return;
@@ -113,6 +122,7 @@ export function AdminOrdersClient({
     try {
       const res = await fetch(`/api/venues/${venueId}/tables/${tableId}`, {
         method: "DELETE",
+        headers: { ...csrfHeaders() },
       });
       if (!res.ok) return;
       setTables((prev) => prev.filter((t) => t.id !== tableId));

@@ -12,6 +12,15 @@ import { addToQueue } from "@/lib/offline-queue";
 import { useOfflineSync } from "@/lib/useOfflineSync";
 import type { TableInfo, OrderData, CategoryData, TableData } from "@/components/orders/types";
 
+const CSRF_COOKIE = "mofe_csrf";
+const CSRF_HEADER = "X-CSRF-Token";
+
+function csrfHeaders(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const match = document.cookie.match(new RegExp(`(^| )${CSRF_COOKIE}=([^;]+)`));
+  return match ? { [CSRF_HEADER]: match[2] } : {};
+}
+
 type TableStatus = "free" | "active" | "ready" | "settled";
 
 export function OrdersClient({
@@ -54,7 +63,7 @@ export function OrdersClient({
     try {
       await fetch(`/api/venues/${venueId}/tables/${table.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...csrfHeaders() },
         body: JSON.stringify({ status: status.toUpperCase() }),
       });
     } catch {
@@ -530,7 +539,7 @@ export function OrdersClient({
           {isOnline && !isSyncing && pendingCount > 0 && `${pendingCount} عملیات در انتظار همگام‌سازی`}
         </div>
       )}
-      <div className="flex flex-col gap-3">
+      <div className="mb-4 flex flex-col gap-3">
         <input
           type="text"
           value={searchQuery}
