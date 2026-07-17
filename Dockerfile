@@ -16,7 +16,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # OpenSSL required by Prisma engine binary
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl postgresql-client wget && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs

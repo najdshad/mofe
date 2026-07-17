@@ -37,7 +37,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r => process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -51,6 +51,7 @@ services:
       DATABASE_URL: postgresql://mofe:mofe@db:5432/mofe?sslmode=disable
       PORT: 8080
       SESSION_COOKIE_NAME: mofe_session
+      REDIS_URL: redis://redis:6379
     depends_on:
       db:
         condition: service_healthy
