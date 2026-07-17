@@ -544,7 +544,7 @@ export function OrdersClient({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="🔍  جستجوی میز، آیتم، یا پیش‌خدمت..."
+          placeholder="جستجو..."
           aria-label="جستجوی میز و سفارش"
           className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-ink focus-visible:ring-2 focus-visible:ring-ink/20"
         />
