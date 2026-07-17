@@ -1,6 +1,6 @@
 # AGENTS.MD — Agentic Development Guide for mofé
 
-> **🚧 Development Status:** This project is in active development and has not been deployed to production. No real payment processing is active — Zarinpal runs in sandbox/mock mode. The subscription system (Plan/Subscription/Invoice models, billing UI, feature gating) is implemented but untested with real payments.
+> **🚧 Development Status:** This project is in active development and has not been deployed to production. No real payment processing is active — Zarinpal runs in sandbox/mock mode. The subscription system (Plan/Subscription/Invoice/Coupon models, billing UI, payment page, feature gating) is implemented but untested with real payments.
 
 ## Project Overview
 
@@ -11,7 +11,7 @@ Persian-first cafe menu management service. Next.js 16 (App Router) + TypeScript
 ```bash
 npm run dev          # Dev server (localhost:3000)
 npm run build        # Production build (verify after every change)
-npm test             # Vitest run (374 tests; use --no-file-parallelism for reliable runs)
+npm test             # Vitest run (475 tests; use --no-file-parallelism for reliable runs)
 npm run test:watch   # Watch mode
 npm run typecheck    # tsc --noEmit
 npm run lint         # ESLint
@@ -26,6 +26,7 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 - **⚠ NEVER run `npx prisma db push --accept-data-loss`** — it destroys Go-managed tables (`orders`, `order_items`). The `@@ignore` Prisma models prevent table drops but column type mismatches (ENUM→TEXT) can still destroy NOT NULL constraints, defaults, and FKs.
 - **Safe `prisma db push` workflow:** `psql "${DATABASE_URL}" -c "DROP TABLE IF EXISTS schema_migrations;" && npx prisma db push && psql "${DATABASE_URL}" -c "CREATE TABLE IF NOT EXISTS schema_migrations (version bigint PRIMARY KEY, dirty boolean NOT NULL); INSERT INTO schema_migrations (version, dirty) VALUES (4, false) ON CONFLICT (version) DO NOTHING;"`
 - **After `prisma db push`**, the Go ordering service automatically recreates dropped indexes and FK constraints on startup (`verifyTables()` + unconditionally `CREATE INDEX IF NOT EXISTS`).
+- **⚠ Prisma model count:** 25 models — 18 Prisma-managed + 2 Go-managed `@@ignore` (`orders`, `order_items`) + 5 billing models (`SaleItem`, `Plan`, `Subscription`, `Invoice`, `Coupon`).
 
 ### Internal Auth
 - `requireInternalAuth()` from `@/lib/api-helpers` — checks `user.role === "internal"` in internal API routes
@@ -37,6 +38,49 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 - API: `GET|POST /api/internal/users`, `GET|POST /api/internal/venues`
 - Auth: every handler calls `requireInternalAuth()`; page layout checks `role === "internal"`
 - Seed: `admin@mofe.ir` / `admin1234`
+
+### CSRF Protection
+- **Middleware:** `csrf.ts` in `src/lib/` — generates 64-char hex tokens via `crypto.randomBytes`
+- **Cookie/Header pattern:** CSRF token set as `mofe_csrf` cookie in proxy middleware + sent in `X-CSRF-Token` header on mutations
+- **Protection:** All state-changing API routes (`POST`, `PATCH`, `PUT`, `DELETE`) validate token match
+- **Go service:** Parallel CSRF middleware in `ordering-service/internal/middleware/csrf.go`
+- **Tests:** `src/__tests__/lib/csrf.test.ts` (6 tests)
+
+### Offline Queue
+- **Client-side queue:** `src/lib/offline-queue.ts` persists operations to `localStorage` under `mofe_offline_queue` key
+- **Operations stored:** `{ id, method, url, body?, tempOrderId? }` — supports POST/GET/DELETE
+- **Replay:** `replayQueue()` sends queued operations in order, replaces `tempOrderId` in subsequent URLs with returned `data.id`
+- **React hook:** `useOfflineSync()` from `src/lib/useOfflineSync.ts` exposes `queueLength`, `isReplaying`, `replay()`
+- **Tests:** `src/__tests__/lib/offline-queue.test.ts` (27 tests)
+
+### Table Tags
+- **Tags:** Array of strings on `VenueTable.tags` — color-coded pills displayed above table cards
+- **TagInput component:** `src/components/orders/TagInput.tsx` — shows existing tags as suggestions on focus, `Enter` to add, `x` to remove
+- **TableTagFilter:** `src/components/orders/TableTagFilter.tsx` — filter tables by selected tags
+- **Colors:** 10 rotating color schemes from `src/lib/tag-colors.ts`
+- **API:** Tags included in `PATCH /api/venues/[id]/tables/[tableId]` body
+
+### Fuzzy Search
+- **Hook:** `useFuzzySearch()` from `src/lib/useFuzzySearch.ts` — uses Fuse.js with Persian digit support
+- **Matches:** Persian digits normalized to ASCII, includes `nameFa`, `tags`, and table number in search
+
+### Billing / Subscription (`/admin/[venueId]/billing`)
+- **Models:** `Plan`, `Subscription`, `Invoice`, `Coupon` — full billing system
+- **Plans:** Basic (free, 50 items, 10 tables), Pro (499K toman/mo, 200 items, 30 tables), Premium (999K toman/mo, unlimited)
+- **Trials:** New venues get free trial (14 days for Basic, 7 for Pro/Premium)
+- **Coupons:** Percentage-based discounts with usage limits and expiry; validated via `POST /api/billing/coupons/validate`
+- **Payment page:** `/admin/[venueId]/billing/pay` with coupon input, invoice summary, Zarinpal sandbox redirect
+- **Feature gating:** `checkItemLimit()` / `checkTableLimit()` enforce plan caps; `requireActiveSubscription()` throws 402
+- **Plan changes:** Prorated upgrades, immediate start for free-to-paid, downgrades deferred to period end
+- **APIs:** `GET /api/billing/plans`, `GET|POST /api/billing/subscription`, `GET /api/billing/invoices`, `POST /api/billing/payments`, `POST /api/billing/coupons/validate`, `GET /api/billing/callback`
+- **Tests:** `src/__tests__/api/billing.test.ts` (53 tests), `src/__tests__/lib/subscription.test.ts` (37 tests), `src/__tests__/lib/zarinpal.test.ts` (13 tests)
+
+### SaleItem Model
+- **`SaleItem`** stores individual item data per completed order (saleId, menuItemId, nameFa, quantity, unitPrice, station, categoryNameFa)
+- Go ordering service inserts into `"SaleItem"` alongside `"Sale"` on order completion
+- **Item-level aggregation:** `GET /api/venues/[venueId]/sales/items` — returns top items, hourly revenue breakdown, category breakdown
+- **CSV export:** `GET /api/venues/[venueId]/sales/export` — downloads sales data as CSV with formula injection protection
+- **Tests:** `src/__tests__/api/sales-items.test.ts` (12 tests), `src/__tests__/api/sales-export.test.ts` (12 tests)
 
 ### Sales Dashboard (`/admin/[venueId]/sales`)
 - `Sale` model stores completed order data (venueId, orderId, total, itemCount, completedAt)
@@ -68,7 +112,7 @@ cd ordering-service && DATABASE_URL="${DATABASE_URL}?sslmode=disable" go run ./c
 
 1. `npm run build` — verify compilation succeeds
 2. `npm run typecheck` — TypeScript checks pass
-3. `npm test` — all 374 tests pass (3 pre-existing billing/zarinpal failures tolerated)
+3. `npm test` — all 475 tests pass (3 pre-existing billing/zarinpal failures tolerated)
 4. `npm run lint` — ESLint clean
 
 ## Critical Context & Gotchas
@@ -146,6 +190,13 @@ All use `forwardRef` where applicable. Variants:
 - **Panel:** `title`, `subtitle`, children
 - **QRCodeExport:** client-side QR with canvas PNG + print PDF
 
+### Order Components (`src/components/orders/`)
+- **TableGrid:** Interactive table grid with occupancy/status display, tag pills
+- **OrderPanel:** Order detail panel with item actions (quantity +/-, notes, remove)
+- **MenuItemBrowser:** Modal item browser for adding items to orders
+- **TableTagFilter:** Filter tables by selected tag chips
+- **TagInput:** Tag entry with suggestions, Enter to add, x to remove
+
 ### Testing
 - **Framework:** Vitest v4
 - **Config:** `vitest.config.ts` — `@/` path alias, `environment: "node"`, `globals: true`
@@ -192,6 +243,7 @@ go mod tidy             # Sync dependencies
 | Config | `ordering-service/internal/config/config.go` |
 | DB pool | `ordering-service/internal/database/postgres.go` |
 | Auth middleware | `ordering-service/internal/middleware/auth.go` |
+| CSRF middleware | `ordering-service/internal/middleware/csrf.go` |
 | Rate limiter | `ordering-service/internal/middleware/ratelimit.go` |
 | Prometheus metrics | `ordering-service/internal/middleware/metrics.go` |
 | Order handlers | `ordering-service/internal/handlers/orders.go` |
@@ -199,7 +251,7 @@ go mod tidy             # Sync dependencies
 | Redis pub/sub | `ordering-service/internal/handlers/redis.go` |
 | Analytics handler | `ordering-service/internal/handlers/analytics.go` |
 | Domain types | `ordering-service/internal/models/` |
-| Migration (up) | `ordering-service/migrations/001_add_orders_tables.up.sql` |
+| Migrations | `ordering-service/migrations/001_add_orders_tables.up.sql`, `002_add_completed_status.up.sql`, `004_change_station_to_text.up.sql` |
 | Dockerfile | `ordering-service/Dockerfile` |
 | Tests | `ordering-service/internal/handlers/orders_test.go` + `analytics_test.go` |
 
@@ -261,12 +313,23 @@ go mod tidy             # Sync dependencies
 | Auth proxy | `src/proxy.ts` |
 | Rate limiter | `src/lib/rate-limit.ts` |
 | Mailer | `src/lib/mailer.ts` |
+| CSRF | `src/lib/csrf.ts` |
+| Offline queue | `src/lib/offline-queue.ts` |
+| Subscription helpers | `src/lib/subscription.ts` |
+| Zarinpal | `src/lib/zarinpal.ts` |
+| Image compression | `src/lib/compress-image.ts` |
+| Menu cache | `src/lib/menu-cache.ts` |
+| Tag colors | `src/lib/tag-colors.ts` |
+| Fuzzy search hook | `src/lib/useFuzzySearch.ts` |
+| Offline sync hook | `src/lib/useOfflineSync.ts` |
+| WebSocket hook | `src/lib/useOrderWebSocket.ts` |
 | Sales API tests | `src/__tests__/api/sales.test.ts` |
 | SalesClient helper tests | `src/__tests__/components/SalesClient.test.ts` |
 | Photo upload API | `src/app/api/venues/[venueId]/items/[itemId]/photo/route.ts` |
 | Storage | `src/lib/storage.ts` |
 | Design tokens + fonts | `src/app/globals.css` |
 | UI components | `src/components/ui/` |
+| Order components | `src/components/orders/` |
 | Tests | `src/__tests__/` |
 | Font files | `public/fonts/` |
 | Prisma client | `src/generated/prisma/` |

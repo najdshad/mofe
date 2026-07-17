@@ -18,11 +18,13 @@ An orientation for developers working on this project. Covers directory layout, 
 ```
 mofe-menu/
 ├── prisma/
-│   ├── schema.prisma      # 20 models (18 Prisma-managed + 2 Go-managed @@ignore):
+│   ├── schema.prisma      # 25 models (18 Prisma-managed + 2 Go-managed @@ignore + 5 billing):
 │   │                      #   User, Venue, VenueMember, Category, MenuItem, Asset,
 │   │                      #   MenuPublication, Domain, StationSchedule, MenuItemVariant,
-│   │                      #   MenuItemPrice, MenuItemAllergen, VenueTable, Sale,
-│   │                      #   AuditLog, PasswordResetToken, RateLimitEntry, Session
+│   │                      #   MenuItemPrice, MenuItemAllergen, VenueTable, Sale, SaleItem,
+│   │                      #   AuditLog, PasswordResetToken, RateLimitEntry, Session,
+│   │                      #   Plan, Subscription, Invoice, Coupon,
+│   │                      #   orders (ignored), order_items (ignored)
 │   ├── migrations/         # Prisma migration history
 │   └── seed.ts            # Demo data seeder (uses src/lib/demo.ts helpers)
 ├── public/
@@ -32,10 +34,10 @@ mofe-menu/
 │   ├── import-csv.ts      # CLI tool to import items from CSV
 │   └── seed-sales.ts      # Seed 60 days of synthetic sales data
 ├── src/
-│   ├── __tests__/           # 17 files, 374 tests (371 pass)
-│   │   ├── api/            # Integration tests (114 tests — auth, CRUD, publish, permissions, table CRUD, table status, sales, sales aggregation, concurrent, slug)
-│   │   ├── lib/            # Unit tests — auth (8) + renderer (48) + publication (14) + rate-limit (8) + ordering-proxy (12) + api-helpers (12) + config (8) + offline-queue (6)
-│   │   ├── components/     # Component helper tests — SalesClient (10)
+│   ├── __tests__/           # 24 files, 475 tests (472 pass)
+│   │   ├── api/            # Integration tests (auth, billing, categories, concurrent, integration, items, menu-slug, photo, sales, sales-export, sales-items)
+│   │   ├── lib/            # Unit tests — auth + csrf + offline-queue + ordering-proxy + rate-limit + subscription + zarinpal + renderer + publication + api-helpers + config
+│   │   ├── components/     # Component helper tests — SalesClient (13)
 │   │   ├── proxy/          # Proxy routing tests (9 tests)
 │   │   ├── global-setup.ts # Creates test DB before all tests, cleans up after
 │   │   ├── setup.ts        # Per-file setup (NODE_ENV=test)
@@ -47,8 +49,9 @@ mofe-menu/
 │   │   │   │   ├── menu/          # Menu management + QR/publish editor (Server + MenuClient)
 │   │   │   │   ├── publications/  # Publication history (Server + PublicationsClient)
 │   │   │   │   ├── settings/      # Venue settings + member management (Server + SettingsClient)
-│   │   │   │   ├── sales/         # Sales dashboard (Server + SalesClient)
-│   │   │   │   └── orders/       # Admin order management (Server + AdminOrdersClient)
+│   │   │   │   ├── sales/         # Sales dashboard (Server + SalesClient, 4 tabbed views)
+│   │   │   │   ├── orders/       # Admin order management (Server + AdminOrdersClient)
+│   │   │   │   └── billing/      # Billing/subscription management (Server + BillingClient)
 │   │   │   └── venues/
 │   │   │       └── new/           # (empty, reserved for venue creation)
 │   │   ├── internal/              # Internal mofé team tool
@@ -59,6 +62,7 @@ mofe-menu/
 │   │   ├── api/
 │   │   │   ├── health/             # Health check endpoint
 │   │   │   ├── auth/               # signup, login, logout, password-reset
+│   │   │   ├── billing/            # plans, subscription, invoices, payments, coupons, callback
 │   │   │   ├── me/                 # current user
 │   │   │   ├── internal/           # Internal API endpoints
 │   │   │   │   ├── users/          # GET|POST — list/create users
@@ -66,7 +70,7 @@ mofe-menu/
 │   │   │   └── venues/
 │   │   │       └── [venueId]/
 │   │   │           ├── categories/     # CRUD + reorder
-│   │   │           ├── items/          # CRUD + reorder + bulk-visibility + import/export CSV + photo + variants + allergens
+│   │   │           ├── items/          # CRUD + reorder + bulk-visibility + bulk-delete + import/export CSV + photo + variants + prices + allergens
 │   │   │           ├── members/        # List + create/delete members
 │   │   │           ├── publications/   # List publications
 │   │   │           ├── publish/        # Publish venue menu
@@ -74,9 +78,9 @@ mofe-menu/
 │   │   │           ├── public-preview/ # Draft data for live preview
 │   │   │           ├── logo/           # Upload/delete venue logo
 │   │   │           ├── schedules/      # Station schedules CRUD
-│   │   │           ├── sales/          # Sales aggregation API
+│   │   │           ├── sales/          # Sales aggregation + items + export API
 │   │   │           ├── orders/         # Order proxy routes (list, create, get, items, send, complete, release-table)
-│   │   │           └── tables/         # Table CRUD
+│   │   │           └── tables/         # Table CRUD (with tags support)
 │   │   ├── staff/
 │   │   │   └── [venueId]/
 │   │   │       └── orders/    # Staff ordering page (Server + OrdersClient)
@@ -134,7 +138,7 @@ mofe-menu/
 │   │   ├── config/         # Env-based config (DB, port, Redis)
 │   │   ├── database/       # pgx connection pool
 │   │   ├── models/         # Domain types (Order, Session, ErrorResponse)
-│   │   ├── middleware/     # Auth, CORS, logging, recovery, metrics, ratelimit
+│   │   ├── middleware/     # Auth, CORS, CSRF, logging, recovery, metrics, ratelimit
 │   │   └── handlers/       # REST endpoints + WebSocket hub + analytics + Redis pub/sub
 │   │       ├── orders.go      # CRUD order/items, send/complete/release-table
 │   │       ├── orders_test.go # Integration tests (37+ pass, 6 pre-existing failures)
@@ -190,7 +194,7 @@ Admin UI → REST API /api/orders (auth via mofe_session cookie)
                               Redis pub/sub → cross-instance relay
 ```
 
-Middleware stack: `RequestID → RealIP → Logger → Recoverer → CORS → MetricsMiddleware → RateLimiter → AuthMiddleware (per-route)`
+Middleware stack: `RequestID → RealIP → Logger → Recoverer → CORS → MetricsMiddleware → RateLimiter → CSRF → AuthMiddleware (per-route)`
 
 ### Internal Tool Flow
 
@@ -280,7 +284,7 @@ Enforced via `requireRole(userId, venueId, allowedRoles)` or `canManageCategorie
 - Vitest v4 with `singleFork` pool
 - `global-setup.ts` pushes schema to PostgreSQL test DB via `prisma db push`
 - `helpers.ts` provides `cleanTestData()` + `seedTestData()` + `seedTestPlans()` + `seedTestSubscription()` + `seedTestSale()`
-- Run: `npm test` (vitest run), `npm run test:watch`
+- Run: `npm test` (vitest run — 475 tests, 3 pre-existing billing/zarinpal failures tolerated), `npm run test:watch`
 
 ### Public Menu Renderer
 
@@ -328,9 +332,16 @@ npm run db:migrate
 npx prisma migrate dev --name describe_change
 ```
 
+### Added: signup page and billing
+- `/signup` page with self-registration form (`RegistrationForm.tsx` component)
+- `/admin/[venueId]/billing` for plan management and subscription
+- `/admin/[venueId]/billing/pay` payment page with coupon input and Zarinpal sandbox redirect
+- Feature gating via `checkItemLimit()` / `checkTableLimit()` / `requireActiveSubscription()`
+- Coupon validation via `POST /api/billing/coupons/validate`
+
 ### Running tests
 ```bash
-npm test                # Run all 374 tests (3 pre-existing billing/zarinpal failures tolerated)
+npm test                # Run all 475 tests (3 pre-existing billing/zarinpal failures tolerated)
 npm run test:watch      # Watch mode
 ```
 
