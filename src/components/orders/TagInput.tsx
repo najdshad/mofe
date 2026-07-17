@@ -21,13 +21,13 @@ export function TagInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const available = existingTags.filter((t) => !tags.includes(t));
+
   const filtered = input.trim()
-    ? existingTags.filter(
-        (t) =>
-          !tags.includes(t) &&
-          t.toLowerCase().includes(input.trim().toLowerCase()),
+    ? available.filter((t) =>
+        t.toLowerCase().includes(input.trim().toLowerCase()),
       )
-    : [];
+    : available;
 
   const addTag = useCallback(
     (tag: string) => {
