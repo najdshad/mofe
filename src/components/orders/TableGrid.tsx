@@ -1,9 +1,28 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
 import type { TableInfo } from "./types";
 
+const tagColors = [
+  ["bg-green-50", "border-green-300", "text-green-700"],
+  ["bg-blue-50", "border-blue-300", "text-blue-700"],
+  ["bg-amber-50", "border-amber-300", "text-amber-700"],
+  ["bg-purple-50", "border-purple-300", "text-purple-700"],
+  ["bg-rose-50", "border-rose-300", "text-rose-700"],
+  ["bg-cyan-50", "border-cyan-300", "text-cyan-700"],
+  ["bg-orange-50", "border-orange-300", "text-orange-700"],
+  ["bg-teal-50", "border-teal-300", "text-teal-700"],
+] as const;
 
+const colorCache = new Map<string, typeof tagColors[number]>();
+
+function tagColor(tag: string) {
+  if (!colorCache.has(tag)) {
+    let h = 0;
+    for (let i = 0; i < tag.length; i++) h = tag.charCodeAt(i) + ((h << 5) - h);
+    colorCache.set(tag, tagColors[(h & 0x7fffffff) % tagColors.length]);
+  }
+  return colorCache.get(tag)!;
+}
 
 export function TableGrid({
   tables,
@@ -22,7 +41,6 @@ export function TableGrid({
   onDelete?: (id: string) => void;
   onAddTable?: () => void;
 }) {
-
   const statusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -60,15 +78,18 @@ export function TableGrid({
             }`}
           >
             {t.tags && t.tags.length > 0 && (
-              <div className="flex w-full flex-wrap justify-center gap-1 mb-2">
-                {t.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-line bg-surface px-2 py-[1px] text-[10px] leading-relaxed text-ink-muted"
-                  >
-                    {tag}
-                  </span>
-                ))}
+              <div className="mb-2 flex w-full flex-wrap justify-center gap-1">
+                {t.tags.map((tag) => {
+                  const [bg, border, text] = tagColor(tag);
+                  return (
+                    <span
+                      key={tag}
+                      className={`rounded-full border px-2 py-[1px] text-[10px] leading-relaxed ${bg} ${border} ${text}`}
+                    >
+                      {tag}
+                    </span>
+                  );
+                })}
               </div>
             )}
             <span className="text-3xl font-serif text-ink-strong">
@@ -82,30 +103,30 @@ export function TableGrid({
             />
           </button>
           {editMode && (
-            <div className="absolute right-1 top-1 z-10 flex gap-1">
+            <div className="absolute left-0.5 top-0.5 z-10 flex gap-0.5">
               {onEdit && (
-                <Button
-                  variant="secondary"
-                  size="sm"
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit({ id: t.tableId, number: t.tableNumber, label: t.label, tags: t.tags });
                   }}
+                  aria-label="ویرایش میز"
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-line bg-paper text-xs text-ink-muted transition-colors hover:border-ink hover:text-ink"
                 >
-                  ویرایش
-                </Button>
+                  ✎
+                </button>
               )}
               {onDelete && (
-                <Button
-                  variant="destructive"
-                  size="sm"
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(t.tableId);
                   }}
+                  aria-label="حذف میز"
+                  className="flex h-6 w-6 items-center justify-center rounded-full border border-line bg-paper text-xs text-ink-muted transition-colors hover:border-red-400 hover:text-red-500"
                 >
-                  حذف
-                </Button>
+                  ✕
+                </button>
               )}
             </div>
           )}
