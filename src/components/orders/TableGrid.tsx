@@ -1,28 +1,7 @@
 "use client";
 
+import { tagColor } from "@/lib/tag-colors";
 import type { TableInfo } from "./types";
-
-const tagColors = [
-  ["bg-green-50", "border-green-300", "text-green-700"],
-  ["bg-blue-50", "border-blue-300", "text-blue-700"],
-  ["bg-amber-50", "border-amber-300", "text-amber-700"],
-  ["bg-purple-50", "border-purple-300", "text-purple-700"],
-  ["bg-rose-50", "border-rose-300", "text-rose-700"],
-  ["bg-cyan-50", "border-cyan-300", "text-cyan-700"],
-  ["bg-orange-50", "border-orange-300", "text-orange-700"],
-  ["bg-teal-50", "border-teal-300", "text-teal-700"],
-] as const;
-
-const colorCache = new Map<string, typeof tagColors[number]>();
-
-function tagColor(tag: string) {
-  if (!colorCache.has(tag)) {
-    let h = 0;
-    for (let i = 0; i < tag.length; i++) h = tag.charCodeAt(i) + ((h << 5) - h);
-    colorCache.set(tag, tagColors[(h & 0x7fffffff) % tagColors.length]);
-  }
-  return colorCache.get(tag)!;
-}
 
 export function TableGrid({
   tables,
@@ -103,7 +82,7 @@ export function TableGrid({
             />
           </button>
           {editMode && (
-            <div className="absolute left-0.5 top-0.5 z-10 flex gap-0.5">
+            <>
               {onEdit && (
                 <button
                   onClick={(e) => {
@@ -111,7 +90,7 @@ export function TableGrid({
                     onEdit({ id: t.tableId, number: t.tableNumber, label: t.label, tags: t.tags });
                   }}
                   aria-label="ویرایش میز"
-                  className="flex h-6 w-6 items-center justify-center rounded-full border border-line bg-paper text-xs text-ink-muted transition-colors hover:border-ink hover:text-ink"
+                  className="absolute left-0.5 top-0.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-line bg-paper text-xs text-ink-muted transition-colors hover:border-ink hover:text-ink"
                 >
                   ✎
                 </button>
@@ -123,12 +102,12 @@ export function TableGrid({
                     onDelete(t.tableId);
                   }}
                   aria-label="حذف میز"
-                  className="flex h-6 w-6 items-center justify-center rounded-full border border-line bg-paper text-xs text-ink-muted transition-colors hover:border-red-400 hover:text-red-500"
+                  className="absolute right-0.5 top-0.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-line bg-paper text-xs text-ink-muted transition-colors hover:border-red-400 hover:text-red-500"
                 >
                   ✕
                 </button>
               )}
-            </div>
+            </>
           )}
         </div>
       ))}

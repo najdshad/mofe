@@ -1,5 +1,7 @@
 "use client";
 
+import { tagColor, tagColorActive } from "@/lib/tag-colors";
+
 interface TableTagFilterProps {
   allTags: string[];
   selectedTags: string[];
@@ -28,16 +30,13 @@ export function TableTagFilter({
     >
       {allTags.map((tag) => {
         const selected = selectedTags.includes(tag);
+        const [bg, border, text] = selected ? tagColorActive(tag) : tagColor(tag);
         return (
           <button
             key={tag}
             type="button"
             onClick={() => toggleTag(tag)}
-            className={`shrink-0 rounded-[var(--radius-control)] px-3 py-1.5 text-sm leading-tight transition-colors duration-150 ${
-              selected
-                ? "bg-ink text-paper"
-                : "border border-line text-ink-muted bg-transparent"
-            }`}
+            className={`shrink-0 rounded-[var(--radius-control)] border px-3 py-1.5 text-sm leading-tight transition-colors duration-150 ${bg} ${border} ${text}`}
           >
             {tag}
           </button>
