@@ -16,7 +16,7 @@ export function TableGrid({
   selectedTable: number | null;
   onSelectTable: (n: number) => void;
   editMode?: boolean;
-  onEdit?: (table: { id: string; number: number; label?: string }) => void;
+  onEdit?: (table: { id: string; number: number; label?: string; tags?: string[] }) => void;
   onDelete?: (id: string) => void;
   onAddTable?: () => void;
 }) {
@@ -62,6 +62,18 @@ export function TableGrid({
             {t.label && (
               <span className="text-xs text-ink-muted">{t.label}</span>
             )}
+            {t.tags && t.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {t.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-line bg-surface px-1.5 py-0.5 text-[10px] text-ink-muted"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
             <span
               className={`h-3 w-3 rounded-full transition-colors duration-300 ${statusColor(t.status)}`}
             />
@@ -74,7 +86,7 @@ export function TableGrid({
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onEdit({ id: t.tableId, number: t.tableNumber, label: t.label });
+                    onEdit({ id: t.tableId, number: t.tableNumber, label: t.label, tags: t.tags });
                   }}
                 >
                   ویرایش

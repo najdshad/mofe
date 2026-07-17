@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { TableGrid } from "@/components/orders/TableGrid";
 import { OrderPanel } from "@/components/orders/OrderPanel";
 import { MenuItemBrowser } from "@/components/orders/MenuItemBrowser";
+import { TableTagFilter } from "@/components/orders/TableTagFilter";
+import { useFuzzySearch } from "@/lib/useFuzzySearch";
 import { useOrderWebSocket } from "@/lib/useOrderWebSocket";
 import { fetchApi } from "@/lib/fetch-api";
 import { addToQueue } from "@/lib/offline-queue";
@@ -25,7 +27,7 @@ export function OrdersClient({
   tables: TableData[];
   categories: CategoryData[];
   editMode?: boolean;
-  onEditTable?: (table: { id: string; number: number; label?: string }) => void;
+  onEditTable?: (table: { id: string; number: number; label?: string; tags?: string[] }) => void;
   onDeleteTable?: (id: string) => void;
   onAddTable?: () => void;
 }) {
@@ -36,6 +38,8 @@ export function OrdersClient({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState({ send: false, complete: false });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const tablesRef = useRef(tables);
   useEffect(() => { tablesRef.current = tables; }, [tables]);
   const fetchKeyRef = useRef({ venueId: "", key: -1 });
@@ -241,7 +245,25 @@ export function OrdersClient({
     tableId: t.id,
     status: tableStatuses.get(t.number) || "free",
     label: t.label,
+    tags: t.tags,
   }));
+
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const t of tables) {
+      for (const tag of t.tags || []) tagSet.add(tag);
+    }
+    return [...tagSet].sort();
+  }, [tables]);
+
+  const tagFilteredTables = useMemo(() => {
+    if (selectedTags.length === 0) return tableInfoList;
+    return tableInfoList.filter((t) =>
+      selectedTags.every((tag) => t.tags?.includes(tag))
+    );
+  }, [tableInfoList, selectedTags]);
+
+  const filteredTableInfoList = useFuzzySearch(searchQuery, tagFilteredTables, orders);
 
   async function handleCreateOrder() {
     if (selectedTableNumber === null) return;
@@ -508,11 +530,28 @@ export function OrdersClient({
           {isOnline && !isSyncing && pendingCount > 0 && `${pendingCount} عملیات در انتظار همگام‌سازی`}
         </div>
       )}
-      <div className="flex flex-col gap-6 lg:flex-row lg:h-[calc(100vh-8rem)]">
+      <div className="flex flex-col gap-3">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="🔍  جستجوی میز، آیتم، یا پیش‌خدمت..."
+          aria-label="جستجوی میز و سفارش"
+          className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-ink focus-visible:ring-2 focus-visible:ring-ink/20"
+        />
+        {allTags.length > 0 && (
+          <TableTagFilter
+            allTags={allTags}
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+          />
+        )}
+      </div>
+      <div className="flex flex-col gap-6 lg:flex-row lg:h-[calc(100vh-10rem)]">
       {/* Table grid */}
       <div className="w-full lg:w-[65%] overflow-y-auto">
         <TableGrid
-          tables={tableInfoList}
+          tables={filteredTableInfoList}
           selectedTable={selectedTableNumber}
           onSelectTable={setSelectedTableNumber}
           editMode={editMode}

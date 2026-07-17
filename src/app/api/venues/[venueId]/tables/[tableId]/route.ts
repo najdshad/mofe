@@ -57,7 +57,7 @@ export async function PUT(
     });
     if (!table) return NextResponse.json({ error: "میز یافت نشد" }, { status: 404 });
 
-    const data: { number?: number; label?: string | null; isActive?: boolean } = {};
+    const data: { number?: number; label?: string | null; tags?: string[]; isActive?: boolean } = {};
     if (body.number !== undefined) {
       if (typeof body.number !== "number" || body.number < 1) {
         return NextResponse.json({ error: "شماره میز معتبر وارد کنید" }, { status: 400 });
@@ -73,6 +73,7 @@ export async function PUT(
       data.number = body.number;
     }
     if (body.label !== undefined) data.label = body.label || null;
+    if (body.tags !== undefined) data.tags = body.tags;
     if (body.isActive !== undefined) data.isActive = body.isActive;
 
     const updated = await prisma.venueTable.update({

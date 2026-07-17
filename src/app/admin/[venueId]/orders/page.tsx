@@ -42,6 +42,7 @@ export default async function AdminOrdersPage({
         id: t.id,
         number: t.number,
         label: t.label || undefined,
+        tags: t.tags,
         isActive: t.isActive,
         status: t.status,
       }))}

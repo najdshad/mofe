@@ -39,7 +39,7 @@ export default async function StaffOrdersPage({
   return (
     <OrdersClient
       venueId={venueId}
-      tables={tables.map((t) => ({ id: t.id, number: t.number, label: t.label || undefined, status: t.status }))}
+      tables={tables.map((t) => ({ id: t.id, number: t.number, label: t.label || undefined, tags: t.tags, status: t.status }))}
       categories={categories.map((c) => ({
         id: c.id,
         nameFa: c.nameFa,

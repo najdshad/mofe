@@ -259,6 +259,7 @@ model VenueTable {
   venueId   String
   number    Int
   label     String?
+  tags      String[]         @default([])
   status    VenueTableStatus @default(FREE)
   isActive  Boolean          @default(true)
   createdAt DateTime         @default(now())

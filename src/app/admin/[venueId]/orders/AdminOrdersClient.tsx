@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { OrdersClient } from "@/app/staff/[venueId]/orders/OrdersClient";
 import { Toggle } from "@/components/ui/Toggle";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { TagInput } from "@/components/orders/TagInput";
 import type { TableData, CategoryData } from "@/components/orders/types";
 
 export function AdminOrdersClient({
@@ -22,19 +23,30 @@ export function AdminOrdersClient({
   const [modalNumber, setModalNumber] = useState("");
   const [modalLabel, setModalLabel] = useState("");
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
+  const [modalTags, setModalTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    for (const t of tables) {
+      for (const tag of t.tags || []) tagSet.add(tag);
+    }
+    return [...tagSet].sort();
+  }, [tables]);
 
   const openAddModal = useCallback(() => {
     setModalMode("add");
     setModalNumber("");
     setModalLabel("");
+    setModalTags([]);
     setEditingTableId(null);
   }, []);
 
-  const openEditModal = useCallback((table: { id: string; number: number; label?: string }) => {
+  const openEditModal = useCallback((table: { id: string; number: number; label?: string; tags?: string[] }) => {
     setModalMode("edit");
     setModalNumber(String(table.number));
     setModalLabel(table.label || "");
+    setModalTags(table.tags || []);
     setEditingTableId(table.id);
   }, []);
 
@@ -42,6 +54,7 @@ export function AdminOrdersClient({
     setModalMode(null);
     setModalNumber("");
     setModalLabel("");
+    setModalTags([]);
     setEditingTableId(null);
   }, []);
 
@@ -55,7 +68,7 @@ export function AdminOrdersClient({
         const res = await fetch(`/api/venues/${venueId}/tables`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ number: num, label: modalLabel || undefined }),
+          body: JSON.stringify({ number: num, label: modalLabel || undefined, tags: modalTags }),
         });
         if (!res.ok) return;
         const table = await res.json();
@@ -66,6 +79,7 @@ export function AdminOrdersClient({
               id: table.id,
               number: table.number,
               label: table.label || undefined,
+              tags: table.tags,
               isActive: true,
               status: table.status,
             },
@@ -75,14 +89,14 @@ export function AdminOrdersClient({
         const res = await fetch(`/api/venues/${venueId}/tables/${editingTableId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ number: num, label: modalLabel || null }),
+          body: JSON.stringify({ number: num, label: modalLabel || null, tags: modalTags }),
         });
         if (!res.ok) return;
         const table = await res.json();
         setTables((prev) =>
           prev.map((t) =>
             t.id === editingTableId
-              ? { ...t, number: table.number, label: table.label || undefined }
+              ? { ...t, number: table.number, label: table.label || undefined, tags: table.tags }
               : t,
           ),
         );
@@ -121,7 +135,7 @@ export function AdminOrdersClient({
 
       <OrdersClient
         venueId={venueId}
-        tables={tables.map((t) => ({ id: t.id, number: t.number, label: t.label, status: t.status }))}
+        tables={tables.map((t) => ({ id: t.id, number: t.number, label: t.label, tags: t.tags, status: t.status }))}
         categories={categories}
         editMode={editMode}
         onEditTable={openEditModal}
@@ -153,6 +167,12 @@ export function AdminOrdersClient({
             value={modalLabel}
             onChange={(e) => setModalLabel(e.target.value)}
             placeholder="مثلاً کنار پنجره"
+          />
+          <TagInput
+            tags={modalTags}
+            onChange={setModalTags}
+            existingTags={allTags}
+            placeholder="برچسب (تراس، داخلی، VIP)"
           />
         </div>
       </Modal>

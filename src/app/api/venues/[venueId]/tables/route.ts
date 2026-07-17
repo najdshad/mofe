@@ -53,6 +53,7 @@ export async function POST(
         venueId,
         number: body.number,
         label: body.label || null,
+        tags: body.tags || [],
         isActive: true,
       },
     });

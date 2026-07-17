@@ -3,6 +3,7 @@ export interface TableInfo {
   tableId: string;
   status: "free" | "active" | "ready" | "settled";
   label?: string;
+  tags?: string[];
 }
 
 export type TableStatus = "free" | "active" | "ready" | "settled";
@@ -59,6 +60,7 @@ export interface TableData {
   id: string;
   number: number;
   label?: string;
+  tags?: string[];
   status: string;
   isActive?: boolean;
 }
