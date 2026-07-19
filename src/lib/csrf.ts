@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { ApiError } from "./api-helpers";
 
 export const CSRF_COOKIE_NAME = "mofe_csrf";
 export const CSRF_HEADER_NAME = "X-CSRF-Token";
@@ -26,6 +27,6 @@ export async function validateCsrf(): Promise<void> {
   const headerToken = headersList.get(CSRF_HEADER_NAME);
 
   if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-    throw new Error("CSRF token validation failed");
+    throw new ApiError("CSRF token validation failed", 403);
   }
 }

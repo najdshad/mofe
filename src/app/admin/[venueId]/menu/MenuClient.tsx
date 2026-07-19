@@ -18,6 +18,15 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Panel } from "@/components/ui/Panel";
 import { Toggle } from "@/components/ui/Toggle";
+
+const CSRF_COOKIE = "mofe_csrf";
+const CSRF_HEADER = "X-CSRF-Token";
+
+function csrfHeaders(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const match = document.cookie.match(new RegExp(`(^| )${CSRF_COOKIE}=([^;]+)`));
+  return match ? { [CSRF_HEADER]: match[2] } : {};
+}
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -906,7 +915,7 @@ export function MenuClient({
     try {
       const res = await fetch(`/api/venues/${venueId}/categories/reorder`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...csrfHeaders() },
         body: JSON.stringify({ orders: updates }),
       });
       if (!res.ok) throw new Error("Reorder failed");
@@ -940,7 +949,7 @@ export function MenuClient({
     try {
       const res = await fetch(`/api/venues/${venueId}/items/reorder`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...csrfHeaders() },
         body: JSON.stringify({ orders: updates }),
       });
       if (!res.ok) throw new Error("Reorder failed");

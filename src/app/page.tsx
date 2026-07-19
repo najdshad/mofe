@@ -1,212 +1,722 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Check, ChevronLeft, QrCode, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import {
+  Check, ChevronLeft, FileText, Zap, ClipboardList, BarChart3,
+  Smartphone, QrCode, Star, ArrowUpLeft,
+} from "lucide-react";
 
 const navItems = [
-  { label: "چیست؟", href: "#what" },
+  { label: "قابلیت‌ها", href: "#features" },
   { label: "چگونه کار می‌کند", href: "#how" },
-  { label: "مزایا", href: "#why" },
-];
-
-const benefits = [
-  "به‌روزرسانی منو بدون بازطراحی",
-  "نمایش آخرین نسخه برای مشتری",
-  "بدون نصب اپلیکیشن",
-  "مناسب کافه‌ها و رستوران‌های فارسی‌زبان",
-  "مدیریت ساده برای استفاده روزانه",
+  { label: "قیمت‌ها", href: "#pricing" },
 ];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-4 text-[11px] uppercase tracking-[0.28em] text-ink-muted">
+    <div className="mb-4 text-[11px] uppercase tracking-[0.28em] text-ink-muted font-serif">
       {children}
     </div>
   );
 }
 
-function Pill({ children }: { children: React.ReactNode }) {
+function PhoneMockup() {
+  const categories = ["قهوه", "نوشیدنی سرد", "دسر"];
+  const items = [
+    { name: "اسپرسو", price: "۹۵,۰۰۰" },
+    { name: "لاته", price: "۱۲۰,۰۰۰" },
+    { name: "موکا", price: "۱۳۵,۰۰۰" },
+    { name: "آفوگاتو", price: "۱۴۵,۰۰۰" },
+  ];
   return (
-    <span className="inline-flex items-center rounded-full border border-line bg-paper px-3 py-1 text-[12px] text-ink-muted">
-      {children}
-    </span>
+    <div className="mx-auto w-[252px] sm:w-[272px]">
+      <div className="rounded-[38px] border-[3px] border-ink bg-paper p-3 shadow-[8px_10px_0_rgba(17,17,17,0.14)]">
+        <div className="mb-3 flex justify-center">
+          <div className="h-5 w-24 rounded-full bg-ink" />
+        </div>
+        <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
+          <span className="font-serif text-[15px] text-ink">کافه نقطه</span>
+          <span className="text-[9px] tracking-[0.18em] text-ink-muted">MENU</span>
+        </div>
+        <div className="mb-4 flex gap-1.5 overflow-x-auto">
+          {categories.map((cat) => (
+            <span
+              key={cat}
+              className="shrink-0 rounded-full border border-line px-3 py-1 text-[10px] text-ink-muted first:border-ink first:text-ink"
+            >
+              {cat}
+            </span>
+          ))}
+        </div>
+        <div className="mb-3 border-b border-line pb-2">
+          <span className="text-[9px] tracking-[0.2em] text-ink-muted">قهوه</span>
+        </div>
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div key={item.name} className="flex items-baseline justify-between border-b border-line/50 pb-2">
+              <span className="text-[12px] text-ink">{item.name}</span>
+              <span className="text-[10px] text-ink-muted tracking-wide">
+                {item.price}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex justify-center">
+          <div className="flex items-center gap-2 rounded-full border border-line px-4 py-1.5">
+            <QrCode className="h-3 w-3 text-ink-muted" />
+            <span className="text-[9px] tracking-[0.15em] text-ink-muted">mofé</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminPanelMockup() {
+  const items = [
+    { name: "اسپرسو", price: "۹۵,۰۰۰", cat: "قهوه" },
+    { name: "لاته", price: "۱۲۰,۰۰۰", cat: "قهوه" },
+    { name: "موکا", price: "۱۳۵,۰۰۰", cat: "قهوه" },
+    { name: "چای سیاه", price: "۴۵,۰۰۰", cat: "نوشیدنی گرم" },
+    { name: "آفوگاتو", price: "۱۴۵,۰۰۰", cat: "دسر" },
+  ];
+  return (
+    <div className="overflow-hidden rounded-[var(--radius-panel)] border border-line bg-paper">
+      <div className="flex items-center justify-between border-b border-line px-5 py-4 md:px-6">
+        <div>
+          <span className="block text-[10px] tracking-[0.18em] text-ink-muted">پنل مدیریت</span>
+          <span className="mt-1 block font-serif text-[17px] text-ink">منوی کافه نقطه</span>
+        </div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-line">
+          <span className="text-[10px] text-ink-muted">ن</span>
+        </div>
+      </div>
+      <div className="p-5 md:p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex gap-2">
+            <span className="rounded-full border border-ink px-3 py-1 text-[10px] text-ink">همه</span>
+            <span className="rounded-full border border-line px-3 py-1 text-[10px] text-ink-muted">قهوه</span>
+            <span className="rounded-full border border-line px-3 py-1 text-[10px] text-ink-muted">نوشیدنی</span>
+          </div>
+          <span className="rounded-full bg-ink px-3 py-1 text-[10px] text-paper">انتشار</span>
+        </div>
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div
+              key={item.name}
+              className="flex items-center justify-between rounded-[18px] border border-line/60 bg-surface px-4 py-3"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-paper">
+                  <span className="text-[10px] text-ink-muted">{item.cat.slice(0, 2)}</span>
+                </div>
+                <span className="text-[13px] text-ink">{item.name}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-[12px] text-ink-muted">{item.price}</span>
+                <div className="h-4 w-4 rounded-sm border border-line" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QRMenuMockup() {
+  const sections = [
+    { title: "قهوه", items: ["اسپرسو", "لاته", "کاپوچینو"] },
+    { title: "دسر", items: ["بستنی", "کیک", "آفوگاتو"] },
+  ];
+  return (
+    <div className="mx-auto w-[240px] sm:w-[260px]">
+      <div className="rounded-[32px] border-[3px] border-ink bg-paper p-3">
+        <div className="mb-2 flex justify-center">
+          <div className="h-4 w-16 rounded-full bg-ink/10" />
+        </div>
+        <div className="mb-3 flex justify-center border-b border-line pb-3">
+          <span className="font-serif text-[15px] text-ink">کافه نقطه</span>
+        </div>
+        {sections.map((sec) => (
+          <div key={sec.title} className="mb-3">
+            <div className="mb-1 border-b border-line/50 pb-1">
+              <span className="text-[9px] tracking-[0.2em] text-ink-muted">{sec.title}</span>
+            </div>
+            {sec.items.map((item) => (
+              <div key={item} className="flex items-baseline justify-between py-1">
+                <span className="text-[11px] text-ink">{item}</span>
+                <span className="text-[9px] text-ink-muted">---</span>
+              </div>
+            ))}
+          </div>
+        ))}
+        <div className="flex justify-center border-t border-line pt-2">
+          <QrCode className="h-4 w-4 text-ink-muted" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TableGridMockup() {
+  const tables = ["۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸"];
+  return (
+    <div className="rounded-[var(--radius-panel)] border border-line bg-paper p-5 md:p-6">
+      <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
+        <span className="text-[12px] tracking-[0.15em] text-ink-muted">میزها</span>
+        <div className="flex gap-2">
+          <div className="h-5 w-5 rounded border border-line" />
+          <div className="h-5 w-5 rounded bg-ink/10" />
+        </div>
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {tables.map((t) => (
+          <div
+            key={t}
+            className="flex aspect-square items-center justify-center rounded-xl border border-line text-[11px] text-ink-muted transition hover:border-ink"
+          >
+            {t}
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 rounded-xl border border-line bg-paper p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[11px] text-ink">میز ۳</span>
+          <span className="rounded-full border border-line px-2 py-0.5 text-[8px] text-ink-muted">در حال آماده‌سازی</span>
+        </div>
+        <div className="space-y-1.5">
+          {["اسپرسو", "لاته", "چای"].map((item) => (
+            <div key={item} className="flex items-center justify-between text-[10px] text-ink-muted">
+              <span>{item}</span>
+              <span className="h-2 w-2 rounded-full bg-ink/20" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function MofeLandingPage() {
   return (
     <div className="min-h-screen bg-paper text-ink antialiased">
-      <div className="mx-auto max-w-[1040px] px-5 sm:px-6 lg:px-8">
-        {/* Top bar */}
-        <header className="flex items-center justify-between border-b border-line py-5">
-          <a href="#top" className="text-[18px] tracking-[0.08em] text-ink font-serif">
+      {/* ─── Navigation ─── */}
+      <header className="border-b border-line">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 sm:px-8">
+          <Link href="/" className="text-[20px] tracking-[0.08em] text-ink font-serif">
             mofé
-          </a>
-          <nav className="hidden items-center gap-3 md:flex">
+          </Link>
+          <nav className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="rounded-full px-3 py-2 text-[14px] text-ink-muted transition hover:text-ink"
+                className="rounded-full px-4 py-2 text-[13px] text-ink-muted transition hover:text-ink"
               >
                 {item.label}
               </a>
             ))}
+            <Link
+              href="/signup"
+              className="mr-3 inline-flex items-center gap-1.5 rounded-full border border-ink px-4 py-2 text-[13px] text-ink transition hover:bg-ink hover:text-paper"
+            >
+              شروع کنید
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Link>
           </nav>
           <Link
             href="/signup"
-            className="inline-flex items-center gap-2 rounded-full border border-ink px-4 py-2 text-[14px] text-ink transition hover:bg-surface md:hidden"
+            className="inline-flex items-center gap-1.5 rounded-full border border-ink px-4 py-2 text-[13px] text-ink transition hover:bg-ink hover:text-paper md:hidden"
           >
-            ثبت‌نام
-            <ChevronLeft className="h-4 w-4" />
+            شروع کنید
+            <ChevronLeft className="h-3.5 w-3.5" />
           </Link>
-        </header>
+        </div>
+      </header>
 
-        {/* Hero */}
-        <section id="top" className="py-20 md:py-28 lg:py-32">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-8 flex justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-line px-4 py-2 text-[13px] text-ink-muted">
-                <Sparkles className="h-4 w-4" />
-                منوی دیجیتال ساده برای کافه‌ها و رستوران‌های فارسی‌زبان
-              </div>
-            </div>
-
-            <h1 className="text-[64px] leading-[0.9] tracking-[-0.04em] md:text-[88px] font-serif">
-              mofé
-            </h1>
-
-            <p className="mt-7 text-[22px] leading-10 text-ink md:text-[26px] md:leading-[1.9]">
-              منوی خود را مدیریت کنید، کد QR دریافت کنید و تغییرات را در چند دقیقه منتشر کنید.
-            </p>
-
-            <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-8 text-ink-muted md:text-[18px] md:leading-9">
-              بدون اپلیکیشن، بدون پیچیدگی، فقط یک تجربه تمیز و قابل اعتماد برای شما و مشتریان شما.
-            </p>
-
-            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/signup">
-                <Button size="lg">
-                  ثبت‌نام کافه
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button variant="secondary" size="lg">
-                  ورود به سیستم
-                </Button>
-              </Link>
-            </div>
-
-            <div className="mt-10 flex flex-wrap justify-center gap-2">
-              <Pill>RTL-first</Pill>
-              <Pill>بدون JS در منوی مشتری</Pill>
-              <Pill>طراحی سبک و ماندگار</Pill>
-            </div>
-          </div>
-        </section>
-
-        {/* What it does */}
-        <section id="what" className="border-t border-line py-20 md:py-28">
-          <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+      {/* ─── Hero ─── */}
+      <section className="overflow-hidden border-b border-line">
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 md:py-14 lg:py-16">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14">
             <div>
-              <SectionLabel>What mofé does</SectionLabel>
-              <h2 className="text-[34px] leading-[1.15] md:text-[44px] font-serif">
-                یک ابزار عملی برای ساخت، مدیریت و انتشار منوی دیجیتال.
-              </h2>
-              <p className="mt-6 max-w-2xl text-[18px] leading-9 text-ink-muted">
-                mofé به کافه‌ها و رستوران‌ها کمک می‌کند آیتم‌های منو را اضافه کنند، قیمت و توضیحات را مدیریت کنند و نسخه به‌روز را برای مشتریان منتشر کنند. مشتری فقط QR را اسکن می‌کند و منو را روی موبایل می‌بیند.
-              </p>
-            </div>
-
-            <div className="rounded-[var(--radius-panel)] border border-line bg-paper p-6 md:p-8">
-              <div className="flex items-center justify-between border-b border-line pb-4">
-                <span className="text-[14px] text-ink-muted">قابلیت‌ها</span>
-                <QrCode className="h-5 w-5 text-ink" />
+              <div className="mb-7 flex items-center gap-3 text-[11px] tracking-[0.18em] text-ink-muted">
+                <span className="h-px w-8 bg-ink-muted/60" />
+                منوی دیجیتال برای مهمان‌نوازی خوب
               </div>
-              <ul className="mt-5 space-y-4">
-                {[
-                  "ساخت و ویرایش آیتم‌های منو",
-                  "انتشار فوری تغییرات",
-                  "تولید منوی QR",
-                  "تجربه موبایلی سریع و سبک",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-[16px] leading-7 text-ink">
-                    <Check className="mt-1 h-4 w-4 shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <h1 className="text-[46px] leading-[1.02] tracking-[-0.03em] sm:text-[58px] md:text-[70px] lg:text-[78px] font-serif">
+                منوی کافه‌ات،
+                <br />
+                همیشه روی موبایل
+                <br />
+                مشتری‌هایت
+              </h1>
+              <p className="mt-6 text-[18px] leading-9 text-ink-muted sm:text-[20px] sm:leading-[1.9] lg:text-[22px]">
+                یک بار منو را درست کن. کد QR بچسبان روی میز. هر تغییری دادنی، بلافاصله برای همه نمایش داده می‌شود. بدون اپلیکیشن، بدون هزینه چاپ، بدون سردرگمی.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href="/signup" className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-7 py-3.5 text-[15px] text-paper transition hover:opacity-90">
+                  ثبت‌نام رایگان — ۱۴ روز آزمایشی
+                  <ChevronLeft className="h-4 w-4" />
+                </Link>
+                <Link href="/m/noghteh" className="inline-flex items-center justify-center gap-2 rounded-full border border-line px-7 py-3.5 text-[15px] text-ink transition hover:border-ink">
+                  مشاهده منوی نمونه
+                  <ArrowUpLeft className="h-4 w-4" />
+                </Link>
+              </div>
+              <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[13px] text-ink-muted">
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5" />
+                  مناسب کافه‌ها، رستوران‌ها، فست‌فودها و چای‌خانه‌ها
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5" />
+                  بدون نیاز به کارت بانکی بین‌المللی
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5" />
+                  فارسی کامل — از فونت تا تاریخ و واحد پول
+                </span>
+              </div>
+            </div>
+            <div className="order-first lg:order-last">
+              <div className="relative mx-auto aspect-[0.92] max-w-[535px] overflow-hidden rounded-[var(--radius-panel)] border border-line bg-[#c9b29a]">
+                <Image
+                  src="/uploads/item-38a0ed82-71a5-4897-9abd-57dbb9f6db6a-51b1b56dd8077173.webp"
+                  alt="صبحانه‌ای گرم در کافه"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 90vw, 535px"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-ink/10" />
+                <div className="absolute inset-x-0 top-0 flex items-center justify-between p-5 text-paper">
+                  <span className="rounded-full border border-paper/60 bg-ink/20 px-3 py-1 text-[10px] tracking-[0.2em]">
+                    ALWAYS CURRENT
+                  </span>
+                  <span className="text-[11px]">کافه نقطه</span>
+                </div>
+                <div className="absolute inset-x-0 bottom-0 h-[74%] bg-paper/70 backdrop-blur-[1px]" />
+                <div className="absolute inset-x-0 bottom-0 flex translate-y-4 justify-center">
+                  <PhoneMockup />
+                </div>
+                <div className="absolute bottom-6 right-6 rounded-[18px] border border-line bg-paper/95 px-4 py-3 text-[11px] text-ink shadow-[4px_5px_0_rgba(17,17,17,0.12)]">
+                  اسکن کن، ببین، سفارش بده.
+                </div>
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* How it works */}
-        <section id="how" className="border-t border-line py-20 md:py-28">
-          <SectionLabel>How it works</SectionLabel>
-          <div className="grid gap-6 lg:grid-cols-3">
+      {/* ─── Pain Point ─── */}
+      <section className="border-b border-line">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+          <div className="mx-auto max-w-4xl">
+            <SectionLabel>چرا mofé</SectionLabel>
+            <div className="grid gap-6 md:grid-cols-[1fr_auto_1fr] md:items-center">
+              <div className="rounded-[var(--radius-panel)] border border-line bg-paper p-6 md:p-8">
+                <div className="mb-4 text-[11px] tracking-[0.2em] text-ink-muted">قبل از mofé</div>
+                <ul className="space-y-4 text-[15px] leading-8 text-ink-muted">
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ink/20" />
+                    منو چاپ می‌کنی — قیمت‌ها عوض می‌شود — منو باطل شده
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ink/20" />
+                    مشتری سردرگم است یا باید دوباره چاپ کنی
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ink/20" />
+                    منو در اینستاگرام — مشتری باید ورق بزند، زوم کند
+                  </li>
+                </ul>
+              </div>
+              <div className="flex justify-center text-2xl text-ink-muted md:block">←</div>
+              <div className="rounded-[var(--radius-panel)] border border-ink bg-paper p-6 md:p-8">
+                <div className="mb-4 text-[11px] tracking-[0.2em] text-ink-muted">بعد از mofé</div>
+                <p className="text-[22px] leading-[1.6] font-serif text-ink">
+                  یک بار تنظیم می‌کنی.
+                  <br />
+                  تا همیشه.
+                </p>
+                <div className="mt-6 flex gap-2">
+                  <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">بدون چاپ</span>
+                  <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">بدون سردرگمی</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── How It Works ─── */}
+      <section id="how" className="border-b border-line">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+          <div className="mx-auto max-w-4xl">
+            <SectionLabel>چطور کار می‌کند</SectionLabel>
+            <h2 className="text-[32px] leading-[1.15] md:text-[42px] font-serif">
+              در سه قدم
+            </h2>
+          </div>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
             {[
               {
-                number: "01",
-                title: "ساخت منو",
-                text: "آیتم‌ها را اضافه کنید و دسته‌بندی منو را بسازید.",
+                number: "۰۱",
+                title: "منوی خود را بسازید",
+                text: "آیتم‌ها را اضافه کنید، دسته‌بندی کنید، قیمت بگذارید. عکس آپلود کنید. همه چیز در یک پنل ساده و سریع.",
               },
               {
-                number: "02",
-                title: "دریافت QR",
-                text: "برای منو یک QR اختصاصی دریافت کنید.",
+                number: "۰۲",
+                title: "QR اختصاصی خود را دریافت کنید",
+                text: "یک کلیک. منوی شما به صورت یک صفحه HTML ایستاده و فوق‌العاده سبک منتشر می‌شود. لینک و کد QR مخصوص خود را دارید.",
               },
               {
-                number: "03",
-                title: "انتشار برای مشتریان",
-                text: "مشتری QR را اسکن می‌کند و آخرین نسخه را می‌بیند.",
+                number: "۰۳",
+                title: "روی میز بچسبانید و تمام",
+                text: "مشتری اسکن می‌کند و منو را با تمام جزئیات می‌بیند — قیمت، کالری، مواد حساسیت‌زا، عکس. بدون نصب، بدون منتظر ماندن.",
               },
             ].map((step) => (
-              <article key={step.number} className="rounded-[var(--radius-panel)] border border-line bg-paper p-6 md:p-8">
-                <div className="text-[12px] tracking-[0.3em] text-ink-muted">{step.number}</div>
-                <h3 className="mt-6 text-[26px] leading-tight">{step.title}</h3>
-                <p className="mt-4 text-[17px] leading-8 text-ink-muted">{step.text}</p>
+              <article
+                key={step.number}
+                className="rounded-[var(--radius-panel)] border border-line bg-paper p-6 transition hover:border-ink/30 md:p-8"
+              >
+                <div className="text-[11px] tracking-[0.3em] text-ink-muted">{step.number}</div>
+                <h3 className="mt-5 text-[22px] leading-tight font-serif">{step.title}</h3>
+                <p className="mt-4 text-[15px] leading-8 text-ink-muted">{step.text}</p>
               </article>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Why */}
-        <section id="why" className="border-t border-line py-20 md:py-28">
-          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+      {/* ─── Features Grid ─── */}
+      <section id="features" className="border-b border-line">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+          <div className="mx-auto max-w-4xl">
+            <SectionLabel>چرا mofé فرق می‌کند</SectionLabel>
+            <h2 className="text-[32px] leading-[1.15] md:text-[42px] font-serif">
+              ساخته شده برای کار واقعی
+            </h2>
+          </div>
+          <div className="mt-12 grid gap-5 md:grid-cols-2">
+            {[
+              {
+                icon: FileText,
+                title: "منوی عمومی بدون JavaScript",
+                text: "صفحه‌ای که مشتری می‌بیند صرفاً HTML ایستاده است. حدود ۱۰ کیلوبایت. روی 3G در یک ثانیه لود می‌شود. بدون ردپا، بدون تبلیغ، بدون منتظر ماندن.",
+              },
+              {
+                icon: Zap,
+                title: "آپدیت آنی",
+                text: "قیمت شکر را در پنل تغییر بده. یک دقیقه بعد، هر کس QR را اسکن کند قیمت جدید را می‌بیند. بدون چاپ، بدون استوری اینستاگرام.",
+              },
+              {
+                icon: ClipboardList,
+                title: "ثبت سفارش واقعی",
+                text: "برای کافه‌های شلوغ: ویترها روی تبلت سفارش می‌گیرند، آشپزخانه در لحظه می‌بیند. وضعیت هر آیتم: ارسال شده، در حال آماده‌سازی، آماده، تحویل داده شده. آفلاین هم کار می‌کند.",
+              },
+              {
+                icon: BarChart3,
+                title: "گزارش فروش با تاریخ شمسی",
+                text: "ببین کدام آیتم‌ها بیشتر فروش می‌روند. کدام روزهای هفته شلوغ‌ترند. همه چیز به تومان و تاریخ شمسی. خروجی CSV برای حسابداری.",
+              },
+            ].map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <article
+                  key={feature.title}
+                  className="rounded-[var(--radius-panel)] border border-line bg-paper p-6 transition hover:border-ink/30 md:p-8"
+                >
+                  <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-paper">
+                    <Icon className="h-4 w-4 text-ink" />
+                  </div>
+                  <h3 className="text-[18px] leading-tight font-serif text-ink">{feature.title}</h3>
+                  <p className="mt-3 text-[14px] leading-7 text-ink-muted">{feature.text}</p>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Menu Preview ─── */}
+      <section className="border-b border-line bg-paper">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+          <div className="grid items-start gap-12 md:grid-cols-[1fr_0.8fr]">
             <div>
-              <SectionLabel>Why cafe owners use it</SectionLabel>
-              <h2 className="text-[34px] leading-[1.15] md:text-[44px] font-serif">
-                برای کار روزانه ساخته شده، نه برای نمایش.
+              <SectionLabel>چیزی که مشتری می‌بیند</SectionLabel>
+              <h2 className="text-[28px] leading-[1.15] md:text-[36px] font-serif">
+                یک منوی سیاه و سفید با خطوط ظریف و طراحی گرم
               </h2>
-              <p className="mt-6 text-[18px] leading-9 text-ink-muted">
-                این صفحه باید اعتماد ایجاد کند: ساده، روشن و قابل استفاده برای افرادی که می‌خواهند فقط منوی خود را سریع و درست مدیریت کنند.
+              <p className="mt-5 text-[16px] leading-8 text-ink-muted">
+                دقیقاً مثل یک منوی کاغذی خوب — اما همیشه به‌روز، همیشه در جیب مشتری.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">
+                  فونت فارسی اختصاصی
+                </span>
+                <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">
+                  بدون CDN خارجی
+                </span>
+                <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">
+                  تحریم‌ناپذیر
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-center md:justify-end">
+              <QRMenuMockup />
+            </div>
+          </div>
+          <div className="mt-16">
+            <p className="mb-6 text-[11px] tracking-[0.2em] text-ink-muted">
+              از چپ: پنل مدیریت — خروجی منوی QR
+            </p>
+            <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
+              <AdminPanelMockup />
+              <div className="flex items-center justify-center rounded-[var(--radius-panel)] border border-dashed border-line bg-paper p-6">
+                <div className="text-center">
+                  <Smartphone className="mx-auto h-8 w-8 text-ink-muted/50" />
+                  <p className="mt-3 text-[13px] text-ink-muted">
+                    مشتری با اسکن QR
+                    <br />
+                    همین صفحه را می‌بیند
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Real-Time Ordering ─── */}
+      <section className="border-b border-line">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+          <div className="grid items-start gap-12 md:grid-cols-[0.9fr_1.1fr]">
+            <div className="order-last md:order-first">
+              <TableGridMockup />
+            </div>
+            <div>
+              <SectionLabel>برای کافه‌های شلوغ</SectionLabel>
+              <h2 className="text-[28px] leading-[1.15] md:text-[36px] font-serif">
+                سفارش‌گیری لحظه‌ای
+              </h2>
+              <p className="mt-5 text-[16px] leading-8 text-ink-muted">
+                ویتر روی تبلت آیتم‌ها را انتخاب می‌کند. با یک لمس، سفارش به صفحه آشپزخانه می‌رود. وضعیت هر آیتم به صورت زنده قابل پیگیری است.
+              </p>
+              <p className="mt-4 text-[16px] leading-8 text-ink">
+                مشتری دیگر منتظر نمی‌ماند، ویتر دیگر دوندگی نمی‌کند.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">
+                  انتخاب میز
+                </span>
+                <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">
+                  ارسال به آشپزخانه
+                </span>
+                <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">
+                  آفلاین کار می‌کند
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Pricing ─── */}
+      <section id="pricing" className="border-b border-line">
+        <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 md:py-28">
+          <div className="mx-auto max-w-4xl">
+            <SectionLabel>تعرفه‌ها</SectionLabel>
+            <h2 className="text-[32px] leading-[1.15] md:text-[42px] font-serif">
+              ساده و منصفانه
+            </h2>
+          </div>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {[
+              {
+                name: "Basic",
+                label: "رایگان",
+                bestFor: "کافه‌های کوچک و تازه‌کار",
+                features: [
+                  "منوی QR نامحدود",
+                  "تا ۵۰ آیتم منو",
+                  "تا ۱۰ میز",
+                  "۱۴ روز آزمایشی رایگان",
+                ],
+                cta: "شروع رایگان",
+                href: "/signup",
+              },
+              {
+                name: "Pro",
+                label: "حرفه‌ای",
+                bestFor: "رستوران‌های شلوغ",
+                features: [
+                  "همه چیز Basic +",
+                  "آیتم و میز نامحدود",
+                  "سفارش‌گیری لحظه‌ای",
+                  "گزارش فروش جامع",
+                  "خروجی CSV",
+                ],
+                cta: "انتخاب Pro",
+                href: "/signup",
+                featured: true,
+              },
+              {
+                name: "Premium",
+                label: "پرمیوم",
+                bestFor: "رستوران‌های حرفه‌ای",
+                features: [
+                  "همه چیز Pro +",
+                  "اولویت پشتیبانی",
+                  "API اختصاصی",
+                  "شخصی‌سازی پیشرفته",
+                ],
+                cta: "ارتباط با ما",
+                href: "#",
+              },
+            ].map((plan) => (
+              <article
+                key={plan.name}
+                className={`rounded-[var(--radius-panel)] border bg-paper p-6 transition md:p-8 ${
+                  plan.featured
+                    ? "border-ink shadow-[0_0_0_1px_rgba(0,0,0,0.06)]"
+                    : "border-line hover:border-ink/30"
+                }`}
+              >
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[11px] tracking-[0.2em] text-ink-muted">{plan.name}</span>
+                  <span className="rounded-full border border-line px-3 py-0.5 text-[10px] text-ink-muted">
+                    {plan.label}
+                  </span>
+                </div>
+                <p className="mt-4 text-[13px] leading-6 text-ink-muted">{plan.bestFor}</p>
+                <ul className="mt-5 space-y-3 border-t border-line pt-5">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-[13px] leading-6 text-ink">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-muted" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-6">
+                  {plan.href === "#" ? (
+                    <a href="mailto:hello@mofe.ir" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-line px-6 py-3 text-[13px] text-ink-muted transition hover:border-ink hover:text-ink">
+                      {plan.cta}
+                    </a>
+                  ) : (
+                    <Link
+                      href={plan.href}
+                      className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-[13px] transition ${
+                        plan.featured
+                          ? "bg-ink text-paper hover:opacity-90"
+                          : "border border-line text-ink hover:border-ink"
+                      }`}
+                    >
+                      {plan.cta}
+                    </Link>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+          <p className="mt-8 text-center text-[13px] text-ink-muted">
+            همه پلن‌ها شامل منوی QR و پنل مدیریت می‌شوند. بدون هزینه پنهان.
+          </p>
+        </div>
+      </section>
+
+      {/* ─── Testimonials ─── */}
+      <section className="border-b border-line">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+          <div className="mx-auto max-w-3xl text-center">
+            <SectionLabel>صاحبان کافه درباره mofé چه می‌گویند</SectionLabel>
+            <p className="mt-6 text-[15px] leading-8 text-ink-muted">
+              این بخش با اولین کاربران واقعی پر می‌شود
+            </p>
+            <div className="mt-8 inline-flex flex-col items-center rounded-[var(--radius-panel)] border border-line bg-paper px-8 py-6">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-line bg-paper">
+                <Star className="h-5 w-5 text-ink-muted" />
+              </div>
+              <p className="text-[14px] leading-7 text-ink-muted">
+                کافه نقطه — یک کافه دمو با ۶۶ آیتم منوی متنوع.
+              </p>
+              <Link
+                href="/m/noghteh"
+                className="mt-3 inline-flex items-center gap-1.5 text-[13px] text-ink underline-offset-4 hover:underline"
+              >
+                ببینید منوی mofé چطور کار می‌کند
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Final CTA ─── */}
+      <section className="border-b border-line">
+        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-[32px] leading-[1.15] md:text-[42px] font-serif">
+              آماده‌ای منوی کافه‌ات را دیجیتال کنی؟
+            </h2>
+            <p className="mt-5 text-[17px] leading-8 text-ink-muted">
+              ۱۴ روز رایگان. بدون نیاز به کارت بانکی. یک کلیک شروع کن.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-2 rounded-full bg-ink px-10 py-4 text-[16px] text-paper transition hover:opacity-90"
+              >
+                شروع کنید
+                <ChevronLeft className="h-4 w-4" />
+              </Link>
+            </div>
+            <p className="mt-6 text-[13px] text-ink-muted">
+              هنوز سوال داری؟{' '}
+              <a href="https://t.me/mofe" className="underline-offset-4 hover:underline" target="_blank" rel="noopener noreferrer">
+                به ما در تلگرام پیام بده @mofe
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Footer ─── */}
+      <footer>
+        <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8 md:py-12">
+          <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+            <div>
+              <Link href="/" className="text-[18px] tracking-[0.08em] text-ink font-serif">
+                mofé
+              </Link>
+              <p className="mt-3 max-w-xs text-[13px] leading-7 text-ink-muted">
+                منوی دیجیتال ساده برای کافه‌ها و رستوران‌های فارسی‌زبان
               </p>
             </div>
-
-            <div className="grid gap-3">
-              {benefits.map((item) => (
-                <div key={item} className="flex items-center gap-3 rounded-[var(--radius-card)] border border-line bg-paper px-5 py-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-paper">
-                    <Check className="h-4 w-4" />
-                  </div>
-                  <span className="text-[16px] leading-7">{item}</span>
-                </div>
-              ))}
+            <div className="flex flex-col gap-2 text-[13px] text-ink-muted">
+              <span>hello@mofe.ir</span>
+              <a href="https://t.me/mofe" target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">
+                Telegram: @mofe
+              </a>
+              <a href="https://github.com/anomalyco/mofe-menu" target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:underline">
+                GitHub
+              </a>
+            </div>
+            <div className="text-[13px] text-ink-muted">
+              <nav className="flex flex-col gap-2">
+                {navItems.map((item) => (
+                  <a key={item.href} href={item.href} className="underline-offset-4 hover:underline hover:text-ink">
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
             </div>
           </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="border-t border-line py-8">
-          <div className="flex flex-col gap-3 text-[14px] text-ink-muted md:flex-row md:items-center md:justify-between">
-            <div className="text-ink font-serif">mofé</div>
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
-              <span>© 2026 mofé</span>
-              <span>تماس: hello@mofe.ir</span>
-              <span>Telegram: @mofe</span>
-            </div>
+          <div className="mt-8 border-t border-line pt-6 text-center text-[12px] text-ink-muted">
+            © ۲۰۲۶ mofé
           </div>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </div>
   );
 }
