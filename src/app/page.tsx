@@ -215,21 +215,39 @@ export default function MofeLandingPage() {
                 {item.label}
               </a>
             ))}
+            <div className="mr-3 flex overflow-hidden rounded-full border border-ink">
+              <Link
+                href="/login"
+                className="px-4 py-2 text-[13px] text-ink transition hover:bg-ink/5"
+              >
+                ورود
+              </Link>
+              <div className="w-px self-stretch bg-ink/20" />
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-[13px] text-ink transition hover:bg-ink/5"
+              >
+                شروع کنید
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </nav>
+          <div className="flex items-center gap-1.5 overflow-hidden rounded-full border border-ink md:hidden">
+            <Link
+              href="/login"
+              className="px-3 py-2 text-[13px] text-ink transition hover:bg-ink/5"
+            >
+              ورود
+            </Link>
+            <div className="w-px self-stretch bg-ink/20" />
             <Link
               href="/signup"
-              className="mr-3 inline-flex items-center gap-1.5 rounded-full border border-ink px-4 py-2 text-[13px] text-ink transition hover:bg-ink hover:text-paper"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-[13px] text-ink transition hover:bg-ink/5"
             >
               شروع کنید
               <ChevronLeft className="h-3.5 w-3.5" />
             </Link>
-          </nav>
-          <Link
-            href="/signup"
-            className="inline-flex items-center gap-1.5 rounded-full border border-ink px-4 py-2 text-[13px] text-ink transition hover:bg-ink hover:text-paper md:hidden"
-          >
-            شروع کنید
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </Link>
+          </div>
         </div>
       </header>
 
