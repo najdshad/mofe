@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   Check, ChevronLeft, FileText, Zap, ClipboardList, BarChart3,
@@ -279,27 +278,9 @@ export default function MofeLandingPage() {
               </div>
             </div>
             <div className="order-first lg:order-last">
-              <div className="relative mx-auto aspect-[0.92] max-w-[535px] overflow-hidden rounded-[var(--radius-panel)] border border-line bg-[#c9b29a]">
-                <Image
-                  src="/uploads/item-38a0ed82-71a5-4897-9abd-57dbb9f6db6a-51b1b56dd8077173.webp"
-                  alt="صبحانه‌ای گرم در کافه"
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 90vw, 535px"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-ink/10" />
-                <div className="absolute inset-x-0 top-0 flex items-center justify-between p-5 text-paper">
-                  <span className="rounded-full border border-paper/60 bg-ink/20 px-3 py-1 text-[10px] tracking-[0.2em]">
-                    ALWAYS CURRENT
-                  </span>
-                  <span className="text-[11px]">کافه نقطه</span>
-                </div>
-                <div className="absolute inset-x-0 bottom-0 h-[74%] bg-paper/70 backdrop-blur-[1px]" />
-                <div className="absolute inset-x-0 bottom-0 flex translate-y-4 justify-center">
-                  <PhoneMockup />
-                </div>
-                <div className="absolute bottom-6 right-6 rounded-[18px] border border-line bg-paper/95 px-4 py-3 text-[11px] text-ink shadow-[4px_5px_0_rgba(17,17,17,0.12)]">
+              <div className="mx-auto max-w-[535px]">
+                <PhoneMockup />
+                <div className="mt-4 text-center text-[11px] text-ink-muted">
                   اسکن کن، ببین، سفارش بده.
                 </div>
               </div>
