@@ -4,13 +4,11 @@ import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
+import { getStorage } from "@/lib/storage";
 import path from "path";
-import fs from "fs/promises";
 import crypto from "crypto";
 import sharp from "sharp";
 import { compressToTarget, MAX_SIZE_BYTES } from "@/lib/compress-image";
-
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 
 async function isValidImage(buffer: Buffer): Promise<boolean> {
   try {
@@ -74,24 +72,18 @@ export async function POST(
       );
     }
 
-    if (item.photoUrl) {
-      const oldPath = path.join(process.cwd(), "public", item.photoUrl);
-      try { await fs.unlink(oldPath); } catch (err: unknown) {
-        if (err instanceof Error && (err as NodeJS.ErrnoException).code !== "ENOENT") {
-          console.error("[photo] failed to delete old file:", err.message);
-        }
-      }
-    }
+    const storage = await getStorage();
 
-    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+    if (item.photoUrl) {
+      const oldKey = path.basename(item.photoUrl);
+      try { await storage.delete(oldKey); } catch { /* ok */ }
+    }
 
     const hash = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
     const filename = `item-${itemId}-${hash}.webp`;
-    const filepath = path.join(UPLOADS_DIR, filename);
 
-    await fs.writeFile(filepath, resized);
-
-    const photoUrl = `/uploads/${filename}`;
+    const result = await storage.save(filename, resized, "image/webp");
+    const photoUrl = result.url;
 
     await prisma.menuItem.update({
       where: { id: itemId },
@@ -132,8 +124,9 @@ export async function DELETE(
     }
 
     if (item.photoUrl) {
-      const filePath = path.join(process.cwd(), "public", item.photoUrl);
-      try { await fs.unlink(filePath); } catch { /* ok */ }
+      const storage = await getStorage();
+      const oldKey = path.basename(item.photoUrl);
+      try { await storage.delete(oldKey); } catch { /* ok */ }
     }
 
     await prisma.menuItem.update({

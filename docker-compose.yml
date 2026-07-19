@@ -17,19 +17,14 @@ services:
     restart: unless-stopped
 
   app:
+    image: docker.arvancloud.ir/mofe/app:latest
     build:
       context: .
       args:
         NEXT_PUBLIC_WS_URL: ws://localhost:8080
     expose:
       - "3000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://mofe:mofe@db:5432/mofe
-      - ORDERING_SERVICE_URL=http://ordering-service:8080
-      - ROOT_DOMAIN=mofe.ir
-      - APP_DOMAIN=app.mofe.ir
-      - MENU_DOMAIN=menu.mofe.ir
+    env_file: .env
     volumes:
       - mofe-uploads:/app/public/uploads
     depends_on:
@@ -44,14 +39,11 @@ services:
       start_period: 15s
 
   ordering-service:
+    image: docker.arvancloud.ir/mofe/ordering-service:latest
     build: ./ordering-service
     ports:
       - "8080:8080"
-    environment:
-      DATABASE_URL: postgresql://mofe:mofe@db:5432/mofe?sslmode=disable
-      PORT: 8080
-      SESSION_COOKIE_NAME: mofe_session
-      REDIS_URL: redis://redis:6379
+    env_file: .env
     depends_on:
       db:
         condition: service_healthy

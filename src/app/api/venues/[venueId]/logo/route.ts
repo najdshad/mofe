@@ -3,13 +3,11 @@ import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
+import { getStorage } from "@/lib/storage";
 import path from "path";
-import fs from "fs/promises";
 import crypto from "crypto";
 import sharp from "sharp";
 import { compressToTarget, MAX_SIZE_BYTES } from "@/lib/compress-image";
-
-const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 
 async function isValidImage(buffer: Buffer): Promise<boolean> {
   try {
@@ -66,24 +64,18 @@ export async function POST(
     }
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoUrl: true } });
-    if (venue?.logoUrl) {
-      const oldPath = path.join(process.cwd(), "public", venue.logoUrl);
-      try { await fs.unlink(oldPath); } catch (err: unknown) {
-        if (err instanceof Error && (err as NodeJS.ErrnoException).code !== "ENOENT") {
-          console.error("[logo] failed to delete old file:", err.message);
-        }
-      }
-    }
+    const storage = await getStorage();
 
-    await fs.mkdir(UPLOADS_DIR, { recursive: true });
+    if (venue?.logoUrl) {
+      const oldKey = path.basename(venue.logoUrl);
+      try { await storage.delete(oldKey); } catch { /* ok */ }
+    }
 
     const hash = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
     const filename = `${venueId}-${hash}.webp`;
-    const filepath = path.join(UPLOADS_DIR, filename);
 
-    await fs.writeFile(filepath, resized);
-
-    const logoUrl = `/uploads/${filename}`;
+    const result = await storage.save(filename, resized, "image/webp");
+    const logoUrl = result.url;
 
     await prisma.venue.update({
       where: { id: venueId },
@@ -112,12 +104,9 @@ export async function DELETE(
     }
 
     if (venue.logoUrl) {
-      const filePath = path.join(process.cwd(), "public", venue.logoUrl);
-      try {
-        await fs.unlink(filePath);
-      } catch {
-        // file may not exist
-      }
+      const storage = await getStorage();
+      const oldKey = path.basename(venue.logoUrl);
+      try { await storage.delete(oldKey); } catch { /* ok */ }
     }
 
     await prisma.venue.update({
