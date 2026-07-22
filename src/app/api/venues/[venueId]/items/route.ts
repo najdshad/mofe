@@ -70,6 +70,8 @@ export async function POST(
       return NextResponse.json(
         {
           error: `تعداد آیتم‌های منو به حداکثر ${limit.max.toLocaleString("fa-IR")} رسیده است. برای افزایش محدودیت، اشتراک خود را ارتقا دهید.`,
+          upgradeUrl: `/admin/${venueId}/billing`,
+          limit: { current: limit.current, max: limit.max },
         },
         { status: 403 }
       );

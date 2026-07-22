@@ -119,6 +119,7 @@ func main() {
 	r.Route("/api/orders", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(db))
 		r.Use(rl.Middleware)
+		r.Use(middleware.RequireOrderingEnabled(db))
 
 		r.Post("/", orderHandler.CreateOrder)
 		r.Get("/", orderHandler.ListOrders)
@@ -135,6 +136,7 @@ func main() {
 	r.Route("/api/admin", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware(db))
 		r.Use(rl.Middleware)
+		r.Use(middleware.RequireOrderingEnabled(db))
 		r.Use(middleware.RequireRole("OWNER", "MANAGER"))
 
 		r.Get("/orders", orderHandler.ListOrders)
@@ -143,7 +145,9 @@ func main() {
 
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		middleware.AuthMiddleware(db)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			hub.HandleWebSocket(w, r)
+			middleware.RequireOrderingEnabled(db)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				hub.HandleWebSocket(w, r)
+			})).ServeHTTP(w, r)
 		})).ServeHTTP(w, r)
 	})
 

@@ -95,6 +95,8 @@ export async function POST(
     return NextResponse.json(
       {
         error: `تعداد آیتم‌های CSV (${dataRows.length}) بیش از حداکثر مجاز (${limit.max}) است. لطفاً اشتراک خود را ارتقا دهید.`,
+        upgradeUrl: `/admin/${venueId}/billing`,
+        limit: { current: limit.current, max: limit.max },
       },
       { status: 403 }
     );

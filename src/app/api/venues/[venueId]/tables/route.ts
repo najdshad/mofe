@@ -3,6 +3,7 @@ import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { canManage, requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { validateCsrf } from "@/lib/csrf";
+import { checkTableLimit } from "@/lib/subscription";
 
 export async function GET(
   request: Request,
@@ -35,6 +36,18 @@ export async function POST(
     if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     await validateCsrf();
+
+    const limit = await checkTableLimit(venueId);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        {
+          error: `تعداد میزها به حداکثر ${limit.max.toLocaleString("fa-IR")} رسیده است. برای افزایش محدودیت، اشتراک خود را ارتقا دهید.`,
+          upgradeUrl: `/admin/${venueId}/billing`,
+          limit: { current: limit.current, max: limit.max },
+        },
+        { status: 403 }
+      );
+    }
 
     const body = await request.json();
     if (!body.number || typeof body.number !== "number" || body.number < 1) {
