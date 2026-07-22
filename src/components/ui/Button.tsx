@@ -2,7 +2,7 @@
 
 import { forwardRef } from "react";
 
-type Variant = "primary" | "secondary" | "tertiary" | "destructive";
+type Variant = "primary" | "secondary" | "tertiary" | "destructive" | "none";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -14,6 +14,7 @@ const variantStyles: Record<Variant, string> = {
   secondary: "bg-transparent text-ink border border-line hover:border-ink",
   tertiary: "bg-transparent text-ink-muted hover:text-ink border border-transparent",
   destructive: "bg-transparent text-ink border border-line hover:border-ink hover:text-ink",
+  none: "",
 };
 
 const sizeStyles = {

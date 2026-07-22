@@ -407,7 +407,8 @@ export function BillingClient({
               <Button
                 onClick={handlePay}
                 disabled={paying}
-                className="w-full border-paper bg-paper text-ink hover:bg-paper/90 lg:w-auto"
+                variant="none"
+                className="w-full border-paper bg-paper text-ink lg:w-auto"
                 size="lg"
               >
                 <RefreshCw className="h-4 w-4" strokeWidth={1.8} />
@@ -416,7 +417,8 @@ export function BillingClient({
             ) : (
               <Button
                 onClick={scrollToPlans}
-                className="w-full border-paper bg-paper text-ink hover:bg-paper/90 lg:w-auto"
+                variant="none"
+                className="w-full border-paper bg-paper text-ink lg:w-auto"
                 size="lg"
               >
                 <Sparkles className="h-4 w-4" strokeWidth={1.8} />
@@ -850,9 +852,9 @@ function PlanCard({
       ) : (
         <Button
           className={`mt-6 w-full ${
-            featured ? "border-paper bg-paper text-ink hover:bg-paper/90" : ""
+            featured ? "border-paper bg-paper text-ink" : ""
           }`}
-          variant={featured ? "primary" : "secondary"}
+          variant={featured ? "none" : "secondary"}
           disabled={isChanging}
           onClick={() => onSelect(plan.id)}
         >
