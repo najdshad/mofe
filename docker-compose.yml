@@ -1,8 +1,8 @@
 services:
   db:
     image: postgres:16-alpine
-    expose:
-      - "5432"
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: mofe
       POSTGRES_PASSWORD: mofe
