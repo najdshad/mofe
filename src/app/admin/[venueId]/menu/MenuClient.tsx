@@ -1138,6 +1138,13 @@ export function MenuClient({
     });
   };
 
+  const handleDownloadTemplate = () => {
+    const a = document.createElement("a");
+    a.href = `/api/venues/${venueId}/items/csv-template`;
+    a.download = `menu-template-${venueId}.csv`;
+    a.click();
+  };
+
   const handleExportCSV = () => {
     const a = document.createElement("a");
     a.href = `/api/venues/${venueId}/items/export-csv`;
@@ -1420,12 +1427,21 @@ export function MenuClient({
                 >
                   {selectionMode ? "پایان انتخاب" : "انتخاب چندتایی"}
                 </button>
-                <button
-                  onClick={handleExportCSV}
-                  className="rounded-full border border-line px-3 py-1.5 text-xs text-ink-muted hover:border-ink hover:text-ink transition-colors"
-                >
-                  خروجی CSV
-                </button>
+                <div className="flex overflow-hidden rounded-full border border-line">
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="px-3 py-1.5 text-xs text-ink-muted transition-colors hover:bg-surface hover:text-ink"
+                  >
+                    قالب CSV
+                  </button>
+                  <div className="w-px self-stretch bg-line" />
+                  <button
+                    onClick={handleExportCSV}
+                    className="px-3 py-1.5 text-xs text-ink-muted transition-colors hover:bg-surface hover:text-ink"
+                  >
+                    خروجی CSV
+                  </button>
+                </div>
                 <label
                   className="rounded-full border border-line px-3 py-1.5 text-xs text-ink-muted hover:border-ink hover:text-ink transition-colors cursor-pointer"
                 >

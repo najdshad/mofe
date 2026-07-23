@@ -65,7 +65,7 @@ cd ordering-service && go run ./cmd/server
 | --- | --- |
 | `npm run dev` | Dev server |
 | `npm run build` | Production build |
-| `npm test` | Run 475 tests (24 files) |
+| `npm test` | Run 500 tests (26 files) |
 | `npm run typecheck` | TypeScript type check |
 | `npm run lint` | ESLint |
 | `npm run db:studio` | Prisma Studio |
@@ -81,7 +81,7 @@ cd ordering-service && go run ./cmd/server
 | Auth | Session-based, HTTP-only cookie, bcrypt + SHA-256 |
 | Real-time | Go 1.23, chi v5, gorilla/websocket |
 | Queue | localStorage-based offline queue (client-side) |
-| Testing | Vitest (475 tests), Go tests |
+| Testing | Vitest (500 tests), Go tests |
 | Infrastructure | Docker, nginx, optional Redis |
 
 ## Design

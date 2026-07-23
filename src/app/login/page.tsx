@@ -12,11 +12,7 @@ export default function LoginPage() {
         <Suspense fallback={<div className="text-center text-sm text-ink-muted">در حال بارگذاری...</div>}>
           <LoginForm />
         </Suspense>
-        {process.env.NODE_ENV === "development" && (
-          <p className="mt-4 text-center text-xs text-ink-muted">
-            کاربر: admin@noghteh / رمز: demo1234
-          </p>
-        )}
+
       </div>
     </div>
   );

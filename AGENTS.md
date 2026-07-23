@@ -52,7 +52,7 @@ cd ordering-service && go run ./cmd/server  # Start Go ordering service
 - **Fonts:** Body: `"Parastoo", "Vazirmatn", "Tahoma", sans-serif`. Headings: `"EB Garamond", "Parastoo", "Vazirmatn", "Times New Roman", serif`.
 - **Offline queue:** `src/lib/offline-queue.ts` — localStorage under `mofe_offline_queue` key.
 - **Photo upload:** Sharp → WebP ≤50KB, max 500px, binary search for quality. Fallback: reduce dimension in 100px steps to 200px.
-- **CSV:** Formula injection sanitized — cells starting with `=`, `+`, `-`, `@`, `\t` get `'` prefix.
+- **CSV:** Formula injection sanitized — cells starting with `=`, `+`, `-`, `@`, `\t` get `'` prefix. Template download at `GET /api/venues/[venueId]/items/csv-template` returns headers + example row.
 - **Signup (`POST /api/auth/signup`):** Creates User + Venue + VenueMember(owner) in atomic transaction. Rate-limited 3/IP/day (prod only). Auto-generates slug from Persian name.
 
 ## Go Ordering Service (`ordering-service/`)
@@ -121,7 +121,14 @@ Test suite uses `TEST_DATABASE_URL` (falls back to `postgresql://localhost:5432/
 | Offline queue | `src/lib/offline-queue.ts` |
 | UI components | `src/components/ui/` |
 | Order components | `src/components/orders/` |
+| Schedule section | `src/app/admin/[venueId]/settings/ScheduleSection.tsx` |
+| Schedule API | `src/app/api/venues/[venueId]/schedules/route.ts` |
+| CSV export API | `src/app/api/venues/[venueId]/items/export-csv/route.ts` |
+| CSV import API | `src/app/api/venues/[venueId]/items/import-csv/route.ts` |
+| CSV template API | `src/app/api/venues/[venueId]/items/csv-template/route.ts` |
 | Tests | `src/__tests__/` |
+| Schedule tests | `src/__tests__/api/schedules.test.ts` |
+| Test helpers | `src/__tests__/helpers.ts` |
 | Design tokens + fonts | `src/app/globals.css` |
 | Go entry point | `ordering-service/cmd/server/main.go` |
 | Go handlers | `ordering-service/internal/handlers/orders.go` |

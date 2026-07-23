@@ -151,6 +151,35 @@ export function SettingsClient({
     return () => observer.disconnect();
   }, []);
 
+  const handleSetStationDefaults = (station: string, startTime: string, endTime: string, isActive: boolean, protectedDays: number[]) => {
+    setSchedules((prev) => {
+      const updated = [...prev];
+      const protect = new Set(protectedDays);
+      for (const day of [0, 1, 2, 3, 4, 5, 6]) {
+        if (protect.has(day)) continue;
+        const idx = updated.findIndex((s) => s.station === station && s.dayOfWeek === day);
+        if (idx >= 0) {
+          updated[idx] = { ...updated[idx], startTime, endTime, isActive };
+        } else {
+          updated.push({ station, dayOfWeek: day, startTime, endTime, isActive });
+        }
+      }
+      return updated;
+    });
+  };
+
+  const handleResetDay = (station: string, dayOfWeek: number, startTime: string, endTime: string, isActive: boolean) => {
+    setSchedules((prev) => {
+      const idx = prev.findIndex((s) => s.station === station && s.dayOfWeek === dayOfWeek);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], startTime, endTime, isActive };
+        return updated;
+      }
+      return [...prev, { station, dayOfWeek, startTime, endTime, isActive }];
+    });
+  };
+
   const handleScheduleToggle = (station: string, dayOfWeek: number) => {
     setSchedules((prev) => {
       const existing = prev.find((s) => s.station === station && s.dayOfWeek === dayOfWeek);
@@ -648,6 +677,8 @@ export function SettingsClient({
               onToggle={handleScheduleToggle}
               onTimeChange={handleScheduleTime}
               onApplyAll={handleApplyAll}
+              onSetDefaults={handleSetStationDefaults}
+              onResetDay={handleResetDay}
               onSave={handleSaveSchedules}
             />
           </div>

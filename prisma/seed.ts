@@ -29,6 +29,7 @@ async function main() {
     { code: "WELCOME10", description: "۱۰٪ تخفیف برای کاربران جدید", discountType: "percentage", discountValue: 10, maxUses: 100, maxUsesPerUser: 1, isActive: true },
     { code: "PRO500", description: "۵۰,۰۰۰ تومان تخفیف برای طرح حرفه‌ای", discountType: "fixed", discountValue: 50000, maxUses: 50, maxUsesPerUser: 1, appliesToPlanSlug: "pro", isActive: true },
     { code: "PREMIUM100", description: "۱۰۰,۰۰۰ تومان تخفیف برای طرح پریمیوم", discountType: "fixed", discountValue: 100000, maxUses: 50, maxUsesPerUser: 1, appliesToPlanSlug: "premium", isActive: true },
+    { code: "NOGHTEH-2319", description: "تخفیف ۱۰۰٪ ویژه", discountType: "percentage", discountValue: 100, maxUses: -1, maxUsesPerUser: -1, isActive: true },
   ];
 
   for (const c of couponCodes) {

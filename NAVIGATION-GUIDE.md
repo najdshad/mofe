@@ -34,8 +34,8 @@ mofe-menu/
 │   ├── import-csv.ts      # CLI tool to import items from CSV
 │   └── seed-sales.ts      # Seed 60 days of synthetic sales data
 ├── src/
-│   ├── __tests__/           # 24 files, 475 tests (472 pass)
-│   │   ├── api/            # Integration tests (auth, billing, categories, concurrent, integration, items, menu-slug, photo, sales, sales-export, sales-items)
+│   ├── __tests__/           # 26 files, 500 tests (497 pass, 3 pre-existing billing/zarinpal failures tolerated)
+│   │   ├── api/            # Integration tests (auth, billing, categories, concurrent, integration, items, menu-slug, photo, sales, sales-export, sales-items, schedules)
 │   │   ├── lib/            # Unit tests — auth + csrf + offline-queue + ordering-proxy + rate-limit + subscription + zarinpal + renderer + publication + api-helpers + config
 │   │   ├── components/     # Component helper tests — SalesClient (13)
 │   │   ├── proxy/          # Proxy routing tests (9 tests)
@@ -48,7 +48,7 @@ mofe-menu/
 │   │   │   │   ├── layout.tsx     # Admin shell (header, nav, auth check)
 │   │   │   │   ├── menu/          # Menu management + QR/publish editor (Server + MenuClient)
 │   │   │   │   ├── publications/  # Publication history (Server + PublicationsClient)
-│   │   │   │   ├── settings/      # Venue settings + member management (Server + SettingsClient)
+│   │   │   │   ├── settings/      # Venue settings + member management (Server + SettingsClient + ScheduleSection)
 │   │   │   │   ├── sales/         # Sales dashboard (Server + SalesClient, 4 tabbed views)
 │   │   │   │   ├── orders/       # Admin order management (Server + AdminOrdersClient)
 │   │   │   │   └── billing/      # Billing/subscription management (Server + BillingClient)
@@ -70,7 +70,7 @@ mofe-menu/
 │   │   │   └── venues/
 │   │   │       └── [venueId]/
 │   │   │           ├── categories/     # CRUD + reorder
-│   │   │           ├── items/          # CRUD + reorder + bulk-visibility + bulk-delete + import/export CSV + photo + variants + prices + allergens
+│   │   │           ├── items/          # CRUD + reorder + bulk-visibility + bulk-delete + import/export CSV + csv-template + photo + variants + prices + allergens
 │   │   │           ├── members/        # List + create/delete members
 │   │   │           ├── publications/   # List publications
 │   │   │           ├── publish/        # Publish venue menu
@@ -284,7 +284,7 @@ Enforced via `requireRole(userId, venueId, allowedRoles)` or `canManageCategorie
 - Vitest v4 with `singleFork` pool
 - `global-setup.ts` pushes schema to PostgreSQL test DB via `prisma db push`
 - `helpers.ts` provides `cleanTestData()` + `seedTestData()` + `seedTestPlans()` + `seedTestSubscription()` + `seedTestSale()`
-- Run: `npm test` (vitest run — 475 tests, 3 pre-existing billing/zarinpal failures tolerated), `npm run test:watch`
+- Run: `npm test` (vitest run — 500 tests, 3 pre-existing billing/zarinpal failures tolerated), `npm run test:watch`
 
 ### Public Menu Renderer
 
@@ -341,7 +341,7 @@ npx prisma migrate dev --name describe_change
 
 ### Running tests
 ```bash
-npm test                # Run all 475 tests (3 pre-existing billing/zarinpal failures tolerated)
+npm test                # Run all 500 tests (3 pre-existing billing/zarinpal failures tolerated)
 npm run test:watch      # Watch mode
 ```
 
