@@ -39,7 +39,7 @@ const technology = [
   ["بلادرنگ", "منوی عمومی به صورت HTML ایستاده، بدون JavaScript"],
   ["رسانه", "Sharp برای WebP فشرده تا ۵۰ کیلوبایت"],
   ["استقرار", "Docker و nginx، بدون وابستگی به CDN خارجی"],
-  ["امنیت", "Session http-only، CSRF، rate limit و کنترل نقش"],
+  ["امنیت", "Session http-only، CSRF و rate limit"],
 ];
 
 function SectionEyebrow({

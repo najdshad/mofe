@@ -12,7 +12,6 @@ export async function GET() {
         id: m.venue.id,
         nameFa: m.venue.nameFa,
         slug: m.venue.slug,
-        role: m.role,
         publicStatus: m.venue.publicStatus,
       }))
     );

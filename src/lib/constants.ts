@@ -14,10 +14,5 @@ export const TIMEZONE_LABELS: Record<string, string> = {
   "Australia/Sydney": "سیدنی (UTC+10:00)",
 };
 
-export const ROLE_LABELS: Record<string, string> = {
-  owner: "مالک",
-  manager: "مدیر",
-};
-
 export const VALID_STATIONS = ["kitchen", "bar"] as const;
 export type Station = (typeof VALID_STATIONS)[number];

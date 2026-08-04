@@ -73,7 +73,6 @@ interface MenuClientProps {
   venueId: string;
   categories: Category[];
   items: Item[];
-  canPublish: boolean;
   venuePublicStatus: string;
   hasUnpublishedChanges: boolean;
   publicUrl: string;
@@ -791,7 +790,6 @@ export function MenuClient({
   venueId,
   categories: initialCategories,
   items: initialItems,
-  canPublish,
   venuePublicStatus,
   hasUnpublishedChanges,
   publicUrl,
@@ -1257,14 +1255,12 @@ export function MenuClient({
               <>
                 <button
                   onClick={() => setShowPublishModal(true)}
-                  disabled={!canPublish}
                   className="rounded-full border border-line px-3 py-1 text-xs text-ink hover:border-ink transition-colors disabled:opacity-40"
                 >
                   انتشار مجدد
                 </button>
                 <button
                   onClick={() => setShowUnpublishModal(true)}
-                  disabled={!canPublish}
                   className="rounded-full border border-line px-3 py-1 text-xs text-ink-muted hover:text-ink hover:border-ink transition-colors disabled:opacity-40"
                 >
                   لغو انتشار
@@ -1273,7 +1269,7 @@ export function MenuClient({
             ) : (
               <button
                 onClick={() => setShowPublishModal(true)}
-                disabled={!canPublish}
+               
                 className="rounded-full border border-ink bg-ink px-3 py-1 text-xs text-paper hover:opacity-90 transition-colors disabled:opacity-40"
               >
                 انتشار منو

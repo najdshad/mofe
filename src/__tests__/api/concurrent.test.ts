@@ -8,7 +8,7 @@ vi.mock("@/lib/api-helpers", async () => {
 });
 
 vi.mock("@/lib/permissions", () => ({
-  canManage: vi.fn(),
+  requireVenueAccess: vi.fn(),
 }));
 
 vi.mock("@/lib/csrf", () => ({
@@ -16,13 +16,13 @@ vi.mock("@/lib/csrf", () => ({
 }));
 
 import { requireAuth } from "@/lib/api-helpers";
-import { canManage } from "@/lib/permissions";
+import { requireVenueAccess } from "@/lib/permissions";
 import { PATCH as itemPATCH } from "@/app/api/venues/[venueId]/items/[itemId]/route";
 
 let data: Awaited<ReturnType<typeof seedTestData>>;
 
 const mockRequireAuth = requireAuth as ReturnType<typeof vi.fn>;
-const mockCanManage = canManage as ReturnType<typeof vi.fn>;
+const mockRequireVenueAccess = requireVenueAccess as ReturnType<typeof vi.fn>;
 
 beforeAll(async () => {
   await cleanTestData();
@@ -32,7 +32,7 @@ beforeAll(async () => {
 describe.concurrent("Concurrent access patterns", () => {
   it("handles concurrent item price updates", async () => {
     mockRequireAuth.mockResolvedValue(data.user);
-    mockCanManage.mockResolvedValue(true);
+    mockRequireVenueAccess.mockResolvedValue({ userId: data.user.id, venueId: data.venue.id });
 
     const itemId = data.items.item1.id;
     const venueId = data.venue.id;

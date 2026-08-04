@@ -7,8 +7,6 @@ import { DEMO_EMAIL, ensureDemoData } from "@/lib/demo";
 import { verifyPassword, hashToken, generateToken } from "@/lib/auth";
 import {
   requireVenueAccess,
-  requireRole,
-  canManage,
   getAccessibleVenues,
 } from "@/lib/permissions";
 
@@ -36,7 +34,7 @@ describe("Auth", () => {
     const membership = await prisma.venueMember.findFirst({
       where: { userId: user!.id, venue: { slug: "noghteh" } },
     });
-    expect(membership?.role).toBe("owner");
+    expect(membership).not.toBeNull();
   });
 });
 
@@ -350,12 +348,11 @@ describe("Public Menu Rendering", () => {
 });
 
 describe("Venue Members and Permissions", () => {
-  it("finds venue membership for owner", async () => {
+  it("finds venue membership for the seeded user", async () => {
     const membership = await prisma.venueMember.findUnique({
       where: { venueId_userId: { venueId: data.venue.id, userId: data.user.id } },
     });
     expect(membership).not.toBeNull();
-    expect(membership?.role).toBe("owner");
   });
 
   it("does not find membership for non-member user", async () => {
@@ -368,12 +365,11 @@ describe("Venue Members and Permissions", () => {
     expect(membership).toBeNull();
   });
 
-  it("allows owner to manage categories", async () => {
+  it("members have access to manage the venue", async () => {
     const membership = await prisma.venueMember.findUnique({
       where: { venueId_userId: { venueId: data.venue.id, userId: data.user.id } },
     });
-    const canManage = membership?.role === "owner" || membership?.role === "manager";
-    expect(canManage).toBe(true);
+    expect(membership).not.toBeNull();
   });
 
   it("finds accessible venues for user", async () => {
@@ -390,7 +386,6 @@ describe("Permission functions", () => {
   it("requireVenueAccess returns membership for valid member", async () => {
     const membership = await requireVenueAccess(data.user.id, data.venue.id);
     expect(membership).not.toBeNull();
-    expect(membership.role).toBe("owner");
   });
 
   it("requireVenueAccess throws for non-member", async () => {
@@ -400,47 +395,6 @@ describe("Permission functions", () => {
     await expect(requireVenueAccess(otherUser.id, data.venue.id)).rejects.toThrow(
       "Unauthorized: no access to this venue"
     );
-  });
-
-  it("requireRole accepts owner for owner role", async () => {
-    const membership = await requireRole(data.user.id, data.venue.id, ["owner"]);
-    expect(membership.role).toBe("owner");
-  });
-
-  it("requireRole rejects manager for owner-only role", async () => {
-    const managerUser = await prisma.user.create({
-      data: { email: "manager@test.ir", name: "Manager", passwordHash: "", status: "active" },
-    });
-    await prisma.venueMember.create({
-      data: { venueId: data.venue.id, userId: managerUser.id, role: "manager" },
-    });
-    await expect(requireRole(managerUser.id, data.venue.id, ["owner"])).rejects.toThrow(
-      "Forbidden: requires one of roles owner"
-    );
-  });
-
-  it("requireRole with empty allowedRoles rejects everyone", async () => {
-    await expect(requireRole(data.user.id, data.venue.id, [])).rejects.toThrow(
-      "Forbidden: requires one of roles "
-    );
-  });
-
-  it("canManage returns true for owner", async () => {
-    expect(await canManage(data.user.id, data.venue.id)).toBe(true);
-  });
-
-  it("canManage returns true for manager", async () => {
-    const managerUser = await prisma.user.create({
-      data: { email: "manager2@test.ir", name: "Manager2", passwordHash: "", status: "active" },
-    });
-    await prisma.venueMember.create({
-      data: { venueId: data.venue.id, userId: managerUser.id, role: "manager" },
-    });
-    expect(await canManage(managerUser.id, data.venue.id)).toBe(true);
-  });
-
-  it("canManage returns true for owner", async () => {
-    expect(await canManage(data.user.id, data.venue.id)).toBe(true);
   });
 
   it("getAccessibleVenues returns all venues for a user", async () => {
@@ -517,7 +471,7 @@ describe("Cross-venue isolation", () => {
     const venueB = await prisma.venue.create({
       data: { nameFa: "کافه B", slug: "cafe-b-" + Date.now(), publicStatus: "draft" },
     });
-    await expect(canManage(data.user.id, venueB.id)).rejects.toThrow(
+    await expect(requireVenueAccess(data.user.id, venueB.id)).rejects.toThrow(
       "Unauthorized: no access to this venue"
     );
   });
@@ -526,7 +480,7 @@ describe("Cross-venue isolation", () => {
     const venueB = await prisma.venue.create({
       data: { nameFa: "کافه B2", slug: "cafe-b2-" + Date.now(), publicStatus: "draft" },
     });
-    await expect(canManage(data.user.id, venueB.id)).rejects.toThrow(
+    await expect(requireVenueAccess(data.user.id, venueB.id)).rejects.toThrow(
       "Unauthorized: no access to this venue"
     );
   });
@@ -535,7 +489,7 @@ describe("Cross-venue isolation", () => {
     const venueB = await prisma.venue.create({
       data: { nameFa: "کافه B3", slug: "cafe-b3-" + Date.now(), publicStatus: "draft" },
     });
-    await expect(canManage(data.user.id, venueB.id)).rejects.toThrow(
+    await expect(requireVenueAccess(data.user.id, venueB.id)).rejects.toThrow(
       "Unauthorized: no access to this venue"
     );
   });
@@ -549,16 +503,7 @@ describe("Cross-venue isolation", () => {
     );
   });
 
-  it("requireRole throws for venue A owner on venue B", async () => {
-    const venueB = await prisma.venue.create({
-      data: { nameFa: "کافه B5", slug: "cafe-b5-" + Date.now(), publicStatus: "draft" },
-    });
-    await expect(requireRole(data.user.id, venueB.id, ["owner"])).rejects.toThrow(
-      "Unauthorized: no access to this venue"
-    );
-  });
-
-  it("venue B owner cannot access venue A data", async () => {
+  it("venue B member cannot access venue A data", async () => {
     const otherUser = await prisma.user.create({
       data: { email: "owner-b-" + Date.now() + "@test.ir", name: "Owner B", passwordHash: "", status: "active" },
     });
@@ -566,14 +511,14 @@ describe("Cross-venue isolation", () => {
       data: { nameFa: "کافه B6", slug: "cafe-b6-" + Date.now(), publicStatus: "draft" },
     });
     await prisma.venueMember.create({
-      data: { venueId: venueB.id, userId: otherUser.id, role: "owner" },
+      data: { venueId: venueB.id, userId: otherUser.id },
     });
 
-    await expect(canManage(otherUser.id, data.venue.id)).rejects.toThrow(
+    await expect(requireVenueAccess(otherUser.id, data.venue.id)).rejects.toThrow(
       "Unauthorized: no access to this venue"
     );
 
-    expect(await canManage(otherUser.id, venueB.id)).toBe(true);
+    await expect(requireVenueAccess(otherUser.id, venueB.id)).resolves.toBeDefined();
   });
 
   it("venue A data is invisible in venue B's publication snapshot", async () => {

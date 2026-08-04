@@ -103,7 +103,6 @@ export async function POST(request: Request) {
         data: {
           venueId: venue.id,
           userId: user.id,
-          role: "owner",
         },
       });
 

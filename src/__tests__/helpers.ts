@@ -61,11 +61,10 @@ export async function seedTestData() {
 
   await prisma.venueMember.upsert({
     where: { venueId_userId: { venueId: venue.id, userId: user.id } },
-    update: { role: "owner" },
+    update: {},
     create: {
       venueId: venue.id,
       userId: user.id,
-      role: "owner",
     },
   });
 
@@ -174,8 +173,8 @@ export async function seedTestVenueWithFullData() {
 
   await prisma.venueMember.upsert({
     where: { venueId_userId: { venueId: venue.id, userId: user.id } },
-    update: { role: "owner" },
-    create: { venueId: venue.id, userId: user.id, role: "owner" },
+    update: {},
+    create: { venueId: venue.id, userId: user.id },
   });
 
   const cat1 = await prisma.category.create({

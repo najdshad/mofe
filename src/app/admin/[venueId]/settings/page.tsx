@@ -14,21 +14,15 @@ export default async function SettingsPage({
   if (!user) redirect("/login");
 
   const { venueId } = await params;
-  const membership = await requireVenueAccess(user.id, venueId);
+  await requireVenueAccess(user.id, venueId);
 
-  const [venue, members] = await Promise.all([
-    prisma.venue.findUnique({
-      where: { id: venueId },
-      select: {
-        id: true, nameFa: true, nameEn: true, slug: true, timezone: true,
-        welcomeMessage: true, logoUrl: true,
-      },
-    }),
-    prisma.venueMember.findMany({
-      where: { venueId },
-      include: { user: { select: { id: true, name: true, email: true } } },
-    }),
-  ]);
+  const venue = await prisma.venue.findUnique({
+    where: { id: venueId },
+    select: {
+      id: true, nameFa: true, nameEn: true, slug: true, timezone: true,
+      welcomeMessage: true, logoUrl: true,
+    },
+  });
 
   if (!venue) redirect("/venues");
 
@@ -41,15 +35,6 @@ export default async function SettingsPage({
       timezone={venue.timezone}
       welcomeMessage={venue.welcomeMessage}
       logoUrl={venue.logoUrl}
-      members={members.map((m) => ({
-        id: m.id,
-        userId: m.userId,
-        role: m.role,
-        name: m.user.name,
-        email: m.user.email,
-      }))}
-      currentUserRole={membership.role}
-      currentUserId={user.id}
       publicMenuDomain={getPublicMenuUrl(venue.slug)}
     />
   );

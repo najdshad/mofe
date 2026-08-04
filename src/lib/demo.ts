@@ -40,14 +40,10 @@ export async function ensureDemoData(prisma: PrismaClient) {
 
   await prisma.venueMember.upsert({
     where: { venueId_userId: { venueId: venue.id, userId: user.id } },
-    update: {
-      role: "owner",
-      permissions: null,
-    },
+    update: {},
     create: {
       venueId: venue.id,
       userId: user.id,
-      role: "owner",
     },
   });
 

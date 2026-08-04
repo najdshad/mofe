@@ -58,7 +58,6 @@ model VenueMember {
   id          String   @id @default(uuid())
   venueId     String
   userId      String
-  role        String
   permissions String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

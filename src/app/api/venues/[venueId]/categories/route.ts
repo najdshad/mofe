@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManage, requireVenueAccess } from "@/lib/permissions";
+import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { validateCsrf } from "@/lib/csrf";
@@ -32,10 +32,7 @@ export async function POST(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    const canManageResult = await canManage(user.id, venueId);
-    if (!canManageResult) {
-      return NextResponse.json({ error: "دسترسی محدود" }, { status: 403 });
-    }
+    await requireVenueAccess(user.id, venueId);
 
     await validateCsrf();
 

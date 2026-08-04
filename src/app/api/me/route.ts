@@ -15,7 +15,6 @@ export async function GET() {
       },
       memberships: memberships.map((m) => ({
         venueId: m.venueId,
-        role: m.role,
         venue: {
           id: m.venue.id,
           nameFa: m.venue.nameFa,

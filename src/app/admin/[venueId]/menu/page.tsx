@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
-import { requireVenueAccess, canManage } from "@/lib/permissions";
+import { requireVenueAccess } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
@@ -16,10 +16,9 @@ export default async function MenuPage({
   const { venueId } = await params;
   await requireVenueAccess(user.id, venueId);
 
-  const [venue, canUserPublish, categories, items, lastPublication, publicationsData] =
+  const [venue, categories, items, lastPublication, publicationsData] =
     await Promise.all([
       prisma.venue.findUnique({ where: { id: venueId }, select: { updatedAt: true, slug: true, publicStatus: true } }),
-      canManage(user.id, venueId),
       prisma.category.findMany({
         where: { venueId, deletedAt: null },
         orderBy: { displayOrder: "asc" },
@@ -102,7 +101,6 @@ export default async function MenuPage({
       venueId={venueId}
       categories={categoriesData}
       items={itemsData}
-      canPublish={canUserPublish}
       venuePublicStatus={venue.publicStatus}
       hasUnpublishedChanges={hasUnpublishedChanges}
       publicUrl={getPublicMenuUrl(venue.slug)}

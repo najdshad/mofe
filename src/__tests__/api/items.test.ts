@@ -9,7 +9,6 @@ vi.mock("@/lib/api-helpers", async () => {
 
 vi.mock("@/lib/permissions", () => ({
   requireVenueAccess: vi.fn(),
-  canManage: vi.fn(),
 }));
 
 vi.mock("@/lib/csrf", () => ({
@@ -17,7 +16,7 @@ vi.mock("@/lib/csrf", () => ({
 }));
 
 import { requireAuth } from "@/lib/api-helpers";
-import { requireVenueAccess, canManage } from "@/lib/permissions";
+import { requireVenueAccess } from "@/lib/permissions";
 import { ApiError } from "@/lib/api-helpers";
 import { GET, POST } from "@/app/api/venues/[venueId]/items/route";
 import { PATCH, DELETE } from "@/app/api/venues/[venueId]/items/[itemId]/route";
@@ -26,7 +25,6 @@ let data: Awaited<ReturnType<typeof seedTestData>>;
 
 const mockRequireAuth = requireAuth as ReturnType<typeof vi.fn>;
 const mockRequireVenueAccess = requireVenueAccess as ReturnType<typeof vi.fn>;
-const mockCanManage = canManage as ReturnType<typeof vi.fn>;
 
 function req(venueId: string, method = "GET", body?: unknown, searchParams?: string): Request {
   const url = searchParams
@@ -53,14 +51,9 @@ beforeAll(async () => {
 beforeEach(() => {
   mockRequireAuth.mockReset();
   mockRequireVenueAccess.mockReset();
-  mockCanManage.mockReset();
   mockRequireAuth.mockResolvedValue(data.user);
   mockRequireVenueAccess.mockImplementation(async (_userId: string, venueId: string) => {
-    if (venueId === data.venue.id) return { role: "owner" as const, userId: data.user.id, venueId: data.venue.id };
-    throw new ApiError("Unauthorized: no access to this venue", 401);
-  });
-  mockCanManage.mockImplementation(async (userId: string, venueId: string) => {
-    if (venueId === data.venue.id) return true;
+    if (venueId === data.venue.id) return { userId: data.user.id, venueId: data.venue.id };
     throw new ApiError("Unauthorized: no access to this venue", 401);
   });
 });
@@ -178,20 +171,6 @@ describe("POST /api/venues/[venueId]/items", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 403 when user cannot manage", async () => {
-    mockCanManage.mockResolvedValue(false);
-    const res = await POST(
-      req(data.venue.id, "POST", {
-        nameFa: "TEST_محدود",
-        categoryId: data.categories.cat1.id,
-        priceToman: 50000,
-        station: "kitchen",
-      }),
-      params(data.venue.id)
-    );
-    expect(res.status).toBe(403);
-  });
-
   it("returns 401 when unauthenticated", async () => {
     mockRequireAuth.mockRejectedValue(new ApiError("Unauthorized", 401));
     const res = await POST(
@@ -236,13 +215,13 @@ describe("PATCH /api/venues/[venueId]/items/[itemId]", () => {
     expect(res.status).toBe(500);
   });
 
-  it("returns 403 when user cannot manage", async () => {
-    mockCanManage.mockResolvedValue(false);
+  it("returns 401 when no venue access", async () => {
+    mockRequireVenueAccess.mockRejectedValue(new ApiError("Unauthorized: no access to this venue", 401));
     const res = await PATCH(
       req(data.venue.id, "PATCH", { priceToman: 50000 }),
       itemParams(data.venue.id, data.items.item1.id)
     );
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
   });
 });
 
@@ -256,11 +235,5 @@ describe("DELETE /api/venues/[venueId]/items/[itemId]", () => {
 
     const deleted = await prisma.menuItem.findUnique({ where: { id: item.id } });
     expect(deleted?.deletedAt).not.toBeNull();
-  });
-
-  it("returns 403 when user cannot manage", async () => {
-    mockCanManage.mockResolvedValue(false);
-    const res = await DELETE(req(data.venue.id, "DELETE"), itemParams(data.venue.id, data.items.item1.id));
-    expect(res.status).toBe(403);
   });
 });

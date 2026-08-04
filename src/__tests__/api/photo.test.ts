@@ -10,7 +10,7 @@ vi.mock("@/lib/api-helpers", async () => {
 });
 
 vi.mock("@/lib/permissions", () => ({
-  canManage: vi.fn(),
+  requireVenueAccess: vi.fn(),
 }));
 
 const testImageBuffer = Buffer.from(
@@ -19,14 +19,14 @@ const testImageBuffer = Buffer.from(
 );
 
 import { requireAuth } from "@/lib/api-helpers";
-import { canManage } from "@/lib/permissions";
+import { requireVenueAccess } from "@/lib/permissions";
 import { ApiError } from "@/lib/api-helpers";
 import { POST } from "@/app/api/venues/[venueId]/items/[itemId]/photo/route";
 
 let data: Awaited<ReturnType<typeof seedTestData>>;
 
 const mockRequireAuth = requireAuth as ReturnType<typeof vi.fn>;
-const mockCanManage = canManage as ReturnType<typeof vi.fn>;
+const mockRequireVenueAccess = requireVenueAccess as ReturnType<typeof vi.fn>;
 
 function photoFormRequest(venueId: string, itemId: string, file: File | null): Request {
   const formData = new FormData();
@@ -48,9 +48,9 @@ beforeAll(async () => {
 
 beforeEach(() => {
   mockRequireAuth.mockReset();
-  mockCanManage.mockReset();
+  mockRequireVenueAccess.mockReset();
   mockRequireAuth.mockResolvedValue(data.user);
-  mockCanManage.mockResolvedValue(true);
+  mockRequireVenueAccess.mockResolvedValue({ userId: data.user.id, venueId: data.venue.id });
 });
 
 describe("POST /api/venues/[venueId]/items/[itemId]/photo", () => {
@@ -62,16 +62,6 @@ describe("POST /api/venues/[venueId]/items/[itemId]/photo", () => {
       params(data.venue.id, data.items.item1.id)
     );
     expect(res.status).toBe(401);
-  });
-
-  it("returns 403 when user cannot manage", async () => {
-    mockCanManage.mockResolvedValue(false);
-
-    const res = await POST(
-      photoFormRequest(data.venue.id, data.items.item1.id, null),
-      params(data.venue.id, data.items.item1.id)
-    );
-    expect(res.status).toBe(403);
   });
 
   it("returns 404 for non-existent item", async () => {

@@ -27,7 +27,6 @@ export default async function VenuesPage() {
             className="rounded-[var(--radius-panel)] border border-line bg-paper px-8 py-4 text-center text-lg font-serif text-ink transition-colors hover:border-ink"
           >
             {m.venue.nameFa}
-            <span className="mr-3 text-xs text-ink-muted">{m.role}</span>
           </Link>
         ))}
       </div>

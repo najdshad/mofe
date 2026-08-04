@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManage, requireVenueAccess } from "@/lib/permissions";
+import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { ALLERGEN_CODES } from "@/lib/allergens";
@@ -39,8 +39,7 @@ export async function POST(
   try {
     const user = await requireAuth();
     const { venueId, itemId } = await params;
-    const hasAccess = await canManage(user.id, venueId);
-    if (!hasAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    await requireVenueAccess(user.id, venueId);
 
     const item = await prisma.menuItem.findFirst({
       where: { id: itemId, venueId },

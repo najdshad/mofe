@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
-import { canManage } from "@/lib/permissions";
+import { requireVenueAccess } from "@/lib/permissions";
 import { publishVenueMenu } from "@/lib/public-menu/publication";
 
 export async function POST(
@@ -10,7 +10,7 @@ export async function POST(
   try {
     const user = await requireAuth();
     const { venueId } = await params;
-    await canManage(user.id, venueId);
+    await requireVenueAccess(user.id, venueId);
 
     const result = await publishVenueMenu(venueId, user.id);
     if (!result) {
