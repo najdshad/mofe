@@ -1,8 +1,8 @@
 import { prisma } from "./prisma";
 import { ApiError } from "./api-helpers";
 
-export type Role = "owner" | "manager" | "staff";
-const VALID_ROLES: Role[] = ["owner", "manager", "staff"];
+export type Role = "owner" | "manager";
+const VALID_ROLES: Role[] = ["owner", "manager"];
 
 function ensureValidRole(role: string): Role {
   if (!VALID_ROLES.includes(role as Role)) {

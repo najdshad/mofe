@@ -4,7 +4,7 @@ set -e
 if [ "$SKIP_PRISMA_INIT" != "1" ]; then
   echo "Running Prisma schema push..."
 
-  # Safe push — avoid --accept-data-loss which destroys Go-managed tables
+  # Safe push — schema_migrations is a legacy shim, not managed by Prisma
   psql "${DATABASE_URL}" -c "DROP TABLE IF EXISTS schema_migrations;"
   npx prisma db push
   psql "${DATABASE_URL}" -c "CREATE TABLE IF NOT EXISTS schema_migrations (version bigint PRIMARY KEY, dirty boolean NOT NULL); INSERT INTO schema_migrations (version, dirty) VALUES (4, false) ON CONFLICT (version) DO NOTHING;"

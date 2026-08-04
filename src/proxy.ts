@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { generateCsrfToken, CSRF_COOKIE_NAME, csrfCookieOptions } from "@/lib/csrf";
 
-const DASHBOARD_PATHS = ["/login", "/forgot-password", "/reset-password", "/venues", "/admin", "/api"];
+const DASHBOARD_PATHS = ["/login", "/password-reset", "/venues", "/admin", "/api"];
 
 function matchesDashboard(pathname: string): boolean {
   return DASHBOARD_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
@@ -34,6 +34,9 @@ function isValidSessionToken(value: string): boolean {
 
 function authGuard(pathname: string, sessionCookie: { value: string } | undefined, nextUrl: URL): NextResponse | null {
   if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/")) {
+    return null;
+  }
+  if (pathname.startsWith("/api/health")) {
     return null;
   }
   if (sessionCookie?.value && isValidSessionToken(sessionCookie.value)) {

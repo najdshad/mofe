@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the visual and interaction language for the entire service. It applies to admin panels, QR menu pages, modal dialogs, empty states, confirmations, reports, and future product surfaces.
+This document defines the visual and interaction language for the entire service. It applies to admin panels, QR menu pages, modal dialogs, empty states, confirmations, and future product surfaces.
 
 The system is intentionally restrained: ink on paper, minimal ornament, high legibility, low resource usage, and strong typographic hierarchy.
 
@@ -426,15 +426,6 @@ The customer page should feel like a printed menu.
 * item cards with price and metadata
 * sold-out visible, not hidden
 * footer branding only
-
-### Reports and analytics
-
-If analytics are added later, they should remain within the same system.
-
-* Use paper surfaces
-* Prefer simple charts or tables
-* Avoid colorful dashboard aesthetics
-* Keep labels and totals dominant over decoration
 
 ---
 

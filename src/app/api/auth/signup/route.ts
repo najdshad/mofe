@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, createSession } from "@/lib/auth";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
-import { ensureTrialSubscription } from "@/lib/subscription";
 
 function generateSlug(nameFa: string): string {
   const persianToAscii: Record<string, string> = {
@@ -110,8 +109,6 @@ export async function POST(request: Request) {
 
       return { userId: user.id, venueId: venue.id };
     });
-
-    await ensureTrialSubscription(result.venueId);
 
     await createSession(result.userId);
 

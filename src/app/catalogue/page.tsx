@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowUpLeft,
-  BarChart3,
   Check,
   ChevronLeft,
   FileCode2,
@@ -11,13 +10,12 @@ import {
   ScanLine,
   Server,
   ShieldCheck,
-  UsersRound,
 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "mofé — Product Catalogue",
   description:
-    "سکوی مدیریت منوی دیجیتال، سفارش‌گیری لحظه‌ای و فروش برای کافه‌ها و رستوران‌های فارسی‌زبان.",
+    "سکوی مدیریت منوی دیجیتال و تولید QR برای کافه‌ها و رستوران‌های فارسی‌زبان.",
 };
 
 const navigation = [
@@ -31,14 +29,14 @@ const solutionRows = [
   ["هزینه و تأخیر چاپ", "منوی دیجیتال که با یک کلیک منتشر می‌شود."],
   ["ابزارهای خارجی", "فارسی کامل، تومان، تاریخ شمسی و میزبانی داخلی."],
   ["منوی اینستاگرامی", "صفحه HTML اختصاصی با لینک دائمی و QR اختصاصی."],
-  ["هماهنگی تیمی", "سفارش‌گیری لحظه‌ای و وضعیت زنده برای هر آیتم."],
-  ["نداشتن داده فروش", "داشبورد فروش، تحلیل آیتم و خروجی CSV حسابداری."],
+  ["ظاهر یکنواخت", "رنگ و لوگوی کافه، در منوی عمومی بازتاب می‌یابد."],
+  ["قیمت‌های پیچیده", "انواع و قیمت‌های مستقل برای هر آیتم، بدون ابهام."],
 ];
 
 const technology = [
   ["وب", "Next.js 16، App Router و TypeScript strict"],
   ["داده", "PostgreSQL 16 و Prisma v7"],
-  ["بلادرنگ", "Go، chi و WebSocket با Redis اختیاری"],
+  ["بلادرنگ", "منوی عمومی به صورت HTML ایستاده، بدون JavaScript"],
   ["رسانه", "Sharp برای WebP فشرده تا ۵۰ کیلوبایت"],
   ["استقرار", "Docker و nginx، بدون وابستگی به CDN خارجی"],
   ["امنیت", "Session http-only، CSRF، rate limit و کنترل نقش"],
@@ -184,83 +182,6 @@ function AdminMockup() {
   );
 }
 
-function OrderMockup() {
-  const tables = ["۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸"];
-  return (
-    <div className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
-      <div className="flex items-center justify-between border-b border-line pb-3">
-        <div>
-          <p className="text-[10px] tracking-[0.18em] text-ink-muted">سفارش زنده</p>
-          <p className="mt-1 font-serif text-[17px]">سالن اصلی</p>
-        </div>
-        <span className="text-[10px] text-ink-muted">۸ میز</span>
-      </div>
-      <div className="mt-4 grid grid-cols-4 gap-2">
-        {tables.map((table) => (
-          <div
-            className={`flex aspect-square items-center justify-center rounded-xl border text-[11px] ${
-              table === "۳" ? "border-ink bg-ink text-paper" : "border-line text-ink-muted"
-            }`}
-            key={table}
-          >
-            {table}
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 rounded-[18px] border border-line p-3">
-        <div className="flex items-center justify-between">
-          <span className="text-[12px]">میز ۳</span>
-          <span className="rounded-full border border-line px-2 py-0.5 text-[9px] text-ink-muted">
-            در حال آماده‌سازی
-          </span>
-        </div>
-        <div className="mt-3 space-y-2 text-[11px] text-ink-muted">
-          <div className="flex justify-between"><span>۲× لاته</span><span>بار</span></div>
-          <div className="flex justify-between"><span>۱× کیک هویج</span><span>آشپزخانه</span></div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SalesMockup() {
-  const bars = [34, 57, 44, 76, 64, 90, 71];
-  return (
-    <div className="rounded-[var(--radius-panel)] border border-line bg-paper p-5">
-      <div className="flex items-center justify-between border-b border-line pb-3">
-        <div>
-          <p className="text-[10px] tracking-[0.18em] text-ink-muted">گزارش فروش</p>
-          <p className="mt-1 font-serif text-[17px]">این هفته</p>
-        </div>
-        <BarChart3 className="h-4 w-4 text-ink-muted" />
-      </div>
-      <div className="mt-5 grid grid-cols-2 gap-3">
-        <div className="rounded-[16px] border border-line p-3">
-          <p className="text-[10px] text-ink-muted">فروش کل</p>
-          <p className="mt-2 font-serif text-[22px]">۱۲٫۸ م</p>
-          <p className="text-[9px] text-ink-muted">تومان</p>
-        </div>
-        <div className="rounded-[16px] border border-line p-3">
-          <p className="text-[10px] text-ink-muted">تعداد سفارش</p>
-          <p className="mt-2 font-serif text-[22px]">۱۸۶</p>
-          <p className="text-[9px] text-ink-muted">این هفته</p>
-        </div>
-      </div>
-      <div className="mt-5 flex h-24 items-end justify-between gap-2 border-b border-line pb-2">
-        {bars.map((height, index) => (
-          <div className="flex flex-1 flex-col items-center gap-1.5" key={height}>
-            <span
-              className={`w-full rounded-t-sm ${index === 5 ? "bg-ink" : "bg-ink/20"}`}
-              style={{ height: `${height}%` }}
-            />
-            <span className="text-[8px] text-ink-muted">{index + 1}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function ProductCataloguePage() {
   return (
     <main className="min-h-screen bg-paper text-ink">
@@ -312,7 +233,7 @@ export default function ProductCataloguePage() {
               در یک ابزار.
             </h1>
             <p className="mt-7 max-w-2xl text-[18px] leading-9 text-ink-muted sm:text-[20px]">
-              mofé سکوی مدیریت منوی دیجیتال، سفارش‌گیری لحظه‌ای و تحلیل فروش برای کافه‌ها و رستوران‌های فارسی‌زبان است.
+              mofé سکوی مدیریت منوی دیجیتال و تولید QR برای کافه‌ها و رستوران‌های فارسی‌زبان است.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -341,12 +262,12 @@ export default function ProductCataloguePage() {
             <div className="absolute inset-0 rounded-[var(--radius-panel)] border border-line bg-surface" />
             <div className="relative grid min-h-[420px] grid-cols-[1fr_auto] items-end gap-4 overflow-hidden rounded-[var(--radius-panel)] p-6 sm:p-8">
               <div className="self-start">
-                <p className="text-[10px] tracking-[0.2em] text-ink-muted">ONE PRODUCT · FIVE SURFACES</p>
+                <p className="text-[10px] tracking-[0.2em] text-ink-muted">ONE PRODUCT · THREE SURFACES</p>
                 <div className="mt-5 max-w-[180px] border-t border-ink pt-3 font-serif text-[20px] leading-7">
-                  منو، QR، سفارش، تیم و فروش.
+                  منو، QR و انتشار.
                 </div>
                 <div className="mt-9 space-y-2">
-                  {["مدیریت منو", "انتشار عمومی", "سفارش زنده", "گزارش فروش"].map((label, index) => (
+                  {["مدیریت منو", "انتشار عمومی", "طراحی اختصاصی"].map((label, index) => (
                     <div className="flex items-center gap-2 text-[11px] text-ink-muted" key={label}>
                       <span className={`h-1.5 w-1.5 rounded-full ${index === 0 ? "bg-ink" : "bg-ink/30"}`} />
                       {label}
@@ -356,7 +277,7 @@ export default function ProductCataloguePage() {
               </div>
               <MenuPublicationMockup />
               <div className="absolute bottom-6 right-6 rounded-[18px] border border-line bg-paper px-3 py-2 text-[10px] text-ink-muted">
-                اسکن کن، ببین، سفارش بده.
+                اسکن کن، ببین، انتخاب کن.
               </div>
             </div>
           </div>
@@ -370,7 +291,7 @@ export default function ProductCataloguePage() {
               <SectionEyebrow number="۰۱">مسئله</SectionEyebrow>
               <SectionHeading>کافه‌ها با ابزارهای ناهماهنگ اداره می‌شوند.</SectionHeading>
               <p className="mt-6 text-[16px] leading-8 text-ink-muted">
-                منوی چاپی با تغییر قیمت منقضی می‌شود، اینستاگرام جای منوی حرفه‌ای را نمی‌گیرد و سفارش‌های کاغذی، داده قابل اتکایی برای تصمیم‌گیری باقی نمی‌گذارند.
+                منوی چاپی با تغییر قیمت منقضی می‌شود، اینستاگرام جای منوی حرفه‌ای را نمی‌گیرد و آیتم ناموجود یا قیمت اشتباه، هفته‌ها از چشم مشتری پنهان می‌ماند.
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -378,7 +299,7 @@ export default function ProductCataloguePage() {
                 ["چاپِ تکراری", "هر تغییر قیمت، هزینه و تأخیر تازه‌ای برای طراحی و چاپ منو ایجاد می‌کند."],
                 ["اطلاع‌رسانی کند", "آیتم ناموجود یا قیمت جدید، هفته‌ها از چشم مشتری دور می‌ماند."],
                 ["تجربه نامناسب", "مشتری بین پست‌ها می‌گردد، زوم می‌کند و قیمت را حدس می‌زند."],
-                ["عملیات بدون داده", "وضعیت سفارش و فروش هر شیفت، به جای گزارش، فقط یک حدس است."],
+                ["ظاهر یکنواخت", "منوی هر کافه با برند خودش دیده نمی‌شود؛ همه به یک قالب تکراری شبیه‌اند."],
               ].map(([title, text], index) => (
                 <article className="rounded-[var(--radius-card)] border border-line bg-surface p-6" key={title}>
                   <p className="text-[11px] tracking-[0.18em] text-ink-muted">۰{index + 1}</p>
@@ -397,7 +318,7 @@ export default function ProductCataloguePage() {
             <SectionEyebrow number="۰۲">راه‌حل</SectionEyebrow>
             <SectionHeading>یک سامانه برای تمام نقطه‌های تماس.</SectionHeading>
             <p className="mt-6 text-[16px] leading-8 text-ink-muted">
-              mofé جریان منو تا فروش را یکپارچه می‌کند؛ هر بخش برای زبان، واحد پول و شیوه کار تیم‌های مهمان‌نوازی ایران طراحی شده است.
+              mofé جریان منو را از ساخت تا انتشار یکپارچه می‌کند؛ هر بخش برای زبان، واحد پول و شیوه کار کافه‌های مهمان‌نوازی ایران طراحی شده است.
             </p>
           </div>
           <div className="mt-12 overflow-hidden rounded-[var(--radius-panel)] border border-line">
@@ -479,74 +400,11 @@ export default function ProductCataloguePage() {
         </div>
       </section>
 
-      <section className="border-b border-line">
-        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
-          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
-            <div>
-              <SectionEyebrow number="۰۵">عملیات زنده</SectionEyebrow>
-              <SectionHeading>از میز تا آشپزخانه، بدون کاغذ و تأخیر.</SectionHeading>
-              <p className="mt-6 text-[16px] leading-8 text-ink-muted">
-                سرویس مستقل Go سفارش‌ها را در لحظه میان ویتر، آشپزخانه و پنل مدیریت هماهنگ می‌کند. هر شعبه یک hub اختصاصی دارد و همه تغییرات به همان شعبه broadcast می‌شوند.
-              </p>
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                {[
-                  ["۱", "انتخاب میز", "ویتر میز و آیتم‌ها را در تبلت انتخاب می‌کند."],
-                  ["۲", "ارسال آشپزخانه", "سفارش با یک لمس برای ایستگاه مناسب می‌رود."],
-                  ["۳", "پیگیری وضعیت", "ارسال، آماده‌سازی، آماده و تحویل در لحظه دیده می‌شود."],
-                ].map(([number, title, text]) => (
-                  <article className="rounded-[var(--radius-card)] border border-line p-5" key={number}>
-                    <p className="font-serif text-[17px] text-ink-muted">{number}</p>
-                    <h3 className="mt-4 font-serif text-[19px]">{title}</h3>
-                    <p className="mt-2 text-[12px] leading-6 text-ink-muted">{text}</p>
-                  </article>
-                ))}
-              </div>
-            </div>
-            <OrderMockup />
-          </div>
-        </div>
-      </section>
-
-      <section className="border-b border-line">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 sm:px-8 md:py-28 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
-          <SalesMockup />
-          <div>
-            <SectionEyebrow number="۰۶">داده و تیم</SectionEyebrow>
-            <SectionHeading>مدیریت دقیق‌تر، با تصویر روشن‌تر.</SectionHeading>
-            <p className="mt-6 text-[16px] leading-8 text-ink-muted">
-              داشبورد فروش، عددهای مهم را به تومان و تاریخ شمسی نشان می‌دهد تا مدیر شعبه بتواند به جای حدس، با داده عمل کند.
-            </p>
-            <div className="mt-7 grid gap-4 sm:grid-cols-2">
-              <div className="border-t border-line pt-4">
-                <BarChart3 className="h-4 w-4 text-ink-muted" />
-                <h3 className="mt-3 font-serif text-[20px]">فروش قابل خواندن</h3>
-                <p className="mt-2 text-[13px] leading-7 text-ink-muted">
-                  جمع فروش، تعداد سفارش، میانگین سبد، آیتم‌های پرفروش و توزیع ساعتی.
-                </p>
-              </div>
-              <div className="border-t border-line pt-4">
-                <UsersRound className="h-4 w-4 text-ink-muted" />
-                <h3 className="mt-3 font-serif text-[20px]">دسترسی روشن</h3>
-                <p className="mt-2 text-[13px] leading-7 text-ink-muted">
-                  نقش‌های مالک، مدیر و کارمند؛ هر شخص فقط به ابزار لازم خود دسترسی دارد.
-                </p>
-              </div>
-            </div>
-            <div className="mt-7 flex flex-wrap gap-2">
-              <PaperTag>تاریخ شمسی</PaperTag>
-              <PaperTag>خروجی CSV امن</PaperTag>
-              <PaperTag>گزارش آیتم و دسته</PaperTag>
-              <PaperTag>کنترل نقش در تمام APIها</PaperTag>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="border-b border-line" id="technology">
         <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
           <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
             <div>
-              <SectionEyebrow number="۰۷">بنیان فنی</SectionEyebrow>
+              <SectionEyebrow number="۰۵">بنیان فنی</SectionEyebrow>
               <SectionHeading>ساخته‌شده برای استقلال و دوام.</SectionHeading>
               <p className="mt-6 text-[16px] leading-8 text-ink-muted">
                 معماری mofé از ابتدا با نیازهای زیرساختی ایران سازگار شده: بدون فونت، CDN یا ورود خارجی؛ با کنترل کامل داده و مسیر استقرار.
@@ -584,10 +442,10 @@ export default function ProductCataloguePage() {
         <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
           <div className="grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
             <div>
-              <SectionEyebrow number="۰۸">وضعیت و مسیر رشد</SectionEyebrow>
+              <SectionEyebrow number="۰۶">وضعیت و مسیر رشد</SectionEyebrow>
               <SectionHeading>هسته محصول آماده است؛ لایه‌های مقیاس در راه‌اند.</SectionHeading>
               <p className="mt-6 text-[16px] leading-8 text-ink-muted">
-                ماژول‌های اصلی منو، QR، سفارش، فروش و اشتراک پیاده‌سازی شده‌اند. درگاه زرین‌پال فعلاً در محیط sandbox قرار دارد و برای پرداخت واقعی هنوز اعتبارسنجی نشده است.
+                ماژول‌های اصلی منو و QR پیاده‌سازی شده‌اند و انتشار منوی عمومی از روز اول در دسترس است.
               </p>
             </div>
             <div className="rounded-[var(--radius-panel)] border border-line">
@@ -599,8 +457,8 @@ export default function ProductCataloguePage() {
                   "دامنه اختصاصی برای هر کافه با CNAME",
                   "تحویل سریع‌تر منو از CDN داخلی",
                   "آمار بازدید و تعامل منوی QR",
-                  "اپلیکیشن اختصاصی ویترها",
-                  "اتصال به پرداخت روی میز",
+                  "خروجی چاپی برای بروشور و کارت میز",
+                  "مولتی‌شعبه و منوی ترکیبی",
                   "فارسی، انگلیسی و عربی در یک منو",
                 ].map((item, index) => (
                   <li className="flex items-center gap-4 px-6 py-4 text-[14px]" key={item}>
@@ -617,13 +475,13 @@ export default function ProductCataloguePage() {
       <section className="border-b border-line">
         <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
           <div className="max-w-3xl">
-            <SectionEyebrow number="۰۹">برای هر مقیاس</SectionEyebrow>
+            <SectionEyebrow number="۰۷">برای هر مقیاس</SectionEyebrow>
             <SectionHeading>از چای‌خانه محلی تا رستوران شلوغ.</SectionHeading>
           </div>
           <div className="mt-12 grid gap-4 md:grid-cols-3">
             {[
               ["کافه کوچک", "یک شعبه · ۳۰ آیتم", "یک بار منو را تنظیم می‌کند، QR را روی میز می‌چسباند و هر تغییر قیمت را همان لحظه منتشر می‌کند."],
-              ["رستوران شلوغ", "۳۰ میز · ۶ ویتر", "تیم سرویس سفارش را زنده به آشپزخانه می‌رساند و مدیر، فروش و ساعت اوج را در داشبورد می‌بیند."],
+              ["رستوران شلوغ", "منوی بزرگ · عکس زیاد", "منویی سبک که با صدها آیتم در چند ثانیه منتشر می‌شود و روی هر گوشی روان کار می‌کند."],
               ["چای‌خانه سنتی", "منوی محدود · نیاز سبک", "برای یک منوی تمیز و حرفه‌ای، بدون هزینه چاپ یا پیچیدگی ابزارهای خارجی."],
             ].map(([title, meta, text], index) => (
               <article className="rounded-[var(--radius-card)] border border-line p-6" key={title}>
@@ -644,11 +502,11 @@ export default function ProductCataloguePage() {
             محصول را در کار واقعی ببینید.
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-[16px] leading-8 text-ink-muted">
-            نسخه دمو با داده واقعی کافه نقطه آماده است: ۶۶ آیتم منو، پنل مالک و منوی عمومی قابل اسکن.
+            نسخه دمو با داده واقعی کافه نقطه آماده است: ۶۶ آیتم منو، پنل مدیریت کامل و منوی عمومی قابل اسکن.
           </p>
           <div className="mx-auto mt-8 grid max-w-xl overflow-hidden rounded-[var(--radius-card)] border border-line text-right sm:grid-cols-2">
             <div className="border-b border-line p-5 sm:border-b-0 sm:border-l">
-              <p className="text-[10px] tracking-[0.16em] text-ink-muted">OWNER DEMO</p>
+              <p className="text-[10px] tracking-[0.16em] text-ink-muted">ADMIN DEMO</p>
               <p className="mt-3 text-[14px]">admin@noghteh</p>
               <p className="mt-1 text-[13px] text-ink-muted">demo1234</p>
             </div>

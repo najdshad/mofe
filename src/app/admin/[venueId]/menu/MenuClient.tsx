@@ -35,6 +35,7 @@ import { GripIcon, EditIcon, DeleteIcon } from "@/components/ui/Icons";
 import { fetchApi } from "@/lib/fetch-api";
 import { ALLERGEN_LABELS } from "@/lib/allergens";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface Category {
   id: string;
@@ -1241,6 +1242,12 @@ export function MenuClient({
           {publishStatus && (
             <span className="text-xs text-ink-muted shrink-0">{publishStatus}</span>
           )}
+          <Link
+            href={`/admin/${venueId}/publications`}
+            className="hidden sm:inline text-xs text-ink-muted underline decoration-line underline-offset-4 hover:text-ink transition-colors shrink-0"
+          >
+            تاریخچه انتشار
+          </Link>
           {dragError && (
             <span className="text-xs text-red-600 shrink-0">{dragError}</span>
           )}

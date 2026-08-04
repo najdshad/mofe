@@ -31,7 +31,7 @@ export async function PATCH(
     const updateData: Record<string, unknown> = {};
 
     if (role) {
-      if (!["owner", "manager", "staff"].includes(role)) {
+      if (!["owner", "manager"].includes(role)) {
         return NextResponse.json({ error: "Invalid role" }, { status: 400 });
       }
 

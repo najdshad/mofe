@@ -4,7 +4,6 @@ import { canManage } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { VALID_STATIONS } from "@/lib/constants";
-import { checkItemLimit } from "@/lib/subscription";
 import Papa from "papaparse";
 
 const FORMULA_INJECTION_RE = /^[=+\-@\t]/;
@@ -88,18 +87,6 @@ export async function POST(
       seenCategories.add(key);
       uniqueCategoryNames.push(name);
     }
-  }
-
-  const limit = await checkItemLimit(venueId);
-  if (limit.max !== -1 && (limit.current + dataRows.length) > limit.max) {
-    return NextResponse.json(
-      {
-        error: `تعداد آیتم‌های CSV (${dataRows.length}) بیش از حداکثر مجاز (${limit.max}) است. لطفاً اشتراک خود را ارتقا دهید.`,
-        upgradeUrl: `/admin/${venueId}/billing`,
-        limit: { current: limit.current, max: limit.max },
-      },
-      { status: 403 }
-    );
   }
 
   const results: { row: number; status: string; nameFa: string; message?: string }[] = [];

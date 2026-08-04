@@ -3,31 +3,13 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
-interface NavSub {
-  status: string;
-  plan: { slug: string; orderingEnabled: boolean };
-}
-
-export function NavClient({ venueId, sub }: { venueId: string; sub: NavSub | null }) {
+export function NavClient({ venueId }: { venueId: string }) {
   const pathname = usePathname();
 
-  const links = (() => {
-    const items = [
-      { href: `/admin/${venueId}/menu`, label: "منو" },
-    ];
-
-    if (sub?.plan?.orderingEnabled) {
-      items.push({ href: `/admin/${venueId}/orders`, label: "سفارشات" });
-    }
-
-    items.push(
-      { href: `/admin/${venueId}/sales`, label: "فروش" },
-      { href: `/admin/${venueId}/billing`, label: "اشتراک" },
-      { href: `/admin/${venueId}/settings`, label: "تنظیمات" }
-    );
-
-    return items;
-  })();
+  const links = [
+    { href: `/admin/${venueId}/menu`, label: "منو" },
+    { href: `/admin/${venueId}/settings`, label: "تنظیمات" },
+  ];
 
   return (
     <div className="mx-auto flex max-w-5xl gap-4 px-4">

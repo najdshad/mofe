@@ -1,3 +1,0 @@
--- Cannot remove enum values in PostgreSQL.
--- This migration is a no-op; the up migration only adds a new value.
--- To fully revert, you would need to drop and recreate the type.

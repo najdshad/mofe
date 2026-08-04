@@ -17,12 +17,6 @@ export async function requireAuth() {
   return user;
 }
 
-export async function requireInternalAuth() {
-  const user = await requireAuth();
-  if (user.role !== "internal") throw new ApiError("Forbidden: internal access required", 403);
-  return user;
-}
-
 export function errorResponse(error: unknown) {
   if (error instanceof ApiError) {
     return NextResponse.json({ error: error.message }, { status: error.status });

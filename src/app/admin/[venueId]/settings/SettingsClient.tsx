@@ -6,7 +6,6 @@ import {
   ArrowUpLeft,
   Building2,
   Check,
-  Clock3,
   ExternalLink,
   Globe2,
   ImagePlus,
@@ -21,7 +20,6 @@ import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { VenueInfoSection } from "./VenueInfoSection";
 import { MembersSection } from "./MembersSection";
-import { ScheduleSection } from "./ScheduleSection";
 import { useStatusMessage } from "@/hooks/useStatusMessage";
 
 interface Member {
@@ -44,7 +42,6 @@ interface SettingsClientProps {
   currentUserRole: string;
   currentUserId: string;
   publicMenuDomain: string;
-  subscription: { plan: { customDomain: boolean; orderingEnabled: boolean } } | null;
 }
 
 const SETTING_SECTIONS: Array<{
@@ -56,7 +53,6 @@ const SETTING_SECTIONS: Array<{
   { id: "venue", label: "اطلاعات مجموعه", description: "نام و منطقه زمانی", icon: Building2 },
   { id: "appearance", label: "ظاهر منو", description: "لوگو و پیام خوش‌آمد", icon: Palette },
   { id: "members", label: "اعضای تیم", description: "نقش‌ها و دسترسی‌ها", icon: Users },
-  { id: "schedule", label: "زمان‌بندی", description: "ساعت فعالیت ایستگاه‌ها", icon: Clock3 },
   { id: "domain", label: "آدرس منو", description: "لینک منوی عمومی", icon: Globe2 },
 ];
 
@@ -99,7 +95,6 @@ export function SettingsClient({
   currentUserRole,
   currentUserId,
   publicMenuDomain,
-  subscription,
 }: SettingsClientProps) {
   const router = useRouter();
   const [nameFa, setNameFa] = useState(initialNameFa);
@@ -113,21 +108,7 @@ export function SettingsClient({
   const [uploading, setUploading] = useState(false);
   const { statusMessage: appearanceStatus, showStatus: showAppearanceStatus } = useStatusMessage();
 
-  const [schedules, setSchedules] = useState<{ station: string; dayOfWeek: number; startTime: string; endTime: string; isActive: boolean }[]>([]);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
-  const [scheduleStatus, setScheduleStatus] = useState("");
-  const [schedulesLoaded, setSchedulesLoaded] = useState(false);
   const [activeSection, setActiveSection] = useState("venue");
-
-  useEffect(() => {
-    fetch(`/api/venues/${venueId}/schedules`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setSchedules(data);
-      })
-      .catch((e) => console.error("Failed to load schedules:", e))
-      .finally(() => setSchedulesLoaded(true));
-  }, [venueId]);
 
   useEffect(() => {
     const sections = SETTING_SECTIONS
@@ -150,100 +131,6 @@ export function SettingsClient({
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, []);
-
-  const handleSetStationDefaults = (station: string, startTime: string, endTime: string, isActive: boolean, protectedDays: number[]) => {
-    setSchedules((prev) => {
-      const updated = [...prev];
-      const protect = new Set(protectedDays);
-      for (const day of [0, 1, 2, 3, 4, 5, 6]) {
-        if (protect.has(day)) continue;
-        const idx = updated.findIndex((s) => s.station === station && s.dayOfWeek === day);
-        if (idx >= 0) {
-          updated[idx] = { ...updated[idx], startTime, endTime, isActive };
-        } else {
-          updated.push({ station, dayOfWeek: day, startTime, endTime, isActive });
-        }
-      }
-      return updated;
-    });
-  };
-
-  const handleResetDay = (station: string, dayOfWeek: number, startTime: string, endTime: string, isActive: boolean) => {
-    setSchedules((prev) => {
-      const idx = prev.findIndex((s) => s.station === station && s.dayOfWeek === dayOfWeek);
-      if (idx >= 0) {
-        const updated = [...prev];
-        updated[idx] = { ...updated[idx], startTime, endTime, isActive };
-        return updated;
-      }
-      return [...prev, { station, dayOfWeek, startTime, endTime, isActive }];
-    });
-  };
-
-  const handleScheduleToggle = (station: string, dayOfWeek: number) => {
-    setSchedules((prev) => {
-      const existing = prev.find((s) => s.station === station && s.dayOfWeek === dayOfWeek);
-      if (existing) {
-        return prev.map((s) =>
-          s.station === station && s.dayOfWeek === dayOfWeek
-            ? { ...s, isActive: !s.isActive }
-            : s
-        );
-      }
-      return [...prev, { station, dayOfWeek, startTime: "07:00", endTime: "23:30", isActive: true }];
-    });
-  };
-
-  const handleScheduleTime = (station: string, dayOfWeek: number, field: "startTime" | "endTime", value: string) => {
-    setSchedules((prev) => {
-      const existing = prev.find((s) => s.station === station && s.dayOfWeek === dayOfWeek);
-      if (existing) {
-        return prev.map((s) =>
-          s.station === station && s.dayOfWeek === dayOfWeek ? { ...s, [field]: value } : s
-        );
-      }
-      return [...prev, { station, dayOfWeek, startTime: field === "startTime" ? value : "07:00", endTime: field === "endTime" ? value : "23:30", isActive: true }];
-    });
-  };
-
-  const handleApplyAll = (station: string, startTime: string, endTime: string, isActive: boolean) => {
-    setSchedules((prev) => {
-      const days = [0, 1, 2, 3, 4, 5, 6];
-      const updated = [...prev];
-      for (const day of days) {
-        const idx = updated.findIndex((s) => s.station === station && s.dayOfWeek === day);
-        if (idx >= 0) {
-          updated[idx] = { ...updated[idx], startTime, endTime, isActive };
-        } else {
-          updated.push({ station, dayOfWeek: day, startTime, endTime, isActive });
-        }
-      }
-      return updated;
-    });
-  };
-
-  const handleSaveSchedules = async () => {
-    setScheduleLoading(true);
-    setScheduleStatus("");
-    try {
-      const res = await fetch(`/api/venues/${venueId}/schedules`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ schedules }),
-      });
-      if (res.ok) {
-        setScheduleStatus("ذخیره شد");
-        setTimeout(() => setScheduleStatus(""), 3000);
-      } else {
-        const data = await res.json();
-        setScheduleStatus(data.error || "خطا");
-      }
-    } catch {
-      setScheduleStatus("خطا در ذخیره");
-    } finally {
-      setScheduleLoading(false);
-    }
-  };
 
   const handleSaveVenue = async () => {
     setVenueStatus("");
@@ -401,13 +288,6 @@ export function SettingsClient({
   };
 
   const displayName = nameEn.trim() || nameFa;
-  const activeScheduleCount = schedules.filter((schedule) => schedule.isActive).length;
-  const activeStationCount = new Set(
-    schedules.filter((schedule) => schedule.isActive).map((schedule) => schedule.station)
-  ).size;
-  const scheduleSummary = schedulesLoaded
-    ? `${activeScheduleCount} روز فعال`
-    : "در حال بارگذاری";
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-12">
@@ -425,7 +305,7 @@ export function SettingsClient({
               همه‌چیز برای یک منوی بهتر
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-7 text-paper/65">
-              اطلاعات مجموعه، ظاهر منو، دسترسی تیم و ساعت فعالیت را از یکجا مدیریت کنید.
+              اطلاعات مجموعه، ظاهر منو و دسترسی تیم را از یکجا مدیریت کنید.
             </p>
           </div>
 
@@ -455,19 +335,13 @@ export function SettingsClient({
 
       <section
         aria-label="خلاصه تنظیمات"
-        className="grid gap-3 sm:grid-cols-3"
+        className="grid gap-3 sm:grid-cols-2"
       >
         <SummaryCard
           icon={Users}
           label="اعضای تیم"
           value={new Intl.NumberFormat("fa-IR").format(members.length)}
           detail="کاربر دسترسی‌دار"
-        />
-        <SummaryCard
-          icon={Clock3}
-          label="زمان‌بندی"
-          value={schedulesLoaded ? `${activeStationCount} ایستگاه` : "—"}
-          detail={scheduleSummary}
         />
         <SummaryCard
           icon={ImagePlus}
@@ -583,7 +457,7 @@ export function SettingsClient({
                     onChange={(e) => setWelcomeMessage(e.target.value)}
                     maxLength={220}
                     rows={6}
-                    placeholder="مثلاً: خوش آمدید؛ برای سفارش، آیتم مورد علاقه‌تان را انتخاب کنید."
+                    placeholder="مثلاً: خوش آمدید؛ از منوی ما لذت ببرید."
                     className="mt-2 min-h-36 w-full resize-none rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm leading-7 text-ink placeholder:text-ink-muted/50 transition-colors focus:border-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
                   />
                   <p className="mt-2 text-xs leading-5 text-ink-muted">
@@ -669,24 +543,10 @@ export function SettingsClient({
             />
           </div>
 
-          <div id="schedule" className="scroll-mt-5">
-            <ScheduleSection
-              schedules={schedules}
-              loading={scheduleLoading}
-              status={scheduleStatus}
-              onToggle={handleScheduleToggle}
-              onTimeChange={handleScheduleTime}
-              onApplyAll={handleApplyAll}
-              onSetDefaults={handleSetStationDefaults}
-              onResetDay={handleResetDay}
-              onSave={handleSaveSchedules}
-            />
-          </div>
-
           <div id="domain" className="scroll-mt-5">
             <Panel
               title="آدرس منوی عمومی"
-              subtitle="این لینک را در شبکه‌های اجتماعی، بیو و QR میزها به اشتراک بگذارید."
+              subtitle="این لینک را در شبکه‌های اجتماعی و QR منو به اشتراک بگذارید."
               className="overflow-hidden shadow-sm"
             >
               <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
@@ -714,24 +574,6 @@ export function SettingsClient({
                   باز کردن
                   <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.7} />
                 </a>
-              </div>
-              <div
-                className={`mt-3 flex items-start gap-2 rounded-2xl border px-3.5 py-3 text-xs leading-6 ${
-                  subscription?.plan?.customDomain
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-orange-200 bg-orange-50 text-orange-700"
-                }`}
-              >
-                {subscription?.plan?.customDomain ? (
-                  <Check className="mt-1 h-4 w-4 shrink-0" strokeWidth={1.8} />
-                ) : (
-                  <ShieldCheck className="mt-1 h-4 w-4 shrink-0" strokeWidth={1.8} />
-                )}
-                <span>
-                  {subscription?.plan?.customDomain
-                    ? "مجموعه شما امکان اتصال دامنه اختصاصی را دارد؛ برای فعال‌سازی با پشتیبانی تماس بگیرید."
-                    : "دامنه اختصاصی در طرح‌های حرفه‌ای و پریمیوم در دسترس است."}
-                </span>
               </div>
             </Panel>
           </div>

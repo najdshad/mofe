@@ -21,8 +21,8 @@ cd mofe
 
 echo "=== 3. Create .env file ==="
 echo "→ Place your .env file at /opt/mofe/.env with all secrets"
-echo "  (DATABASE_URL, S3_*, ZARINPAL_*, SMTP_*, etc.)"
-echo "  See .env.production.example for the full list."
+echo "  (DATABASE_URL, S3_*, SMTP_*, etc.)"
+echo "  See the Environment section in AGENTS.md for the full list."
 
 echo "=== 4. Obtain SSL certificates ==="
 echo "→ STOP any process on port 80 first, then run:"
@@ -41,7 +41,6 @@ echo "  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
 
 echo "=== 7. Verify ==="
 echo "  curl http://localhost:3000/api/health"
-echo "  curl http://localhost:8080/health"
 echo "  curl https://mofe.ir/health"
 
 echo "=== 8. Set up auto-renewal ==="

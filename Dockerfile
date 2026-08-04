@@ -1,8 +1,4 @@
-ARG NEXT_PUBLIC_WS_URL
-
 FROM node:22-slim AS builder
-ARG NEXT_PUBLIC_WS_URL
-ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package*.json ./

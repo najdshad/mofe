@@ -1,37 +1,25 @@
 # mofé — کافه منو
 
-A Persian-first cafe and restaurant management service: menu management, real-time ordering, sales analytics, QR menus, billing, and team collaboration — all in Persian, with a restrained paper-and-ink aesthetic.
+A Persian-first cafe menu management service: menu management, publications with QR codes, and a beautiful public menu — all in Persian, with a restrained paper-and-ink aesthetic.
 
-Designed for cafe owners in Iran. Staff take orders on tablets, the kitchen sees them in real time, customers scan a QR code for a beautiful static menu, and the owner gets sales reports — no app installs, no monthly SaaS fees from abroad.
+Designed for cafe owners in Iran. Owners build and publish their menu, customers scan a QR code for a beautiful static menu — no app installs, no monthly SaaS fees from abroad.
 
 ## Features
 
 ### Menu Management
-CRUD for categories and items with drag-and-drop reorder, Persian/English names, pricing, description, station assignment, and calories. Variants (single/double/etc.) with price modifiers, allergen badges, and sold-out toggles. CSV import with smart header detection and CSV export. Bulk visibility and delete operations. Photo upload per item — auto-compressed to WebP ≤50KB via Sharp.
-
-### Real-Time Ordering System
-A separate Go service (chi v5, WebSocket) powers live order management. Staff create orders on a table grid, add items with variant/quantity/notes, send to the kitchen, and track item status (SENT → PREPARING → READY → DELIVERED). All mutations broadcast to venue-scoped WebSocket clients. Optional Redis pub/sub for horizontal scaling. Offline queue replays operations when connectivity resumes.
-
-### Sales Dashboard
-Aggregated revenue and order data with Shamsi (Persian) date charts via Recharts. Daily/weekly/monthly/yearly/custom ranges. Summary cards (total orders, revenue, average order value). Item-level breakdown: top items, hourly revenue distribution, category breakdown. CSV export with formula injection protection.
+CRUD for categories and items with drag-and-drop reorder (@dnd-kit), Persian/English names, pricing, description, and calories. Variants with price modifiers, allergen badges (14 allergens), and sold-out toggles. CSV import with header alias detection and CSV export. Bulk delete, per-item sold-out toggles. Photo upload per item — auto-compressed to WebP ≤50KB via Sharp (max 500px).
 
 ### Public QR Menu
-One-click publish produces a self-contained static HTML page (~10KB, zero JavaScript, no API calls) accessible at `/m/[slug]`. RTL, mobile-first, Persian numerals, sold-out items with badges, sticky category navigation with IntersectionObserver auto-highlight, allergen pills, variant badges, and an optional photo mode. Served from an in-memory cache with 60s TTL. No app, no install — just a QR code.
+One-click publish stores a snapshot and serves a self-contained static HTML page at `/m/[slug]` — no API calls, and no JavaScript executes (the route serves a `script-src 'none'` CSP). RTL, mobile-first, Persian numerals, sold-out items with badges, sticky category navigation with scroll-based auto-highlight, allergen pills, variant badges, and an optional photo mode. Served from an in-memory cache with 60s TTL. No app, no install — just a QR code.
 
-### Staff & Permissions
-Three venue roles: owner, manager, staff. Owners manage everything, managers handle operations, staff take orders. Role-based enforcement on all API routes. Multi-venue support with cross-venue isolation. Staff member login via `username@venue.slug` email scheme.
-
-### Billing & Subscriptions
-Three plans (Basic/Pro/Premium) with tiered item and table limits. Free trials (14 days for Basic, 7 for Pro/Premium). Prorated plan upgrades, downgrades deferred to period end. Coupon discounts with usage limits and expiry. Zarinpal sandbox integration for payment processing.
+### Auth & Venues
+Session-based auth with signup, login, and password reset. Multi-venue support with cross-venue isolation. Role-based enforcement (owner/manager) on all API routes.
 
 ### Venue Management
-Venue settings (name, timezone, welcome message, accent color). Logo upload with auto-compression. Member management with add/remove/role change. Station schedules — per-day, per-station (kitchen/bar) operating hours. Photo display toggle for the public menu.
-
-### Internal Admin Tool
-Role-gated (`role === "internal"`) panel for the mofé team. User management (list/create accounts) and venue management (list/create venues with owner assignment).
+Venue settings (name, timezone, welcome message, accent color). Logo upload with auto-compression. Member management with add/remove/role change (owner/manager only). Photo display toggle for the public menu.
 
 ### Security
-Session-based auth with SHA-256 hashed tokens, 7-day TTL, idle timeout. CSRF protection on all state-changing routes (Next.js and Go). DB-backed rate limiting (login, password reset). Input validation, HTML sanitization for the public menu, and SQL injection protection via parameterized queries.
+Session-based auth with SHA-256 hashed tokens, 7-day TTL, 30-minute idle timeout, and bcrypt (12 rounds) password hashes. CSRF protection on all state-changing routes. DB-backed rate limiting (login, password reset, signup). Input validation, HTML escaping for the public menu, and SQL injection protection via Prisma ORM parameterized queries.
 
 ### Audit Logging
 All mutations (categories, items, members, publish/unpublish) logged to the AuditLog table with actor, action, entity, and metadata. Fire-and-forget — never fails the primary operation.
@@ -41,11 +29,11 @@ All mutations (categories, items, members, publish/unpublish) logged to the Audi
 | Email | Password | Role |
 | --- | --- | --- |
 | `admin@noghteh` | `demo1234` | Owner of "کافه نقطه" (seed venue) |
-| `admin@mofe.ir` | `admin1234` | Internal (mofé team) |
 
 ## Quick Start
 
 ```bash
+export DATABASE_URL="postgresql://mofe:mofe@localhost:5432/mofe"   # prisma.config.ts reads this from the environment; no .env file ships in the repo
 npm install
 npx prisma db push
 npx prisma db seed
@@ -54,35 +42,34 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-For the ordering service (Go):
-```bash
-cd ordering-service && go run ./cmd/server
-```
-
 ## Scripts
 
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Dev server |
 | `npm run build` | Production build |
-| `npm test` | Run 500 tests (26 files) |
+| `npm run start` | Start the production build |
+| `npm test` | Run test suite (257 tests, 15 files) |
+| `npm run test:watch` | Run tests in watch mode |
 | `npm run typecheck` | TypeScript type check |
 | `npm run lint` | ESLint |
 | `npm run db:studio` | Prisma Studio |
-| `npm run db:seed` | Seed demo data |
+| `npm run db:push` | db push + schema_migrations drop/recreate dance |
+| `npm run db:migrate` | Prisma migrate dev |
+| `npm run db:reset` | Prisma migrate reset --force |
+| `npx prisma db seed` | Seed demo data |
+| `npm run download:menus` | Download published menus via `scripts/download-menus.ts` |
 
 ## Tech Stack
 
 | Layer | Technology |
 | --- | --- |
-| Web framework | Next.js 16 (App Router), TypeScript |
+| Web framework | Next.js 16 (App Router), React 19, TypeScript |
 | Styling | Tailwind CSS v4, custom paper-and-ink design tokens |
 | Database | PostgreSQL, Prisma v7, @prisma/adapter-pg |
 | Auth | Session-based, HTTP-only cookie, bcrypt + SHA-256 |
-| Real-time | Go 1.23, chi v5, gorilla/websocket |
-| Queue | localStorage-based offline queue (client-side) |
-| Testing | Vitest (500 tests), Go tests |
-| Infrastructure | Docker, nginx, optional Redis |
+| Testing | Vitest (257 tests) |
+| Infrastructure | Docker, nginx |
 
 ## Design
 
@@ -92,7 +79,7 @@ See [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md) for the full system.
 
 ## Development Status
 
-> 🚧 This project is in active development and has not been deployed to production. Zarinpal runs in sandbox/mock mode. The subscription billing system is implemented but untested with real payments.
+> 🚧 This project is in active development and has not been deployed to production.
 
 ## Further Reading
 
@@ -100,6 +87,5 @@ See [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md) for the full system.
 | --- | --- |
 | [`NAVIGATION-GUIDE.md`](./NAVIGATION-GUIDE.md) | Directory structure, conventions, architecture, dev tasks |
 | [`AGENTS.md`](./AGENTS.md) | AI-assisted development instructions, gotchas, testing |
-| [`PRD.md`](./PRD.md) | Product requirements |
 | [`DESIGN-LANGUAGE.md`](./DESIGN-LANGUAGE.md) | Full design system specification |
 | [`sample-csv.csv`](./sample-csv.csv) | CSV import template (66 items) |

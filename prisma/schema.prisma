@@ -31,17 +31,16 @@ model User {
 }
 
 model Venue {
-  id              String    @id @default(uuid())
-  nameFa          String
-  nameEn          String?
-  slug            String    @unique
-  plan            String    @default("starter")
-  timezone        String    @default("Asia/Tehran")
-  accentColor     String?
-  welcomeMessage  String?
-  logoUrl     String?
-  menuPhotoMode   Boolean   @default(false)
-  publicStatus    String    @default("draft")
+  id             String    @id @default(uuid())
+  nameFa         String
+  nameEn         String?
+  slug           String    @unique
+  timezone       String    @default("Asia/Tehran")
+  accentColor    String?
+  welcomeMessage String?
+  logoUrl        String?
+  menuPhotoMode  Boolean   @default(false)
+  publicStatus   String    @default("draft")
   publishedAt    DateTime?
   unpublishedAt  DateTime?
   createdAt      DateTime  @default(now())
@@ -52,12 +51,7 @@ model Venue {
   menuItems    MenuItem[]
   assets       Asset[]
   publications MenuPublication[]
-  domains      Domain[]
   auditLogs    AuditLog[]
-  sales            Sale[]
-  stationSchedules StationSchedule[]
-  tables           VenueTable[]
-  subscription     Subscription?
 }
 
 model VenueMember {
@@ -169,42 +163,6 @@ model MenuPublication {
   @@index([createdByUserId])
 }
 
-model Domain {
-  id                String    @id @default(uuid())
-  venueId           String
-  type              String
-  hostname          String    @unique
-  status            String    @default("pending")
-  verificationToken String?
-  verifiedAt        DateTime?
-  createdAt         DateTime  @default(now())
-
-  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-
-  @@index([venueId])
-}
-
-model StationSchedule {
-  id         String   @id @default(uuid())
-  venueId    String
-  station    String
-  dayOfWeek  Int
-  startTime  String
-  endTime    String
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-
-  @@index([venueId, station])
-  @@index([venueId, dayOfWeek])
-  @@index([venueId])
-  @@index([station])
-  @@index([dayOfWeek])
-  @@unique([venueId, station, dayOfWeek])
-}
-
 model MenuItemVariant {
   id          String   @id @default(uuid())
   menuItemId  String
@@ -245,239 +203,6 @@ model MenuItemAllergen {
   @@unique([menuItemId, allergenCode])
   @@index([menuItemId])
   @@index([allergenCode])
-}
-
-enum VenueTableStatus {
-  FREE
-  ACTIVE
-  READY
-  SETTLED
-}
-
-model VenueTable {
-  id        String           @id @default(uuid())
-  venueId   String
-  number    Int
-  label     String?
-  tags      String[]         @default([])
-  status    VenueTableStatus @default(FREE)
-  isActive  Boolean          @default(true)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-
-  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-
-  @@unique([venueId, number])
-  @@index([venueId, isActive])
-}
-
-/// Managed by Go ordering-service — Prisma must NOT alter or drop these tables.
-/// @@ignore prevents Prisma Client generation; enums + constraints prevent db push from
-/// trying to convert columns to String (which would drop defaults/constraints).
-/// See ordering-service/migrations/001 for the authoritative table definition.
-
-enum OrderStatusGo {
-  DRAFT
-  PENDING
-  SENT
-  IN_PROGRESS
-  READY
-  DELIVERED
-  COMPLETED
-  CANCELLED
-
-  @@map("order_status")
-}
-
-enum ItemStatusGo {
-  PENDING
-  SENT
-  PREPARING
-  READY
-  DELIVERED
-  CANCELLED
-
-  @@map("item_status")
-}
-
-/// Go ordering-service order table (see ordering-service/migrations/001)
-model orders {
-  id                String          @id
-  venue_id          String
-  waiter_id         String?
-  table_number      String?
-  guest_count       Int?            @default(1)
-  status            OrderStatusGo?  @default(PENDING)
-  subtotal          Int             @default(0)
-  total             Int             @default(0)
-  notes             String?
-  created_at        DateTime?       @default(now())
-  sent_to_kitchen_at DateTime?
-  ready_at          DateTime?
-  delivered_at      DateTime?
-  cancelled_at      DateTime?
-  completed_at      DateTime?
-  created_by_name   String?
-
-  @@ignore
-}
-
-/// Go ordering-service order items table (see ordering-service/migrations/001)
-model order_items {
-  id             String         @id
-  order_id       String
-  menu_item_id   String
-  menu_item_name String
-  variant_id     String?
-  variant_name   String?
-  quantity       Int
-  unit_price     Int
-  total_price    Int
-  station        String
-  status         ItemStatusGo?  @default(PENDING)
-  notes          String?
-  sent_at        DateTime?
-  preparing_at   DateTime?
-  ready_at       DateTime?
-  delivered_at   DateTime?
-  cancelled_at   DateTime?
-  course_number  Int?           @default(1)
-  created_at     DateTime?      @default(now())
-
-  @@ignore
-}
-
-model Sale {
-  id          String      @id @default(uuid())
-  venueId     String      @map("venue_id")
-  orderId     String      @unique @map("order_id")
-  total       Int         @map("total")
-  itemCount   Int         @map("item_count")
-  completedAt DateTime    @default(now()) @map("completed_at")
-  createdAt   DateTime    @default(now()) @map("created_at")
-
-  venue Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  items SaleItem[]
-
-  @@index([venueId, completedAt])
-  @@map("Sale")
-}
-
-model SaleItem {
-  id           String   @id @default(uuid())
-  saleId       String   @map("sale_id")
-  menuItemId   String   @map("menu_item_id")
-  menuItemName String   @map("menu_item_name")
-  variantId    String?  @map("variant_id")
-  variantName  String?  @map("variant_name")
-  quantity     Int
-  unitPrice    Int      @map("unit_price")
-  totalPrice   Int      @map("total_price")
-  station      String   @default("kitchen")
-  completedAt  DateTime @map("completed_at")
-
-  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
-
-  @@index([saleId])
-  @@index([menuItemId, completedAt])
-  @@index([completedAt])
-  @@map("SaleItem")
-}
-
-model Plan {
-  id        String   @id @default(uuid())
-  slug      String   @unique
-  nameFa    String
-  nameEn    String
-  description String?
-  priceToman Int
-  trialDays Int      @default(7)
-  sortOrder Int      @default(0)
-  purchasable Boolean @default(true)
-
-  maxMenuItems    Int     @default(-1)
-  maxTables       Int     @default(-1)
-  customDomain    Boolean @default(false)
-  orderingEnabled Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([purchasable])
-
-  subscriptions Subscription[]
-}
-
-model Subscription {
-  id                 String    @id @default(uuid())
-  venueId            String    @unique
-  planId             String
-  status             String    @default("trial")
-  currentPeriodStart DateTime
-  currentPeriodEnd   DateTime
-  trialEndsAt        DateTime?
-  canceledAt         DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  plan  Plan  @relation(fields: [planId], references: [id], onDelete: Restrict)
-  invoices Invoice[]
-
-  @@index([status])
-  @@index([planId])
-}
-
-model Invoice {
-  id              String    @id @default(uuid())
-  subscriptionId  String
-  amountToman     Int
-  baseAmount      Int?
-  discountAmount  Int?
-  couponId        String?
-  couponCode      String?
-  status          String    @default("pending")
-  authority       String?   @unique
-  refId           String?   @unique
-  cardPan         String?
-  paidAt          DateTime?
-  periodStart     DateTime
-  periodEnd       DateTime
-  description     String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  coupon       Coupon?      @relation(fields: [couponId], references: [id], onDelete: SetNull)
-
-  @@index([subscriptionId])
-  @@index([status])
-  @@index([couponId])
-}
-
-model Coupon {
-  id             String    @id @default(uuid())
-  code           String    @unique
-  description    String?
-  discountType   String    // "percentage" or "fixed"
-  discountValue  Int       // e.g., 10 for 10%, or 50000 for 50,000 Toman
-  maxUses        Int       @default(1) // -1 for unlimited
-  usedCount      Int       @default(0)
-  maxUsesPerUser Int       @default(1)
-  minPlanPrice   Int?      // minimum plan price in Toman to apply
-  appliesToPlanSlug String? // null = all plans
-  expiresAt      DateTime?
-  isActive       Boolean   @default(true)
-  createdBy      String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  invoices Invoice[]
-
-  @@index([isActive])
-  @@index([expiresAt])
-  @@index([appliesToPlanSlug])
-  // @@index([code]) is redundant — code has @unique which already creates an index
 }
 
 model AuditLog {

@@ -40,7 +40,7 @@ export function MembersSection({
   const [addName, setAddName] = useState("");
   const [addUsername, setAddUsername] = useState("");
   const [addPassword, setAddPassword] = useState("");
-  const [addRole, setAddRole] = useState("staff");
+  const [addRole, setAddRole] = useState("manager");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -168,7 +168,6 @@ export function MembersSection({
                   >
                     <option value="owner">مالک</option>
                     <option value="manager">مدیر</option>
-                    <option value="staff">کارمند</option>
                   </select>
                 ) : (
                   <span className="rounded-full border border-line bg-paper px-3 py-2 text-xs text-ink-muted">
@@ -276,7 +275,6 @@ export function MembersSection({
               onChange={(e) => setAddRole(e.target.value)}
               className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-ink focus:border-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
             >
-              <option value="staff">کارمند</option>
               <option value="manager">مدیر</option>
               {isOwner && <option value="owner">مالک</option>}
             </select>

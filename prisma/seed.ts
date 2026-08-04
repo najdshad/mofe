@@ -3,7 +3,6 @@ import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { DEMO_EMAIL, DEMO_PASSWORD, ensureDemoData } from "../src/lib/demo";
-import bcrypt from "bcryptjs";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe",
@@ -11,35 +10,6 @@ const pool = new Pool({
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 async function main() {
-  const plans = [
-    { slug: "basic", nameFa: "پایه", nameEn: "Basic", description: "طرح رایگان با امکانات پایه", priceToman: 0, trialDays: 7, sortOrder: 1, purchasable: false, maxMenuItems: 10, maxTables: 3, customDomain: false, orderingEnabled: false },
-    { slug: "pro", nameFa: "حرفه‌ای", nameEn: "Pro", description: "طرح حرفه‌ای با امکانات کامل", priceToman: 1500000, trialDays: 0, sortOrder: 2, purchasable: true, maxMenuItems: 100, maxTables: 10, customDomain: true, orderingEnabled: true },
-    { slug: "premium", nameFa: "پریمیوم", nameEn: "Premium", description: "طرح پریمیوم بدون محدودیت", priceToman: 3000000, trialDays: 0, sortOrder: 3, purchasable: true, maxMenuItems: -1, maxTables: -1, customDomain: true, orderingEnabled: true },
-  ];
-
-  for (const plan of plans) {
-    await prisma.plan.upsert({
-      where: { slug: plan.slug },
-      update: plan,
-      create: plan,
-    });
-  }
-
-  const couponCodes = [
-    { code: "WELCOME10", description: "۱۰٪ تخفیف برای کاربران جدید", discountType: "percentage", discountValue: 10, maxUses: 100, maxUsesPerUser: 1, isActive: true },
-    { code: "PRO500", description: "۵۰,۰۰۰ تومان تخفیف برای طرح حرفه‌ای", discountType: "fixed", discountValue: 50000, maxUses: 50, maxUsesPerUser: 1, appliesToPlanSlug: "pro", isActive: true },
-    { code: "PREMIUM100", description: "۱۰۰,۰۰۰ تومان تخفیف برای طرح پریمیوم", discountType: "fixed", discountValue: 100000, maxUses: 50, maxUsesPerUser: 1, appliesToPlanSlug: "premium", isActive: true },
-    { code: "NOGHTEH-2319", description: "تخفیف ۱۰۰٪ ویژه", discountType: "percentage", discountValue: 100, maxUses: -1, maxUsesPerUser: -1, isActive: true },
-  ];
-
-  for (const c of couponCodes) {
-    await prisma.coupon.upsert({
-      where: { code: c.code },
-      update: c,
-      create: c,
-    });
-  }
-
   const { venue } = await ensureDemoData(prisma);
 
   const categories = [
@@ -215,40 +185,10 @@ async function main() {
     });
   }
 
-  // Seed demo tables (1–10)
-  for (let i = 1; i <= 10; i++) {
-    await prisma.venueTable.upsert({
-      where: { venueId_number: { venueId: venue.id, number: i } },
-      update: { isActive: true },
-      create: {
-        venueId: venue.id,
-        number: i,
-        label: i === 1 ? "ویژه" : undefined,
-        isActive: true,
-      },
-    });
-  }
-
-  const internalPasswordHash = await bcrypt.hash("admin1234", 12);
-  await prisma.user.upsert({
-    where: { email: "admin@mofe.ir" },
-    update: {},
-    create: {
-      name: "مدیر سیستم",
-      email: "admin@mofe.ir",
-      passwordHash: internalPasswordHash,
-      role: "internal",
-      emailVerifiedAt: new Date(),
-      status: "active",
-    },
-  });
-
   console.log("Seed completed successfully");
   console.log(`  Venue: ${venue.nameFa} (${venue.slug})`);
   console.log(`  Admin email: ${DEMO_EMAIL}`);
   console.log(`  Password: ${DEMO_PASSWORD}`);
-  console.log(`  Internal email: admin@mofe.ir`);
-  console.log(`  Internal password: admin1234`);
 }
 
 main()

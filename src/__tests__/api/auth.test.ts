@@ -154,7 +154,6 @@ describe("POST /api/auth/signup", () => {
     await prisma.passwordResetToken.deleteMany({ where: { user: { id: user!.id } } });
     await prisma.session.deleteMany({ where: { userId: user!.id } });
     await prisma.venueMember.deleteMany({ where: { userId: user!.id } });
-    await prisma.subscription.deleteMany({ where: { venue: { members: { some: { userId: user!.id } } } } });
     await prisma.venue.deleteMany({ where: { members: { some: { userId: user!.id } } } });
     await prisma.user.delete({ where: { id: user!.id } });
   });

@@ -1,13 +1,12 @@
 import Link from "next/link";
 import {
-  Check, ChevronLeft, FileText, Zap, ClipboardList, BarChart3,
+  Check, ChevronLeft, FileText, Zap, ClipboardList,
   Smartphone, QrCode, Star, ArrowUpLeft,
 } from "lucide-react";
 
 const navItems = [
   { label: "قابلیت‌ها", href: "#features" },
   { label: "چگونه کار می‌کند", href: "#how" },
-  { label: "قیمت‌ها", href: "#pricing" },
 ];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -157,45 +156,6 @@ function QRMenuMockup() {
   );
 }
 
-function TableGridMockup() {
-  const tables = ["۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸"];
-  return (
-    <div className="rounded-[var(--radius-panel)] border border-line bg-paper p-5 md:p-6">
-      <div className="mb-4 flex items-center justify-between border-b border-line pb-3">
-        <span className="text-[12px] tracking-[0.15em] text-ink-muted">میزها</span>
-        <div className="flex gap-2">
-          <div className="h-5 w-5 rounded border border-line" />
-          <div className="h-5 w-5 rounded bg-ink/10" />
-        </div>
-      </div>
-      <div className="grid grid-cols-4 gap-2">
-        {tables.map((t) => (
-          <div
-            key={t}
-            className="flex aspect-square items-center justify-center rounded-xl border border-line text-[11px] text-ink-muted transition hover:border-ink"
-          >
-            {t}
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 rounded-xl border border-line bg-paper p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-[11px] text-ink">میز ۳</span>
-          <span className="rounded-full border border-line px-2 py-0.5 text-[8px] text-ink-muted">در حال آماده‌سازی</span>
-        </div>
-        <div className="space-y-1.5">
-          {["اسپرسو", "لاته", "چای"].map((item) => (
-            <div key={item} className="flex items-center justify-between text-[10px] text-ink-muted">
-              <span>{item}</span>
-              <span className="h-2 w-2 rounded-full bg-ink/20" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function MofeLandingPage() {
   return (
     <div className="min-h-screen bg-paper text-ink antialiased">
@@ -272,7 +232,7 @@ export default function MofeLandingPage() {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/signup" className="inline-flex items-center justify-center gap-2 rounded-full bg-ink px-7 py-3.5 text-[15px] text-paper transition hover:opacity-90">
-                  ثبت‌نام رایگان — ۱۴ روز آزمایشی
+                  شروع رایگان
                   <ChevronLeft className="h-4 w-4" />
                 </Link>
                 <Link href="/m/noghteh" className="inline-flex items-center justify-center gap-2 rounded-full border border-line px-7 py-3.5 text-[15px] text-ink transition hover:border-ink">
@@ -299,7 +259,7 @@ export default function MofeLandingPage() {
               <div className="mx-auto max-w-[535px]">
                 <PhoneMockup />
                 <div className="mt-4 text-center text-[11px] text-ink-muted">
-                  اسکن کن، ببین، سفارش بده.
+                  اسکن کن، ببین، انتخاب کن.
                 </div>
               </div>
             </div>
@@ -411,13 +371,13 @@ export default function MofeLandingPage() {
               },
               {
                 icon: ClipboardList,
-                title: "ثبت سفارش واقعی",
-                text: "برای کافه‌های شلوغ: ویترها روی تبلت سفارش می‌گیرند، آشپزخانه در لحظه می‌بیند. وضعیت هر آیتم: ارسال شده، در حال آماده‌سازی، آماده، تحویل داده شده. آفلاین هم کار می‌کند.",
+                title: "قیمت‌گذاری کامل",
+                text: "برای هر آیتم چند قیمت بگذار (سایزها، افزودنی‌ها)، واریانت تعریف کن، مواد حساسیت‌زا را مشخص کن و وضعیت ناموجود را در یک لمس تغییر بده.",
               },
               {
-                icon: BarChart3,
-                title: "گزارش فروش با تاریخ شمسی",
-                text: "ببین کدام آیتم‌ها بیشتر فروش می‌روند. کدام روزهای هفته شلوغ‌ترند. همه چیز به تومان و تاریخ شمسی. خروجی CSV برای حسابداری.",
+                icon: FileText,
+                title: "ورود و خروج CSV",
+                text: "منویت را با اکسل یا Google Sheets بساز و یک‌جا وارد کن. خروجی CSV هم برای بایگانی و چاپ در دسترس است.",
               },
             ].map((feature) => {
               const Icon = feature.icon;
@@ -487,143 +447,6 @@ export default function MofeLandingPage() {
         </div>
       </section>
 
-      {/* ─── Real-Time Ordering ─── */}
-      <section className="border-b border-line">
-        <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
-          <div className="grid items-start gap-12 md:grid-cols-[0.9fr_1.1fr]">
-            <div className="order-last md:order-first">
-              <TableGridMockup />
-            </div>
-            <div>
-              <SectionLabel>برای کافه‌های شلوغ</SectionLabel>
-              <h2 className="text-[28px] leading-[1.15] md:text-[36px] font-serif">
-                سفارش‌گیری لحظه‌ای
-              </h2>
-              <p className="mt-5 text-[16px] leading-8 text-ink-muted">
-                ویتر روی تبلت آیتم‌ها را انتخاب می‌کند. با یک لمس، سفارش به صفحه آشپزخانه می‌رود. وضعیت هر آیتم به صورت زنده قابل پیگیری است.
-              </p>
-              <p className="mt-4 text-[16px] leading-8 text-ink">
-                مشتری دیگر منتظر نمی‌ماند، ویتر دیگر دوندگی نمی‌کند.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">
-                  انتخاب میز
-                </span>
-                <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">
-                  ارسال به آشپزخانه
-                </span>
-                <span className="rounded-full border border-line px-3 py-1 text-[11px] text-ink-muted">
-                  آفلاین کار می‌کند
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Pricing ─── */}
-      <section id="pricing" className="border-b border-line">
-        <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8 md:py-28">
-          <div className="mx-auto max-w-4xl">
-            <SectionLabel>تعرفه‌ها</SectionLabel>
-            <h2 className="text-[32px] leading-[1.15] md:text-[42px] font-serif">
-              ساده و منصفانه
-            </h2>
-          </div>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {[
-              {
-                name: "Basic",
-                label: "رایگان",
-                bestFor: "کافه‌های کوچک و تازه‌کار",
-                features: [
-                  "منوی QR نامحدود",
-                  "تا ۵۰ آیتم منو",
-                  "تا ۱۰ میز",
-                  "۱۴ روز آزمایشی رایگان",
-                ],
-                cta: "شروع رایگان",
-                href: "/signup",
-              },
-              {
-                name: "Pro",
-                label: "حرفه‌ای",
-                bestFor: "رستوران‌های شلوغ",
-                features: [
-                  "همه چیز Basic +",
-                  "آیتم و میز نامحدود",
-                  "سفارش‌گیری لحظه‌ای",
-                  "گزارش فروش جامع",
-                  "خروجی CSV",
-                ],
-                cta: "انتخاب Pro",
-                href: "/signup",
-                featured: true,
-              },
-              {
-                name: "Premium",
-                label: "پرمیوم",
-                bestFor: "رستوران‌های حرفه‌ای",
-                features: [
-                  "همه چیز Pro +",
-                  "اولویت پشتیبانی",
-                  "API اختصاصی",
-                  "شخصی‌سازی پیشرفته",
-                ],
-                cta: "ارتباط با ما",
-                href: "#",
-              },
-            ].map((plan) => (
-              <article
-                key={plan.name}
-                className={`rounded-[var(--radius-panel)] border bg-paper p-6 transition md:p-8 ${
-                  plan.featured
-                    ? "border-ink shadow-[0_0_0_1px_rgba(0,0,0,0.06)]"
-                    : "border-line hover:border-ink/30"
-                }`}
-              >
-                <div className="flex items-baseline justify-between">
-                  <span className="text-[11px] tracking-[0.2em] text-ink-muted">{plan.name}</span>
-                  <span className="rounded-full border border-line px-3 py-0.5 text-[10px] text-ink-muted">
-                    {plan.label}
-                  </span>
-                </div>
-                <p className="mt-4 text-[13px] leading-6 text-ink-muted">{plan.bestFor}</p>
-                <ul className="mt-5 space-y-3 border-t border-line pt-5">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-[13px] leading-6 text-ink">
-                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-muted" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-6">
-                  {plan.href === "#" ? (
-                    <a href="mailto:hello@mofe.ir" className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-line px-6 py-3 text-[13px] text-ink-muted transition hover:border-ink hover:text-ink">
-                      {plan.cta}
-                    </a>
-                  ) : (
-                    <Link
-                      href={plan.href}
-                      className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-[13px] transition ${
-                        plan.featured
-                          ? "bg-ink text-paper hover:opacity-90"
-                          : "border border-line text-ink hover:border-ink"
-                      }`}
-                    >
-                      {plan.cta}
-                    </Link>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-          <p className="mt-8 text-center text-[13px] text-ink-muted">
-            همه پلن‌ها شامل منوی QR و پنل مدیریت می‌شوند. بدون هزینه پنهان.
-          </p>
-        </div>
-      </section>
-
       {/* ─── Testimonials ─── */}
       <section className="border-b border-line">
         <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 md:py-28">
@@ -659,7 +482,7 @@ export default function MofeLandingPage() {
               آماده‌ای منوی کافه‌ات را دیجیتال کنی؟
             </h2>
             <p className="mt-5 text-[17px] leading-8 text-ink-muted">
-              ۱۴ روز رایگان. بدون نیاز به کارت بانکی. یک کلیک شروع کن.
+              رایگان شروع کن. بدون نیاز به کارت بانکی. یک کلیک تا اولین QR.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link

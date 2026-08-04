@@ -72,8 +72,8 @@ export async function POST(
 
     const email = `${username}@${venue.slug}`;
 
-    const newRole = role || "staff";
-    if (!["owner", "manager", "staff"].includes(newRole)) {
+    const newRole = role || "manager";
+    if (!["owner", "manager"].includes(newRole)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 

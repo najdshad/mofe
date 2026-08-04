@@ -1,13 +1,5 @@
 services:
   app:
-    build:
-      args:
-        NEXT_PUBLIC_WS_URL: wss://app.mofe.ir
-    environment:
-      DATABASE_URL: "postgresql://mofe:mofe@db:5432/mofe"
-
-  ordering-service:
-    ports: []
     environment:
       DATABASE_URL: "postgresql://mofe:mofe@db:5432/mofe"
 
@@ -22,7 +14,4 @@ services:
   db:
     volumes:
       - mofe-db:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  redis:
     restart: unless-stopped

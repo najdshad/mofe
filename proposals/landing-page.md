@@ -9,7 +9,7 @@
 | Persona | Pain Point | What They Need |
 |---------|-----------|----------------|
 | **Roya** — cafe owner in Tehran, non-technical, runs a busy specialty coffee shop | Print menus are outdated before they arrive. She edits prices on Instagram stories constantly. | A set-it-and-forget-it digital menu her customers can actually use. |
-| **Amir** — manager of a chain restaurant, tech-savvy | Staff confusion during rush hours. Written orders get lost. No visibility into what's selling. | Real-time order routing + sales analytics. |
+| **Amir** — manager of a chain restaurant, tech-savvy | Menu prices change constantly across branches; printed menus and Instagram posts go stale. | Fast menu editing with variants, allergens, and one-click publish. |
 | **Sara** — owns a small traditional tea house | Can't justify international SaaS prices. Doesn't need complexity, just a beautiful menu card for her regulars. | A free or very low-cost QR menu that matches her aesthetic. |
 
 ---
@@ -40,7 +40,7 @@ The nav is barely visible — just a thin `--line` border separates it from the 
 
 **CTA buttons:**
 
-- Primary: `"ثبت‌نام رایگان — ۱۴ روز آزمایشی"`
+- Primary: `"ثبت‌نام رایگان"`
 - Secondary: `"مشاهده منوی نمونه"`
 
 **Trust bar** (beneath CTA):
@@ -104,13 +104,13 @@ A 2×2 grid (2-column desktop, 1-column mobile). Each card has a small monochrom
 
 > قیمت شکر را در پنل تغییر بده. یک دقیقه بعد، هر کس QR را اسکن کند قیمت جدید را می‌بیند. بدون چاپ، بدون استوری اینستاگرام.
 
-#### Card 3: ثبت سفارش واقعی
+#### Card 3: انواع، آلرژن و عکس
 
-> برای کافه‌های شلوغ: ویترها روی تبلت سفارش می‌گیرند، آشپزخانه در لحظه می‌بیند. وضعیت هر آیتم: ارسال شده، در حال آماده‌سازی، آماده، تحویل داده شده. آفلاین هم کار می‌کند.
+> برای هر آیتم انواع با قیمت مجزا تعریف کن (سینگل/داپل). برچسب آلرژن و عکس فشرده‌ی حداکثر ۵۰ کیلوبایت — همه جزئیات در منوی عمومی.
 
-#### Card 4: گزارش فروش با تاریخ شمسی
+#### Card 4: ورود و خروج CSV
 
-> ببین کدام آیتم‌ها بیشتر فروش می‌روند. کدام روزهای هفته شلوغ‌ترند. همه چیز به تومان و تاریخ شمسی. خروجی CSV برای حسابداری.
+> منوی قبلی را در اکسل داری؟ CSV را آپلود کن، دسته‌ها خودکار ساخته می‌شوند. خروجی CSV هم برای بایگانی. با حفاظت در برابر تزریق فرمول.
 
 ---
 
@@ -128,33 +128,7 @@ A full-width section with a side-by-side visual: admin panel (left) and the outp
 
 ---
 
-### 7. Real-Time Ordering Section (feature highlight for busier venues)
-
-> **برای کافه‌های شلوغ: سفارش‌گیری لحظه‌ای**
->
-> ویتر روی تبلت آیتم‌ها را انتخاب می‌کند. با یک لمس، سفارش به صفحه آشپزخانه می‌رود. وضعیت هر آیتم به صورت زنده قابل پیگیری است. مشتری دیگر منتظر نمی‌ماند، ویتر دیگر دوندگی نمی‌کند.
-
-This section should include a mockup of the staff order interface (table grid + order panel + item browser). Show the flow visually: select table → pick items → send to kitchen.
-
----
-
-### 8. Pricing Section
-
-**Section label:** "تعرفه‌ها — ساده و منصفانه"
-
-Three cards side by side. No dollar signs — Toman-only, Persian numerals. Hover lifts slightly from the page.
-
-| Plan | Best For | Key Limits | CTA |
-|------|----------|------------|-----|
-| **Basic** — رایگان | کافه‌های کوچک و تازه‌کار | تعداد آیتم و میز محدود، ۱۴ روز آزمایشی رایگان | شروع رایگان |
-| **Pro** | رستوران‌های شلوغ | بدون محدودیت آیتم و میز، سفارش‌گیری لحظه‌ای، گزارش فروش | انتخاب Pro |
-| **Premium** | رستوران‌های حرفه‌ای | همه چیز + اولویت پشتیبانی | ارتباط با ما |
-
-Below cards: "همه پلن‌ها شامل منوی QR و پنل مدیریت می‌شوند. بدون هزینه پنهان."
-
----
-
-### 9. Social Proof / Testimonials (placeholder)
+### 7. Social Proof / Testimonials (placeholder)
 
 > **صاحبان کافه درباره mofé چه می‌گویند**
 > (این بخش با اولین کاربران واقعی پر می‌شود)
@@ -163,11 +137,11 @@ For launch, use the demo venue as a case study: "کافه نقطه — یک کا
 
 ---
 
-### 10. Final CTA Section
+### 8. Final CTA Section
 
 > **آماده‌ای منوی کافه‌ات را دیجیتال کنی؟**
 >
-> ۱۴ روز رایگان. بدون نیاز به کارت بانکی. یک کلیک شروع کن.
+> رایگان شروع کن. بدون نیاز به کارت بانکی. یک کلیک شروع کن.
 >
 > `[شروع کنید ←]`
 
@@ -177,7 +151,7 @@ Below: a secondary link for those who want to learn more: "هنوز سوال د�
 
 ---
 
-### 11. Footer
+### 9. Footer
 
 ```
 mofé (EB Garamond logo)

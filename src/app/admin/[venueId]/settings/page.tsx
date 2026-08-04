@@ -3,7 +3,6 @@ import { requireVenueAccess } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
-import { getCurrentSubscription } from "@/lib/subscription";
 import { SettingsClient } from "./SettingsClient";
 
 export default async function SettingsPage({
@@ -17,19 +16,18 @@ export default async function SettingsPage({
   const { venueId } = await params;
   const membership = await requireVenueAccess(user.id, venueId);
 
-  const [venue, members, sub] = await Promise.all([
+  const [venue, members] = await Promise.all([
     prisma.venue.findUnique({
       where: { id: venueId },
       select: {
         id: true, nameFa: true, nameEn: true, slug: true, timezone: true,
-        plan: true, welcomeMessage: true, logoUrl: true,
+        welcomeMessage: true, logoUrl: true,
       },
     }),
     prisma.venueMember.findMany({
       where: { venueId },
       include: { user: { select: { id: true, name: true, email: true } } },
     }),
-    getCurrentSubscription(venueId),
   ]);
 
   if (!venue) redirect("/venues");
@@ -53,12 +51,6 @@ export default async function SettingsPage({
       currentUserRole={membership.role}
       currentUserId={user.id}
       publicMenuDomain={getPublicMenuUrl(venue.slug)}
-      subscription={sub ? {
-        plan: {
-          customDomain: sub.plan.customDomain,
-          orderingEnabled: sub.plan.orderingEnabled,
-        },
-      } : null}
     />
   );
 }

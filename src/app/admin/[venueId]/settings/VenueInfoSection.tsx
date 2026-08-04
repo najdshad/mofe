@@ -65,7 +65,7 @@ export function VenueInfoSection({
             ))}
           </select>
           <p className="text-xs leading-5 text-ink-muted">
-            ساعت‌های فعالیت و گزارش‌ها بر اساس این منطقه زمانی نمایش داده می‌شوند.
+            ساعت‌های فعالیت بر اساس این منطقه زمانی نمایش داده می‌شوند.
           </p>
         </div>
       </div>

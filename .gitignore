@@ -71,9 +71,6 @@ next-env.d.ts
 /public/uploads/
 
 # Go build artifacts
-ordering-service/server
-ordering-service/server.exe
-ordering-service/bin/
 
 # scripts
 run-server.sh

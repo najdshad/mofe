@@ -10,9 +10,6 @@ export default async function VenuesPage() {
   const memberships = await getAccessibleVenues(user.id);
 
   if (memberships.length === 1) {
-    if (memberships[0].role === "staff") {
-      redirect(`/staff/${memberships[0].venueId}/orders`);
-    }
     redirect(`/admin/${memberships[0].venueId}/menu`);
   }
 
@@ -26,7 +23,7 @@ export default async function VenuesPage() {
         {memberships.map((m) => (
           <Link
             key={m.venueId}
-            href={m.role === "staff" ? `/staff/${m.venueId}/orders` : `/admin/${m.venueId}/menu`}
+            href={`/admin/${m.venueId}/menu`}
             className="rounded-[var(--radius-panel)] border border-line bg-paper px-8 py-4 text-center text-lg font-serif text-ink transition-colors hover:border-ink"
           >
             {m.venue.nameFa}

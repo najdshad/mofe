@@ -29,23 +29,15 @@ export async function teardown() {
   await prisma.menuItemAllergen.deleteMany();
   await prisma.menuItemVariant.deleteMany();
   await prisma.menuItemPrice.deleteMany();
-  await prisma.stationSchedule.deleteMany();
-  await prisma.venueTable.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.passwordResetToken.deleteMany();
-  await prisma.domain.deleteMany();
   await prisma.asset.deleteMany();
   await prisma.rateLimitEntry.deleteMany();
-  await prisma.invoice.deleteMany();
-  await prisma.coupon.deleteMany();
-  await prisma.subscription.deleteMany();
-  await prisma.sale.deleteMany();
   await prisma.menuPublication.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.category.deleteMany();
   await prisma.venueMember.deleteMany();
   await prisma.session.deleteMany();
   await prisma.venue.deleteMany();
-  await prisma.plan.deleteMany();
   await prisma.user.deleteMany();
 }
