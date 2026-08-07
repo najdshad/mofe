@@ -15,15 +15,13 @@ vi.mock("@/lib/csrf", () => ({
 
 function createMockRequest({
   pathname,
-  host,
   hasCookie,
 }: {
   pathname: string;
-  host: string;
   hasCookie: boolean;
 }): NextRequest {
-  const url = `https://${host}${pathname}`;
-  const request = new Request(url, { headers: { host } });
+  const url = `https://mofe.ir${pathname}`;
+  const request = new Request(url, { headers: { host: "mofe.ir" } });
   (request as unknown as Record<string, unknown>).nextUrl = new URL(url);
   (request as unknown as Record<string, unknown>).cookies = {
     get: () => (hasCookie ? { value: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" } : undefined),
@@ -31,23 +29,21 @@ function createMockRequest({
   return request as unknown as NextRequest;
 }
 
-describe("Proxy routing (#19)", () => {
-  it("menu subdomain always passes through", async () => {
+describe("Proxy routing", () => {
+  it("public menu /m/ passes through without auth and is noindex", async () => {
     const { proxy } = await import("@/proxy");
     const req = createMockRequest({
       pathname: "/m/some-cafe",
-      host: "menu.example.com",
       hasCookie: false,
     });
     const res = proxy(req);
     expect(res.headers.get("X-Robots-Tag")).toBe("noindex");
   });
 
-  it("app subdomain + /admin without cookie redirects to login", async () => {
+  it("/admin without cookie redirects to login", async () => {
     const { proxy } = await import("@/proxy");
     const req = createMockRequest({
       pathname: "/admin/venue-1/menu",
-      host: "app.example.com",
       hasCookie: false,
     });
     const res = proxy(req);
@@ -56,22 +52,20 @@ describe("Proxy routing (#19)", () => {
     expect(location).toContain("/login");
   });
 
-  it("app subdomain + /admin with cookie passes through", async () => {
+  it("/admin with cookie passes through", async () => {
     const { proxy } = await import("@/proxy");
     const req = createMockRequest({
       pathname: "/admin/venue-1/menu",
-      host: "app.example.com",
       hasCookie: true,
     });
     const res = proxy(req);
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 
-  it("app subdomain + /api without cookie returns 401", async () => {
+  it("/api without cookie returns 401", async () => {
     const { proxy } = await import("@/proxy");
     const req = createMockRequest({
       pathname: "/api/venues",
-      host: "app.example.com",
       hasCookie: false,
     });
     const res = proxy(req);
@@ -82,56 +76,27 @@ describe("Proxy routing (#19)", () => {
     const { proxy } = await import("@/proxy");
     const req = createMockRequest({
       pathname: "/api/auth/login",
-      host: "app.example.com",
       hasCookie: false,
     });
     const res = proxy(req);
     expect(res.headers.get("X-Robots-Tag")).toBe("noindex");
-  });
-
-  it("root domain + /admin redirects to app subdomain", async () => {
-    const { proxy } = await import("@/proxy");
-    const req = createMockRequest({
-      pathname: "/admin/venue-1",
-      host: "example.com",
-      hasCookie: false,
-    });
-    const res = proxy(req);
-    expect(res.status).toBe(301);
-    const location = res.headers.get("Location") || "";
-    expect(location).toContain("app.example.com");
-  });
-
-  it("root domain + /m/ redirects to menu subdomain", async () => {
-    const { proxy } = await import("@/proxy");
-    const req = createMockRequest({
-      pathname: "/m/some-cafe",
-      host: "example.com",
-      hasCookie: false,
-    });
-    const res = proxy(req);
-    expect(res.status).toBe(301);
-    const location = res.headers.get("Location") || "";
-    expect(location).toContain("menu.example.com");
   });
 
   it("_next path always passes through", async () => {
     const { proxy } = await import("@/proxy");
     const req = createMockRequest({
       pathname: "/_next/static/chunks/main.js",
-      host: "app.example.com",
       hasCookie: false,
     });
     const res = proxy(req);
     expect(res.headers.get("X-Robots-Tag")).toBe("noindex");
   });
 
-  it("localhost bypasses subdomain routing", async () => {
+  it("root page serves without auth", async () => {
     const { proxy } = await import("@/proxy");
     const req = createMockRequest({
-      pathname: "/admin/venue-1",
-      host: "localhost:3000",
-      hasCookie: true,
+      pathname: "/",
+      hasCookie: false,
     });
     const res = proxy(req);
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");

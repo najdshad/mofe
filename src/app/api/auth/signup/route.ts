@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, createSession } from "@/lib/auth";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
-import { logAudit } from "@/lib/audit";
 
 function generateSlug(nameFa: string): string {
   const persianToAscii: Record<string, string> = {
@@ -42,7 +41,6 @@ export async function POST(request: Request) {
     const email = (raw.email ?? "").trim().toLowerCase();
     const password = (raw.password ?? "").trim();
     const cafeName = (raw.cafeName ?? "").trim();
-    const phone = (raw.phone ?? "").trim() || null;
 
     if (!name) {
       return NextResponse.json({ error: "نام الزامی است" }, { status: 400 });
@@ -84,25 +82,16 @@ export async function POST(request: Request) {
         data: {
           name,
           email,
-          phone,
           passwordHash,
-          emailVerifiedAt: new Date(),
           status: "active",
         },
       });
 
       const venue = await tx.venue.create({
         data: {
+          ownerId: user.id,
           nameFa: cafeName,
           slug,
-          publicStatus: "draft",
-        },
-      });
-
-      await tx.venueMember.create({
-        data: {
-          venueId: venue.id,
-          userId: user.id,
         },
       });
 
@@ -111,14 +100,7 @@ export async function POST(request: Request) {
 
     await createSession(result.userId);
 
-    await logAudit({
-      actorUserId: result.userId,
-      action: "auth.signup",
-      entityType: "venue",
-      entityId: result.venueId,
-      metadata: { ip, email, cafeName },
-    });
-
+    
     return NextResponse.json({ success: true, venueId: result.venueId }, { status: 201 });
   } catch (e) {
     console.error("[signup] error:", e);

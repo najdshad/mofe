@@ -1,7 +1,6 @@
 "use client";
 
 export default function RootError({
-  error: _error,
   reset,
 }: {
   error: Error & { digest?: string };

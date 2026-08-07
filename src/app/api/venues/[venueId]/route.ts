@@ -29,12 +29,10 @@ export async function PATCH(
     const { venueId } = await params;
     await requireVenueAccess(user.id, venueId);
 
-    await requireVenueAccess(user.id, venueId);
-
     await validateCsrf();
 
     const ALLOWED_FIELDS = [
-      "nameFa", "nameEn", "timezone",
+      "nameFa", "nameEn",
       "welcomeMessage",
     ] as const;
 

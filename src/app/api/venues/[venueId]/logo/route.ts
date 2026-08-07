@@ -3,7 +3,7 @@ import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
-import { getStorage } from "@/lib/storage";
+import { saveFile, deleteFile } from "@/lib/storage";
 import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
@@ -63,17 +63,16 @@ export async function POST(
     }
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoUrl: true } });
-    const storage = await getStorage();
 
     if (venue?.logoUrl) {
       const oldKey = path.basename(venue.logoUrl);
-      try { await storage.delete(oldKey); } catch { /* ok */ }
+      try { await deleteFile(oldKey); } catch { /* ok */ }
     }
 
     const hash = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
     const filename = `${venueId}-${hash}.webp`;
 
-    const result = await storage.save(filename, resized, "image/webp");
+    const result = await saveFile(filename, resized);
     const logoUrl = result.url;
 
     await prisma.venue.update({
@@ -102,9 +101,8 @@ export async function DELETE(
     }
 
     if (venue.logoUrl) {
-      const storage = await getStorage();
       const oldKey = path.basename(venue.logoUrl);
-      try { await storage.delete(oldKey); } catch { /* ok */ }
+      try { await deleteFile(oldKey); } catch { /* ok */ }
     }
 
     await prisma.venue.update({

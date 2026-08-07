@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
-import { getStorage } from "@/lib/storage";
+import { saveFile, deleteFile } from "@/lib/storage";
 import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
@@ -71,31 +70,20 @@ export async function POST(
       );
     }
 
-    const storage = await getStorage();
-
     if (item.photoUrl) {
       const oldKey = path.basename(item.photoUrl);
-      try { await storage.delete(oldKey); } catch { /* ok */ }
+      try { await deleteFile(oldKey); } catch { /* ok */ }
     }
 
     const hash = crypto.createHash("sha256").update(buffer).digest("hex").slice(0, 16);
     const filename = `item-${itemId}-${hash}.webp`;
 
-    const result = await storage.save(filename, resized, "image/webp");
+    const result = await saveFile(filename, resized);
     const photoUrl = result.url;
 
     await prisma.menuItem.update({
       where: { id: itemId },
       data: { photoUrl: photoUrl },
-    });
-
-    await logAudit({
-      venueId,
-      actorUserId: user.id,
-      action: "item.photo.upload",
-      entityType: "item",
-      entityId: itemId,
-      metadata: { photoUrl },
     });
 
     return NextResponse.json({ photoUrl });
@@ -122,9 +110,8 @@ export async function DELETE(
     }
 
     if (item.photoUrl) {
-      const storage = await getStorage();
       const oldKey = path.basename(item.photoUrl);
-      try { await storage.delete(oldKey); } catch { /* ok */ }
+      try { await deleteFile(oldKey); } catch { /* ok */ }
     }
 
     await prisma.menuItem.update({
@@ -132,14 +119,7 @@ export async function DELETE(
       data: { photoUrl: null },
     });
 
-    await logAudit({
-      venueId,
-      actorUserId: user.id,
-      action: "item.photo.delete",
-      entityType: "item",
-      entityId: itemId,
-    });
-
+    
     return NextResponse.json({ success: true });
   } catch (e) {
     return errorResponse(e);

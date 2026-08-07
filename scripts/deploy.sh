@@ -27,8 +27,6 @@ echo "  See the Environment section in AGENTS.md for the full list."
 echo "=== 4. Obtain SSL certificates ==="
 echo "→ STOP any process on port 80 first, then run:"
 echo "  sudo certbot certonly --standalone -d mofe.ir -d www.mofe.ir"
-echo "  sudo certbot certonly --standalone -d app.mofe.ir"
-echo "  sudo certbot certonly --standalone -d menu.mofe.ir"
 
 echo "=== 5. Copy certs for Docker volume mount ==="
 echo "  sudo mkdir -p /opt/mofe/letsencrypt"

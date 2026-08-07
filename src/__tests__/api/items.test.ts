@@ -116,7 +116,6 @@ describe("POST /api/venues/[venueId]/items", () => {
         nameFa: "TEST_آیتم جدید",
         categoryId: data.categories.cat1.id,
         priceToman: 50000,
-        station: "kitchen",
       }),
       params(data.venue.id)
     );
@@ -129,7 +128,7 @@ describe("POST /api/venues/[venueId]/items", () => {
 
   it("returns 400 when nameFa is missing", async () => {
     const res = await POST(
-      req(data.venue.id, "POST", { categoryId: data.categories.cat1.id, priceToman: 50000, station: "kitchen" }),
+      req(data.venue.id, "POST", { categoryId: data.categories.cat1.id, priceToman: 50000 }),
       params(data.venue.id)
     );
     expect(res.status).toBe(400);
@@ -139,7 +138,7 @@ describe("POST /api/venues/[venueId]/items", () => {
 
   it("returns 400 when categoryId is missing", async () => {
     const res = await POST(
-      req(data.venue.id, "POST", { nameFa: "TEST_بدون دسته", priceToman: 50000, station: "kitchen" }),
+      req(data.venue.id, "POST", { nameFa: "TEST_بدون دسته", priceToman: 50000 }),
       params(data.venue.id)
     );
     expect(res.status).toBe(400);
@@ -151,20 +150,6 @@ describe("POST /api/venues/[venueId]/items", () => {
         nameFa: "TEST_قیمت بد",
         categoryId: data.categories.cat1.id,
         priceToman: -1,
-        station: "kitchen",
-      }),
-      params(data.venue.id)
-    );
-    expect(res.status).toBe(400);
-  });
-
-  it("returns 400 when station is invalid", async () => {
-    const res = await POST(
-      req(data.venue.id, "POST", {
-        nameFa: "TEST_ایستگاه بد",
-        categoryId: data.categories.cat1.id,
-        priceToman: 50000,
-        station: "invalid-station",
       }),
       params(data.venue.id)
     );
@@ -178,7 +163,6 @@ describe("POST /api/venues/[venueId]/items", () => {
         nameFa: "TEST_بدون احراز",
         categoryId: data.categories.cat1.id,
         priceToman: 50000,
-        station: "kitchen",
       }),
       params(data.venue.id)
     );

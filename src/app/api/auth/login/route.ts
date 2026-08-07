@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { createSession, verifyPassword, destroyAllUserSessions } from "@/lib/auth";
+import { createSession, verifyPassword } from "@/lib/auth";
 import { DEMO_EMAIL, ensureDemoData } from "@/lib/demo";
 import { rateLimit, getClientIP } from "@/lib/rate-limit";
-import { logAudit } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -77,25 +76,14 @@ export async function POST(request: Request) {
       );
     }
 
-    await destroyAllUserSessions(user.id);
-
     await createSession(user.id);
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        lastLoginAt: new Date(),
         failedLoginAttempts: 0,
         lockedUntil: null,
       },
-    });
-
-    await logAudit({
-      actorUserId: user.id,
-      action: "auth.login",
-      entityType: "user",
-      entityId: user.id,
-      metadata: { ip },
     });
 
     return NextResponse.json({ success: true });

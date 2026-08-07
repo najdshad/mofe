@@ -4,33 +4,28 @@ import { Check } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { TIMEZONE_LABELS } from "@/lib/constants";
 
 interface VenueInfoSectionProps {
   nameFa: string;
   nameEn: string;
-  timezone: string;
   venueStatus: string;
   onNameFaChange: (v: string) => void;
   onNameEnChange: (v: string) => void;
-  onTimezoneChange: (v: string) => void;
   onSave: () => void;
 }
 
 export function VenueInfoSection({
   nameFa,
   nameEn,
-  timezone,
   venueStatus,
   onNameFaChange,
   onNameEnChange,
-  onTimezoneChange,
   onSave,
 }: VenueInfoSectionProps) {
   return (
     <Panel
       title="اطلاعات مجموعه"
-      subtitle="نام و منطقه زمانی پیش‌فرض منوی شما."
+      subtitle="نام‌های نمایشی منوی شما."
       className="overflow-hidden shadow-sm"
     >
       <div className="grid gap-4 sm:grid-cols-2">
@@ -45,29 +40,6 @@ export function VenueInfoSection({
           onChange={(e) => onNameEnChange(e.target.value)}
           dir="ltr"
         />
-        <div className="space-y-1.5 sm:col-span-2">
-          <label
-            htmlFor="venue-timezone"
-            className="block text-xs tracking-[0.14em] text-ink-muted"
-          >
-            منطقه زمانی
-          </label>
-          <select
-            id="venue-timezone"
-            value={timezone}
-            onChange={(e) => onTimezoneChange(e.target.value)}
-            className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-ink transition-colors focus:border-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
-          >
-            {Object.entries(TIMEZONE_LABELS).map(([tz, label]) => (
-              <option key={tz} value={tz}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs leading-5 text-ink-muted">
-            ساعت‌های فعالیت بر اساس این منطقه زمانی نمایش داده می‌شوند.
-          </p>
-        </div>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4">

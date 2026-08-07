@@ -7,10 +7,10 @@ export default async function VenuesPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const memberships = await getAccessibleVenues(user.id);
+  const venues = await getAccessibleVenues(user.id);
 
-  if (memberships.length === 1) {
-    redirect(`/admin/${memberships[0].venueId}/menu`);
+  if (venues.length === 1) {
+    redirect(`/admin/${venues[0].id}/menu`);
   }
 
   return (
@@ -20,13 +20,13 @@ export default async function VenuesPage() {
         لطفاً یک مجموعه را انتخاب کنید
       </p>
       <div className="mt-8 flex flex-col gap-3">
-        {memberships.map((m) => (
+        {venues.map((v) => (
           <Link
-            key={m.venueId}
-            href={`/admin/${m.venueId}/menu`}
+            key={v.id}
+            href={`/admin/${v.id}/menu`}
             className="rounded-[var(--radius-panel)] border border-line bg-paper px-8 py-4 text-center text-lg font-serif text-ink transition-colors hover:border-ink"
           >
-            {m.venue.nameFa}
+            {v.nameFa}
           </Link>
         ))}
       </div>

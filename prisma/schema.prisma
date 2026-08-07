@@ -8,65 +8,37 @@ datasource db {
 }
 
 model User {
-  id                  String    @id @default(uuid())
-  name                String
-  email               String    @unique
-  phone               String?
-  passwordHash        String?
-  role                String    @default("user")
-  emailVerifiedAt     DateTime?
-  lastLoginAt         DateTime?
-  status              String    @default("active")
-  failedLoginAttempts Int       @default(0)
-  lockedUntil         DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String?
+  status       String   @default("active")
+  failedLoginAttempts Int @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  sessions         Session[]
-  venueMembers     VenueMember[]
-  uploadedAssets   Asset[]       @relation("UploadedAssets")
-  authoredLogs     AuditLog[]    @relation("ActorLogs")
-  createdPublications MenuPublication[] @relation("PublicationCreator")
-  passwordResetTokens PasswordResetToken[]
+  sessions    Session[]
+  ownedVenues Venue[]
 }
 
 model Venue {
   id             String    @id @default(uuid())
+  ownerId        String
   nameFa         String
   nameEn         String?
   slug           String    @unique
-  timezone       String    @default("Asia/Tehran")
   accentColor    String?
   welcomeMessage String?
   logoUrl        String?
-  menuPhotoMode  Boolean   @default(false)
-  publicStatus   String    @default("draft")
-  publishedAt    DateTime?
-  unpublishedAt  DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  members      VenueMember[]
-  categories   Category[]
-  menuItems    MenuItem[]
-  assets       Asset[]
-  publications MenuPublication[]
-  auditLogs    AuditLog[]
-}
+  owner      User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categories Category[]
+  menuItems  MenuItem[]
 
-model VenueMember {
-  id          String   @id @default(uuid())
-  venueId     String
-  userId      String
-  permissions String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([venueId, userId])
-  @@index([userId])
+  @@index([ownerId])
 }
 
 model Category {
@@ -96,7 +68,6 @@ model MenuItem {
   nameEn              String?
   description         String?
   priceToman          Int @default(0)
-  station             String
   calories            Int?
   photoUrl        String?
   isSoldOut       Boolean   @default(false)
@@ -114,52 +85,8 @@ model MenuItem {
   @@unique([categoryId, nameFa])
   @@index([categoryId])
   @@index([venueId, categoryId, displayOrder])
-  @@index([venueId, station])
   @@index([venueId, isSoldOut])
   @@index([venueId, updatedAt])
-}
-
-model Asset {
-  id              String   @id @default(uuid())
-  venueId         String?
-  kind            String
-  bucket          String
-  objectKey       String
-  publicUrl       String?
-  contentType     String
-  byteSize        Int
-  width           Int?
-  height          Int?
-  checksum        String?
-  createdByUserId String?
-  createdAt       DateTime @default(now())
-
-  venue    Venue? @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  uploader User?  @relation("UploadedAssets", fields: [createdByUserId], references: [id], onDelete: SetNull)
-
-  @@index([venueId])
-  @@index([createdByUserId])
-  @@index([kind])
-}
-
-model MenuPublication {
-  id              String    @id @default(uuid())
-  venueId         String
-  status          String    @default("queued")
-  trigger         String
-  snapshot        String?
-  staticAssetUrl   String?
-  errorMessage    String?
-  createdByUserId String?
-  createdAt       DateTime  @default(now())
-  completedAt     DateTime?
-
-  venue   Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  creator User? @relation("PublicationCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
-
-  @@index([venueId])
-  @@index([status])
-  @@index([createdByUserId])
 }
 
 model MenuItemVariant {
@@ -204,42 +131,6 @@ model MenuItemAllergen {
   @@index([allergenCode])
 }
 
-model AuditLog {
-  id          String   @id @default(uuid())
-  venueId     String?
-  actorUserId String?
-  action      String
-  entityType  String
-  entityId    String?
-  metadata    String?
-  createdAt   DateTime @default(now())
-
-  venue  Venue? @relation(fields: [venueId], references: [id], onDelete: SetNull)
-  actor  User?  @relation("ActorLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
-
-  @@index([venueId])
-  @@index([actorUserId])
-  @@index([createdAt])
-  @@index([venueId, createdAt])
-  @@index([action])
-  @@index([entityType])
-  @@index([entityId])
-}
-
-model PasswordResetToken {
-  id        String    @id @default(uuid())
-  userId    String
-  tokenHash String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([expiresAt])
-}
-
 model RateLimitEntry {
   id        String   @id @default(uuid())
   key       String   @unique
@@ -251,16 +142,15 @@ model RateLimitEntry {
 }
 
 model Session {
-  id             String    @id @default(uuid())
-  userId         String
-  tokenHash      String    @unique
-  expiresAt      DateTime
-  lastActivityAt DateTime?
-  createdAt      DateTime  @default(now())
-  revokedAt      DateTime?
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
-  @@index([userId, lastActivityAt])
+  @@index([userId])
 }

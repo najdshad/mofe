@@ -6,10 +6,9 @@ import { QRCodeExport } from "@/components/ui/QRCodeExport";
 interface QRIconButtonProps {
   venueName: string;
   publicUrl: string;
-  isUnpublished: boolean;
 }
 
-export function QRIconButton({ venueName, publicUrl, isUnpublished }: QRIconButtonProps) {
+export function QRIconButton({ venueName, publicUrl }: QRIconButtonProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -117,7 +116,6 @@ export function QRIconButton({ venueName, publicUrl, isUnpublished }: QRIconButt
               <QRCodeExport
                 publicUrl={publicUrl}
                 venueName={venueName}
-                isUnpublished={isUnpublished}
               />
             </div>
           </div>

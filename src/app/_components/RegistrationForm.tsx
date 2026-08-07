@@ -9,7 +9,6 @@ interface FieldErrors {
   name?: string;
   cafeName?: string;
   email?: string;
-  phone?: string;
   password?: string;
 }
 
@@ -17,7 +16,6 @@ export default function RegistrationForm() {
   const [name, setName] = useState("");
   const [cafeName, setCafeName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -46,7 +44,7 @@ export default function RegistrationForm() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), cafeName: cafeName.trim(), email: email.trim(), phone: phone.trim(), password }),
+        body: JSON.stringify({ name: name.trim(), cafeName: cafeName.trim(), email: email.trim(), password }),
       });
 
       const data = await res.json();
@@ -96,16 +94,6 @@ export default function RegistrationForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         error={fieldErrors.email}
-      />
-
-      <Input
-        label="شماره تلفن (اختیاری)"
-        placeholder="09xx xxx xxxx"
-        type="tel"
-        dir="ltr"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-        error={fieldErrors.phone}
       />
 
       <Input

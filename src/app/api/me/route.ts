@@ -5,7 +5,7 @@ import { getAccessibleVenues } from "@/lib/permissions";
 export async function GET() {
   try {
     const user = await requireAuth();
-    const memberships = await getAccessibleVenues(user.id);
+    const venues = await getAccessibleVenues(user.id);
 
     return NextResponse.json({
       user: {
@@ -13,13 +13,12 @@ export async function GET() {
         name: user.name,
         email: user.email,
       },
-      memberships: memberships.map((m) => ({
-        venueId: m.venueId,
+      venues: venues.map((v) => ({
+        venueId: v.id,
         venue: {
-          id: m.venue.id,
-          nameFa: m.venue.nameFa,
-          slug: m.venue.slug,
-          publicStatus: m.venue.publicStatus,
+          id: v.id,
+          nameFa: v.nameFa,
+          slug: v.slug,
         },
       })),
     });

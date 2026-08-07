@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
 import { validateCsrf } from "@/lib/csrf";
 
 export async function PATCH(
@@ -29,15 +28,7 @@ export async function PATCH(
       data,
     });
 
-    await logAudit({
-      venueId,
-      actorUserId: user.id,
-      action: "category.update",
-      entityType: "category",
-      entityId: categoryId,
-      metadata: { changes: Object.keys(body) },
-    });
-
+    
     return NextResponse.json(category);
   } catch (e) {
     return errorResponse(e);
@@ -66,22 +57,9 @@ export async function DELETE(
       );
     }
 
-    const cat = await prisma.category.findUnique({
-      where: { id: categoryId, venueId },
-    });
-
     await prisma.category.update({
       where: { id: categoryId, venueId },
       data: { deletedAt: new Date() },
-    });
-
-    await logAudit({
-      venueId,
-      actorUserId: user.id,
-      action: "category.delete",
-      entityType: "category",
-      entityId: categoryId,
-      metadata: { nameFa: cat?.nameFa },
     });
 
     return NextResponse.json({ success: true });

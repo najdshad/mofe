@@ -19,7 +19,7 @@ export default async function SettingsPage({
   const venue = await prisma.venue.findUnique({
     where: { id: venueId },
     select: {
-      id: true, nameFa: true, nameEn: true, slug: true, timezone: true,
+      id: true, nameFa: true, nameEn: true, slug: true,
       welcomeMessage: true, logoUrl: true,
     },
   });
@@ -32,7 +32,6 @@ export default async function SettingsPage({
       nameFa={venue.nameFa}
       nameEn={venue.nameEn}
       slug={venue.slug}
-      timezone={venue.timezone}
       welcomeMessage={venue.welcomeMessage}
       logoUrl={venue.logoUrl}
       publicMenuDomain={getPublicMenuUrl(venue.slug)}

@@ -18,7 +18,6 @@ export interface SnapshotCategoryItem {
   nameEn: string | null;
   description: string | null;
   priceToman: number;
-  station: string;
   calories: number | null;
   soldOut: boolean;
   variants?: SnapshotItemVariant[];
@@ -717,66 +716,6 @@ ${FONT_FACE_DECLARATIONS}
       </div>
     </section>
   </main>
-  <script>
-    (() => {
-      const pills = Array.from(document.querySelectorAll("[data-category-pill]"));
-      const sections = pills
-        .map((pill) => {
-          const href = pill.getAttribute("href");
-          return href ? document.querySelector(href) : null;
-        })
-        .filter(Boolean);
-      const nav = document.querySelector(".category-nav");
-      const activate = (targetId) => {
-        pills.forEach((pill) => {
-          const active = pill.getAttribute("href") === "#" + targetId;
-          pill.classList.toggle("active", active);
-          if (active) pill.setAttribute("aria-current", "true");
-          else pill.removeAttribute("aria-current");
-        });
-        const activePill = pills.find((p) => p.classList.contains("active"));
-        if (nav && activePill) {
-          const pillRect = activePill.getBoundingClientRect();
-          const navRect = nav.getBoundingClientRect();
-          if (pillRect.left < navRect.left || pillRect.right > navRect.right) {
-            activePill.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-          }
-        }
-      };
-      pills.forEach((pill) => {
-        pill.addEventListener("click", () => {
-          const href = pill.getAttribute("href");
-          if (href) activate(href.slice(1));
-        });
-      });
-      const updateActive = () => {
-        const threshold = 80;
-        let current = sections[0];
-        for (const section of sections) {
-          const top = section.getBoundingClientRect().top;
-          if (top <= threshold) {
-            current = section;
-          } else {
-            break;
-          }
-        }
-        if (current?.id) activate(current.id);
-      };
-      if (sections.length) {
-        let ticking = false;
-        window.addEventListener("scroll", () => {
-          if (!ticking) {
-            requestAnimationFrame(() => {
-              updateActive();
-              ticking = false;
-            });
-            ticking = true;
-          }
-        });
-        updateActive();
-      }
-    })();
-  </script>
 </body>
 </html>`;
 }

@@ -104,7 +104,6 @@ describe("POST /api/auth/signup", () => {
     email: `newuser-${Date.now()}@test.ir`,
     password: "password123",
     cafeName: "کافه جدید",
-    phone: "09120000000",
   };
 
   it("returns 400 when name is missing", async () => {
@@ -149,12 +148,10 @@ describe("POST /api/auth/signup", () => {
 
     const user = await prisma.user.findUnique({ where: { email: signupPayload.email } });
     expect(user).not.toBeNull();
-    expect(user!.phone).toBe("09120000000");
+    expect(user!.name).toBe("کاربر جدید");
 
-    await prisma.passwordResetToken.deleteMany({ where: { user: { id: user!.id } } });
     await prisma.session.deleteMany({ where: { userId: user!.id } });
-    await prisma.venueMember.deleteMany({ where: { userId: user!.id } });
-    await prisma.venue.deleteMany({ where: { members: { some: { userId: user!.id } } } });
+    await prisma.venue.deleteMany({ where: { ownerId: user!.id } });
     await prisma.user.delete({ where: { id: user!.id } });
   });
 

@@ -7,24 +7,16 @@ export async function cleanTestData() {
   await prisma.menuItemAllergen.deleteMany();
   await prisma.menuItemVariant.deleteMany();
   await prisma.menuItemPrice.deleteMany();
-  // Per-venue sub-models
-  await prisma.auditLog.deleteMany();
-  await prisma.passwordResetToken.deleteMany();
-  await prisma.asset.deleteMany();
   // Rate-limit entries (no FK to venue/user)
   await prisma.rateLimitEntry.deleteMany();
-  // MenuPublication references Venue
-  await prisma.menuPublication.deleteMany();
   // MenuItem references Venue + Category
   await prisma.menuItem.deleteMany();
   // Category references Venue
   await prisma.category.deleteMany();
-  // VenueMember references Venue + User
-  await prisma.venueMember.deleteMany();
   // Session references User
   await prisma.session.deleteMany();
   // Venue (no remaining deps)
-  await prisma.venue.deleteMany();
+  await prisma.venue.deleteMany();  // Venue references User (owner)
   // User (no remaining deps)
   await prisma.user.deleteMany();
 }
@@ -34,37 +26,25 @@ export async function seedTestData() {
 
   const user = await prisma.user.upsert({
     where: { email: "admin@test.ir" },
-    update: { name: "مدیر تست", passwordHash, status: "active", emailVerifiedAt: new Date(), phone: "09120000000" },
+    update: { name: "مدیر تست", passwordHash, status: "active" },
     create: {
       email: "admin@test.ir",
       name: "مدیر تست",
       passwordHash,
       status: "active",
-      emailVerifiedAt: new Date(),
-      phone: "09120000000",
     },
   });
 
   const venue = await prisma.venue.upsert({
     where: { slug: "test-cafe" },
-    update: { nameFa: "کافه تست" },
+    update: { nameFa: "کافه تست", ownerId: user.id },
     create: {
+      ownerId: user.id,
       nameFa: "کافه تست",
       nameEn: "Test Cafe",
       slug: "test-cafe",
       welcomeMessage: "به کافه تست خوش آمدید",
-      publicStatus: "draft",
-      timezone: "Asia/Tehran",
       accentColor: "#111111",
-    },
-  });
-
-  await prisma.venueMember.upsert({
-    where: { venueId_userId: { venueId: venue.id, userId: user.id } },
-    update: {},
-    create: {
-      venueId: venue.id,
-      userId: user.id,
     },
   });
 
@@ -103,7 +83,6 @@ export async function seedTestData() {
       nameEn: "Mint Tea",
       description: "توضیحات آیتم یک",
       priceToman: 75000,
-      station: "kitchen",
       displayOrder: 1,
       isSoldOut: false,
     },
@@ -117,7 +96,6 @@ export async function seedTestData() {
       nameEn: "Cinnamon Tea",
       description: "چای دارچین تازه دم شده",
       priceToman: 85000,
-      station: "kitchen",
       displayOrder: 2,
       isSoldOut: true,
     },
@@ -131,7 +109,6 @@ export async function seedTestData() {
       nameEn: "Carrot Cake",
       description: "کیک هویج تازه",
       priceToman: 175000,
-      station: "kitchen",
       displayOrder: 1,
       isSoldOut: false,
       calories: 320,
@@ -146,35 +123,26 @@ export async function seedTestVenueWithFullData() {
 
   const user = await prisma.user.upsert({
     where: { email: "full@test.ir" },
-    update: { name: "کاربر کامل", passwordHash, status: "active", emailVerifiedAt: new Date(), phone: "09120000000" },
+    update: { name: "کاربر کامل", passwordHash, status: "active" },
     create: {
       email: "full@test.ir",
       name: "کاربر کامل",
       passwordHash,
       status: "active",
-      emailVerifiedAt: new Date(),
-      phone: "09120000000",
     },
   });
 
   const venue = await prisma.venue.upsert({
     where: { slug: "full-cafe" },
-    update: { nameFa: "کافه کامل" },
+    update: { nameFa: "کافه کامل", ownerId: user.id },
     create: {
+      ownerId: user.id,
       nameFa: "کافه کامل",
       nameEn: "Full Cafe",
       slug: "full-cafe",
       welcomeMessage: "به کافه کامل خوش آمدید",
-      publicStatus: "draft",
-      timezone: "Asia/Tehran",
       accentColor: "#c0392b",
     },
-  });
-
-  await prisma.venueMember.upsert({
-    where: { venueId_userId: { venueId: venue.id, userId: user.id } },
-    update: {},
-    create: { venueId: venue.id, userId: user.id },
   });
 
   const cat1 = await prisma.category.create({
@@ -189,7 +157,6 @@ export async function seedTestVenueWithFullData() {
       nameEn: "Mint Tea",
       description: "چای نعناع تازه",
       priceToman: 75000,
-      station: "kitchen",
       displayOrder: 1,
       isSoldOut: false,
       calories: 120,
@@ -239,7 +206,6 @@ export async function seedTestVenueWithFullData() {
       nameEn: null,
       description: null,
       priceToman: 0,
-      station: "bar",
       displayOrder: 2,
       isSoldOut: false,
     },

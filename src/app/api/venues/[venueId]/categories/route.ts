@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
 import { validateCsrf } from "@/lib/csrf";
 
 export async function GET(
@@ -57,15 +56,7 @@ export async function POST(
       });
     });
 
-    await logAudit({
-      venueId,
-      actorUserId: user.id,
-      action: "category.create",
-      entityType: "category",
-      entityId: category.id,
-      metadata: { nameFa: category.nameFa },
-    });
-
+    
     return NextResponse.json(category, { status: 201 });
   } catch (e) {
     return errorResponse(e);

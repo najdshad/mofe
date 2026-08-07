@@ -19,7 +19,7 @@ export async function GET(
     });
 
     const BOM = "\uFEFF";
-    const headers = "nameFa,nameEn,categoryNameFa,priceToman,station,description,calories,isSoldOut";
+    const headers = "nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut";
     const FORMULA_INJECTION_RE = /^[=+\-@\t]/;
     const sanitizeCsvField = (value: string): string => {
       if (FORMULA_INJECTION_RE.test(value)) {
@@ -34,7 +34,6 @@ export async function GET(
         sanitizeCsvField(item.nameEn ?? ""),
         sanitizeCsvField(item.category.nameFa),
         String(item.priceToman),
-        item.station,
         sanitizeCsvField(item.description ?? ""),
         item.calories != null ? String(item.calories) : "",
         item.isSoldOut ? "true" : "false",

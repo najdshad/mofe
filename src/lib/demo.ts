@@ -13,14 +13,12 @@ export async function ensureDemoData(prisma: PrismaClient) {
     update: {
       name: "مدیر کافه نقطه",
       passwordHash,
-      emailVerifiedAt: new Date(),
       status: "active",
     },
     create: {
       name: "مدیر کافه نقطه",
       email: DEMO_EMAIL,
       passwordHash,
-      emailVerifiedAt: new Date(),
       status: "active",
     },
   });
@@ -29,21 +27,11 @@ export async function ensureDemoData(prisma: PrismaClient) {
     where: { slug: DEMO_VENUE_SLUG },
     update: {},
     create: {
+      ownerId: user.id,
       nameFa: "کافه نقطه",
       nameEn: "Noghteh Cafe",
       slug: DEMO_VENUE_SLUG,
-      timezone: "Asia/Tehran",
       welcomeMessage: "به منوی ما خوش آمدید.",
-      publicStatus: "draft",
-    },
-  });
-
-  await prisma.venueMember.upsert({
-    where: { venueId_userId: { venueId: venue.id, userId: user.id } },
-    update: {},
-    create: {
-      venueId: venue.id,
-      userId: user.id,
     },
   });
 

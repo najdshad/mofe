@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
 
 export async function GET(
   _request: Request,
@@ -82,15 +81,7 @@ export async function POST(
       orderBy: { displayOrder: "asc" },
     });
 
-    await logAudit({
-      venueId,
-      actorUserId: user.id,
-      action: "item.prices.update",
-      entityType: "item",
-      entityId: itemId,
-      metadata: { count: prices.length },
-    });
-
+    
     return NextResponse.json(prices);
   } catch (e) {
     return errorResponse(e);

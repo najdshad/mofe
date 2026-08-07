@@ -34,8 +34,6 @@ import { Modal } from "@/components/ui/Modal";
 import { GripIcon, EditIcon, DeleteIcon } from "@/components/ui/Icons";
 import { fetchApi } from "@/lib/fetch-api";
 import { ALLERGEN_LABELS } from "@/lib/allergens";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 interface Category {
   id: string;
@@ -53,7 +51,6 @@ interface Item {
   categoryNameFa: string;
   priceToman: number;
   priceFormatted: string;
-  station: string;
   isSoldOut: boolean;
   description: string | null;
   calories: number | null;
@@ -61,22 +58,11 @@ interface Item {
   photoUrl: string | null;
 }
 
-interface Publication {
-  id: string;
-  status: string;
-  trigger: string;
-  createdAt: string;
-  createdAtLabel: string;
-}
-
 interface MenuClientProps {
   venueId: string;
   categories: Category[];
   items: Item[];
-  venuePublicStatus: string;
-  hasUnpublishedChanges: boolean;
   publicUrl: string;
-  publications: Publication[];
 }
 
 function SortableCategoryRow({
@@ -147,7 +133,7 @@ function SortableCategoryRow({
   );
 }
 
-const COL_TEMPLATE = "36px 2fr 1fr 0.8fr 1fr 0.5fr";
+const COL_TEMPLATE = "36px 2fr 1fr 1fr 0.5fr";
 
 function ItemRowContent({
   item,
@@ -179,11 +165,6 @@ function ItemRowContent({
       <div className="flex items-center justify-center">
         <span className="text-sm text-ink">{item.priceFormatted}</span>
         <span className="mr-1 text-xs text-ink-muted">تومان</span>
-      </div>
-      <div className="flex items-center justify-center">
-        <Badge variant="muted">
-          {item.station === "bar" ? "بار" : "آشپزخانه"}
-        </Badge>
       </div>
       <div className="flex items-center justify-center">
         <button
@@ -349,7 +330,6 @@ function ItemModal({
     nameEn?: string;
     categoryId: string;
     priceToman: number;
-    station: string;
     description?: string;
     calories?: number;
     isSoldOut: boolean;
@@ -365,7 +345,6 @@ function ItemModal({
     initial?.categoryId ?? targetCategoryId ?? categories[0]?.id ?? ""
   );
   const [priceToman, setPriceToman] = useState(String(initial?.priceToman ?? ""));
-  const [station, setStation] = useState(initial?.station ?? "kitchen");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [calories, setCalories] = useState(String(initial?.calories ?? ""));
   const [isSoldOut] = useState(initial?.isSoldOut ?? false);
@@ -472,7 +451,6 @@ function ItemModal({
         nameEn: nameEn.trim() || undefined,
         categoryId,
         priceToman: Number(priceToman),
-        station,
         description: description.trim() || undefined,
         calories: calories ? Number(calories) : undefined,
         isSoldOut,
@@ -579,19 +557,6 @@ function ItemModal({
         </div>
         <div className="space-y-1.5">
           <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
-            ایستگاه
-          </label>
-          <select
-            value={station}
-            onChange={(e) => setStation(e.target.value)}
-            className="w-full rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm text-ink"
-          >
-            <option value="kitchen">آشپزخانه</option>
-            <option value="bar">بار</option>
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
             توضیحات (اختیاری)
           </label>
           <textarea
@@ -607,7 +572,7 @@ function ItemModal({
             <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
               عکس
             </label>
-            <div className="flex items-center gap-3">
+<div className="flex items-center justify-center gap-3">
               {photoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -790,10 +755,7 @@ export function MenuClient({
   venueId,
   categories: initialCategories,
   items: initialItems,
-  venuePublicStatus,
-  hasUnpublishedChanges,
   publicUrl,
-  publications,
 }: MenuClientProps) {
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [items, setItems] = useState<Item[]>(initialItems);
@@ -823,13 +785,6 @@ export function MenuClient({
   } | null>(null);
 
   const [dragError, setDragError] = useState("");
-
-  const [showPublishModal, setShowPublishModal] = useState(false);
-  const [showUnpublishModal, setShowUnpublishModal] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [publishStatus, setPublishStatus] = useState("");
-  const router = useRouter();
 
   const filteredItems = items
     .filter((item) => {
@@ -870,7 +825,7 @@ export function MenuClient({
     const itemIds = Array.from(selectedItems);
     const res = await fetch(`/api/venues/${venueId}/items/bulk-delete`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...csrfHeaders() },
       body: JSON.stringify({ itemIds }),
     });
     if (!res.ok) return;
@@ -1009,7 +964,7 @@ export function MenuClient({
     );
     await fetch(`/api/venues/${venueId}/categories/${categoryId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...csrfHeaders() },
       body: JSON.stringify({ active }),
     });
   };
@@ -1019,7 +974,6 @@ export function MenuClient({
     nameEn?: string;
     categoryId: string;
     priceToman: number;
-    station: string;
     description?: string;
     calories?: number;
     isSoldOut: boolean;
@@ -1039,7 +993,6 @@ export function MenuClient({
         categoryNameFa: category?.nameFa ?? "",
         priceToman: created.priceToman,
         priceFormatted: created.priceToman.toLocaleString("fa-IR"),
-        station: created.station,
         isSoldOut: created.isSoldOut,
         description: created.description,
         calories: created.calories,
@@ -1061,7 +1014,6 @@ export function MenuClient({
     nameEn?: string;
     categoryId: string;
     priceToman: number;
-    station: string;
     description?: string;
     calories?: number;
     isSoldOut: boolean;
@@ -1096,7 +1048,6 @@ export function MenuClient({
               categoryId: data.categoryId,
               categoryNameFa: category?.nameFa ?? "",
               priceToman: data.priceToman,
-              station: data.station,
               description: data.description ?? null,
               calories: data.calories ?? null,
               isSoldOut: data.isSoldOut,
@@ -1132,7 +1083,7 @@ export function MenuClient({
     );
     await fetch(`/api/venues/${venueId}/items/${itemId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...csrfHeaders() },
       body: JSON.stringify({ isSoldOut: soldOut }),
     });
   };
@@ -1178,32 +1129,6 @@ export function MenuClient({
     }
   };
 
-  const handlePublish = async () => {
-    setPublishing(true);
-    const res = await fetch(`/api/venues/${venueId}/publish`, { method: "POST" });
-    if (res.ok) {
-      setShowPublishModal(false);
-      setPublishStatus("منو با موفقیت منتشر شد");
-      router.refresh();
-    } else {
-      setPublishStatus("خطا در انتشار منو");
-    }
-    setPublishing(false);
-  };
-
-  const handleUnpublish = async () => {
-    setPublishing(true);
-    const res = await fetch(`/api/venues/${venueId}/unpublish`, { method: "POST" });
-    if (res.ok) {
-      setShowUnpublishModal(false);
-      setPublishStatus("منو از دسترس خارج شد");
-      router.refresh();
-    } else {
-      setPublishStatus("خطا در لغو انتشار");
-    }
-    setPublishing(false);
-  };
-
   const handleNewItem = (categoryId?: string) => {
     setEditingItem(null);
     setNewItemCategoryId(categoryId);
@@ -1216,123 +1141,19 @@ export function MenuClient({
     <>
       <div className="mb-4 rounded-2xl border border-line bg-surface px-4 py-2.5">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 shrink-0">
-            <span className={`inline-block h-2 w-2 rounded-full ${
-              venuePublicStatus === "published"
-                ? hasUnpublishedChanges ? "bg-amber-500" : "bg-green-500"
-                : venuePublicStatus === "unpublished"
-                  ? "bg-red-400"
-                  : "bg-gray-400"
-            }`} />
-            <span className="text-sm text-ink whitespace-nowrap">
-              {venuePublicStatus === "published" ? "منتشر شده" : venuePublicStatus === "unpublished" ? "منتشر نشده" : "پیش‌نویس"}
-            </span>
-          </div>
-
-          <span className="hidden sm:inline text-xs text-ink-muted truncate min-w-0" dir="ltr">
-            {publicUrl}
-          </span>
-
-          {hasUnpublishedChanges && (
-            <span className="text-xs text-amber-600 shrink-0 whitespace-nowrap">⚠️ تغییرات منتشرنشده</span>
-          )}
-
-          {publishStatus && (
-            <span className="text-xs text-ink-muted shrink-0">{publishStatus}</span>
-          )}
-          <Link
-            href={`/admin/${venueId}/publications`}
-            className="hidden sm:inline text-xs text-ink-muted underline decoration-line underline-offset-4 hover:text-ink transition-colors shrink-0"
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline text-xs text-ink-muted truncate min-w-0 hover:text-ink hover:underline transition-colors"
+            dir="ltr"
           >
-            تاریخچه انتشار
-          </Link>
+            {publicUrl}
+          </a>
           {dragError && (
             <span className="text-xs text-red-600 shrink-0">{dragError}</span>
           )}
-
-          <div className="mr-auto flex items-center gap-2 shrink-0">
-            {venuePublicStatus === "published" ? (
-              <>
-                <button
-                  onClick={() => setShowPublishModal(true)}
-                  className="rounded-full border border-line px-3 py-1 text-xs text-ink hover:border-ink transition-colors disabled:opacity-40"
-                >
-                  انتشار مجدد
-                </button>
-                <button
-                  onClick={() => setShowUnpublishModal(true)}
-                  className="rounded-full border border-line px-3 py-1 text-xs text-ink-muted hover:text-ink hover:border-ink transition-colors disabled:opacity-40"
-                >
-                  لغو انتشار
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setShowPublishModal(true)}
-               
-                className="rounded-full border border-ink bg-ink px-3 py-1 text-xs text-paper hover:opacity-90 transition-colors disabled:opacity-40"
-              >
-                انتشار منو
-              </button>
-            )}
-
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className={`p-1 text-ink-muted hover:text-ink transition-colors ${showHistory ? "rotate-180" : ""}`}
-              title="تاریخچه انتشار"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-          </div>
         </div>
-
-        {showHistory && (
-          <div className="mt-3 border-t border-line pt-3">
-            <div className="overflow-hidden rounded-[var(--radius-card)] border border-line">
-              <div className="grid grid-cols-[1fr_80px_1fr] gap-2 border-b border-line bg-paper px-3 py-2 text-[11px] uppercase tracking-wider text-ink-muted">
-                <div>تاریخ</div>
-                <div>وضعیت</div>
-                <div>علت</div>
-              </div>
-              {publications.length === 0 ? (
-                <div className="px-3 py-4 text-center text-sm text-ink-muted">
-                  هیچ انتشاری یافت نشد
-                </div>
-              ) : (
-                publications.map((pub, idx) => (
-                  <div
-                    key={pub.id}
-                    className={`grid grid-cols-[1fr_80px_1fr] items-center gap-2 px-3 py-2.5 ${
-                      idx !== publications.length - 1 ? "border-b border-line/50" : ""
-                    }`}
-                  >
-                    <div className="text-sm text-ink">{pub.createdAtLabel}</div>
-                    <div>
-                      <span
-                        className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          pub.status === "published"
-                            ? "bg-green-100 text-green-800"
-                            : pub.status === "unpublished"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {pub.status === "published"
-                          ? "منتشر شده"
-                          : pub.status === "unpublished"
-                            ? "منتشر نشده"
-                            : "در صف"}
-                      </span>
-                    </div>
-                    <div className="text-sm text-ink-muted">
-                      {pub.trigger === "manual_publish" ? "انتشار" : "لغو انتشار"}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[240px_1fr]">
@@ -1520,7 +1341,7 @@ export function MenuClient({
                 filteredItems.map((item, idx) => (
                   <div
                     key={item.id}
-                    style={{ gridTemplateColumns: selectionMode ? COL_TEMPLATE : "2fr 1fr 0.8fr 1fr 0.5fr" }}
+                    style={{ gridTemplateColumns: selectionMode ? COL_TEMPLATE : "2fr 1fr 1fr 0.5fr" }}
                     className={`grid items-center gap-2 px-4 py-3 ${
                       idx !== filteredItems.length - 1
                         ? "border-b border-line/50"
@@ -1636,35 +1457,6 @@ export function MenuClient({
             )}
           </div>
         )}
-      </Modal>
-
-      <Modal
-        open={showPublishModal}
-        onClose={() => setShowPublishModal(false)}
-        onConfirm={handlePublish}
-        title="انتشار منو"
-        confirmLabel="انتشار"
-        loading={publishing}
-      >
-        <p>
-          با انتشار منو، نسخه جدید در آدرس عمومی قابل مشاهده خواهد بود.
-          این تغییر بلافاصله اعمال می‌شود.
-        </p>
-      </Modal>
-
-      <Modal
-        open={showUnpublishModal}
-        onClose={() => setShowUnpublishModal(false)}
-        onConfirm={handleUnpublish}
-        title="لغو انتشار"
-        confirmLabel="لغو انتشار"
-        confirmVariant="destructive"
-        loading={publishing}
-      >
-        <p>
-          با لغو انتشار، بازدیدکنندگان QR صفحه «منو در دسترس نیست» را
-          مشاهده خواهند کرد.
-        </p>
       </Modal>
     </>
   );

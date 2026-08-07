@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
 import { ALLERGEN_CODES } from "@/lib/allergens";
 
 export async function GET(
@@ -69,15 +68,7 @@ export async function POST(
       ),
     ]);
 
-    await logAudit({
-      venueId,
-      actorUserId: user.id,
-      action: "item.allergens.update",
-      entityType: "item",
-      entityId: itemId,
-      metadata: { allergenCodes: body.allergenCodes },
-    });
-
+    
     return NextResponse.json({ allergenCodes: body.allergenCodes });
   } catch (e) {
     return errorResponse(e);

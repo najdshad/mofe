@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
 import { validateCsrf } from "@/lib/csrf";
 import path from "path";
 import fs from "fs/promises";
@@ -49,7 +48,7 @@ export async function PATCH(
     }
 
     const ALLOWED_FIELDS = [
-      "nameFa", "nameEn", "description", "priceToman", "station",
+      "nameFa", "nameEn", "description", "priceToman",
       "calories", "isSoldOut", "displayOrder",
     ] as const;
     const data: Record<string, unknown> = {};
@@ -62,15 +61,7 @@ export async function PATCH(
       data,
     });
 
-    await logAudit({
-      venueId,
-      actorUserId: user.id,
-      action: "item.update",
-      entityType: "item",
-      entityId: itemId,
-      metadata: { changes: Object.keys(body) },
-    });
-
+    
     return NextResponse.json(item);
   } catch (e) {
     return errorResponse(e);
@@ -103,15 +94,7 @@ export async function DELETE(
       data: { deletedAt: new Date() },
     });
 
-    await logAudit({
-      venueId,
-      actorUserId: user.id,
-      action: "item.delete",
-      entityType: "item",
-      entityId: itemId,
-      metadata: { nameFa: item?.nameFa },
-    });
-
+    
     return NextResponse.json({ success: true });
   } catch (e) {
     return errorResponse(e);

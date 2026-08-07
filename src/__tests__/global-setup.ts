@@ -15,7 +15,7 @@ export function setup() {
   );
 
   execSync(
-    `psql "${TEST_DB_URL}" -c "DROP TABLE IF EXISTS schema_migrations;" && npx prisma db push && psql "${TEST_DB_URL}" -c "CREATE TABLE IF NOT EXISTS schema_migrations (version bigint PRIMARY KEY, dirty boolean NOT NULL); INSERT INTO schema_migrations (version, dirty) VALUES (4, false) ON CONFLICT (version) DO NOTHING;"`,
+    `psql "${TEST_DB_URL}" -c "DROP TABLE IF EXISTS schema_migrations;" && npx prisma db push`,
     {
       env: { ...process.env, DATABASE_URL: TEST_DB_URL },
       stdio: "pipe",
@@ -29,14 +29,9 @@ export async function teardown() {
   await prisma.menuItemAllergen.deleteMany();
   await prisma.menuItemVariant.deleteMany();
   await prisma.menuItemPrice.deleteMany();
-  await prisma.auditLog.deleteMany();
-  await prisma.passwordResetToken.deleteMany();
-  await prisma.asset.deleteMany();
   await prisma.rateLimitEntry.deleteMany();
-  await prisma.menuPublication.deleteMany();
   await prisma.menuItem.deleteMany();
   await prisma.category.deleteMany();
-  await prisma.venueMember.deleteMany();
   await prisma.session.deleteMany();
   await prisma.venue.deleteMany();
   await prisma.user.deleteMany();

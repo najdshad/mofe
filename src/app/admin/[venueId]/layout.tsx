@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
-import { getVenueMembership } from "@/lib/permissions";
+import { requireVenueAccess } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -18,13 +18,12 @@ export default async function AdminLayout({
   if (!user) redirect("/login");
 
   const { venueId } = await params;
-  const [membership, venue] = await Promise.all([
-    getVenueMembership(user.id, venueId),
-    prisma.venue.findUnique({ where: { id: venueId }, select: { nameFa: true, slug: true, publicStatus: true } }),
+  const [access, venue] = await Promise.all([
+    requireVenueAccess(user.id, venueId).catch(() => null),
+    prisma.venue.findUnique({ where: { id: venueId }, select: { nameFa: true, slug: true } }),
   ]);
 
-  if (!membership) redirect("/venues");
-  if (!venue) redirect("/venues");
+  if (!access || !venue) redirect("/venues");
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -43,7 +42,6 @@ export default async function AdminLayout({
             <QRIconButton
               venueName={venue.nameFa}
               publicUrl={getPublicMenuUrl(venue.slug)}
-              isUnpublished={venue.publicStatus !== "published"}
             />
             <span className="text-sm text-ink-muted">{user.name}</span>
             <form action="/api/auth/logout" method="POST">

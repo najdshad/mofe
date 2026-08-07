@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { cleanTestData, seedTestData } from "../helpers";
 import { prisma } from "@/lib/prisma";
 
@@ -17,61 +17,8 @@ beforeAll(async () => {
   data = await seedTestData();
 });
 
-afterEach(async () => {
-  await prisma.menuPublication.deleteMany({ where: { venueId: data.venue.id } });
-  await prisma.venue.update({
-    where: { id: data.venue.id },
-    data: { publicStatus: "draft", publishedAt: null },
-  });
-});
-
-describe("GET /m/[slug] — CDN redirect", () => {
-  it("redirects to CDN when staticAssetUrl is an HTTP URL", async () => {
-    await prisma.menuPublication.create({
-      data: {
-        venueId: data.venue.id,
-        status: "published",
-        trigger: "manual_publish",
-        snapshot: JSON.stringify({ venue: { nameFa: "test" }, categories: [], generatedAt: new Date().toISOString() }),
-        staticAssetUrl: "https://cdn.mofe.ir/menus/test-cafe.html",
-        completedAt: new Date(),
-      },
-    });
-    await prisma.venue.update({
-      where: { id: data.venue.id },
-      data: { publicStatus: "published", publishedAt: new Date() },
-    });
-
-    vi.resetModules();
-    const { GET } = await import("@/app/m/[slug]/route");
-
-    const res = await GET(req("test-cafe"), params("test-cafe"));
-
-    expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("https://cdn.mofe.ir/menus/test-cafe.html");
-  });
-
-  it("serves rendered HTML when staticAssetUrl is null", async () => {
-    await prisma.menuPublication.create({
-      data: {
-        venueId: data.venue.id,
-        status: "published",
-        trigger: "manual_publish",
-        snapshot: JSON.stringify({
-          venue: { id: data.venue.id, nameFa: "کافه تست", nameEn: null, welcomeMessage: null, accentColor: null, logoUrl: null, slug: "test-cafe" },
-          categories: [],
-          generatedAt: new Date().toISOString(),
-        }),
-        staticAssetUrl: null,
-        completedAt: new Date(),
-      },
-    });
-    await prisma.venue.update({
-      where: { id: data.venue.id },
-      data: { publicStatus: "published", publishedAt: new Date() },
-    });
-
-    vi.resetModules();
+describe("GET /m/[slug]", () => {
+  it("serves the rendered menu", async () => {
     const { GET } = await import("@/app/m/[slug]/route");
 
     const res = await GET(req("test-cafe"), params("test-cafe"));
@@ -80,194 +27,42 @@ describe("GET /m/[slug] — CDN redirect", () => {
     const html = await res.text();
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("کافه تست");
+    expect(html).toContain("چای نعناع");
+    expect(html).toContain("ناموجود");
   });
 
-  it("serves rendered HTML when staticAssetUrl is a local path (not HTTP)", async () => {
-    await prisma.menuPublication.create({
+  it("renders live DB data without a snapshot", async () => {
+    await prisma.menuItem.create({
       data: {
         venueId: data.venue.id,
-        status: "published",
-        trigger: "manual_publish",
-        snapshot: JSON.stringify({
-          venue: { id: data.venue.id, nameFa: "کافه تست", nameEn: null, welcomeMessage: null, accentColor: null, logoUrl: null, slug: "test-cafe" },
-          categories: [],
-          generatedAt: new Date().toISOString(),
-        }),
-        staticAssetUrl: "/uploads/menus/test-cafe.html",
-        completedAt: new Date(),
+        categoryId: data.categories.cat1.id,
+        nameFa: "آیتم زنده",
+        priceToman: 1000,
+        displayOrder: 99,
       },
     });
-    await prisma.venue.update({
-      where: { id: data.venue.id },
-      data: { publicStatus: "published", publishedAt: new Date() },
-    });
 
-    vi.resetModules();
     const { GET } = await import("@/app/m/[slug]/route");
 
     const res = await GET(req("test-cafe"), params("test-cafe"));
-
-    expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain("آیتم زنده");
   });
 
-  it("serves unavailable page when venue is not published", async () => {
-    await prisma.venue.update({
-      where: { id: data.venue.id },
-      data: { publicStatus: "draft" },
-    });
-
-    vi.resetModules();
-    const { GET } = await import("@/app/m/[slug]/route");
-
-    const res = await GET(req("test-cafe"), params("test-cafe"));
-
-    const html = await res.text();
-    expect(html).toContain("منو در حال حاضر در دسترس نیست.");
-  });
-
-  it("returns 404 for non-existent slug", async () => {
-    vi.resetModules();
+  it("returns 404 for a non-existent slug", async () => {
     const { GET } = await import("@/app/m/[slug]/route");
 
     const res = await GET(req("non-existent-venue"), params("non-existent-venue"));
 
     expect(res.status).toBe(404);
+  });
+
+  it("includes category pill anchors", async () => {
+    const { GET } = await import("@/app/m/[slug]/route");
+
+    const res = await GET(req("test-cafe"), params("test-cafe"));
     const html = await res.text();
-    expect(html).toContain("منو");
-  });
-
-  it("returns 500 when snapshot JSON is corrupted", async () => {
-    await prisma.menuPublication.create({
-      data: {
-        venueId: data.venue.id,
-        status: "published",
-        trigger: "manual_publish",
-        snapshot: "not-valid-json",
-        completedAt: new Date(),
-      },
-    });
-    await prisma.venue.update({
-      where: { id: data.venue.id },
-      data: { publicStatus: "published", publishedAt: new Date() },
-    });
-
-    vi.resetModules();
-    const { GET } = await import("@/app/m/[slug]/route");
-
-    const res = await GET(req("test-cafe"), params("test-cafe"));
-
-    expect(res.status).toBe(500);
-    const html = await res.text();
-    expect(html).toContain("در دسترس نیست");
-  });
-
-  it("redirects to CDN even when cached version exists", async () => {
-    await prisma.menuPublication.create({
-      data: {
-        venueId: data.venue.id,
-        status: "published",
-        trigger: "manual_publish",
-        snapshot: JSON.stringify({ venue: { nameFa: "test" }, categories: [], generatedAt: new Date().toISOString() }),
-        staticAssetUrl: "https://cdn.mofe.ir/menus/test-cafe-v2.html",
-        completedAt: new Date(),
-      },
-    });
-    await prisma.venue.update({
-      where: { id: data.venue.id },
-      data: { publicStatus: "published", publishedAt: new Date() },
-    });
-
-    vi.resetModules();
-    const { GET } = await import("@/app/m/[slug]/route");
-
-    const res1 = await GET(req("test-cafe"), params("test-cafe"));
-    // First call should populate cache, second should still redirect
-    const res2 = await GET(req("test-cafe"), params("test-cafe"));
-
-    expect(res1.status).toBe(302);
-    expect(res2.status).toBe(302);
-    expect(res2.headers.get("Location")).toBe("https://cdn.mofe.ir/menus/test-cafe-v2.html");
-  });
-});
-
-describe("GET /m/[slug] — staticAssetUrl edge cases", () => {
-  it("redirects for https URLs", async () => {
-    await prisma.menuPublication.create({
-      data: {
-        venueId: data.venue.id,
-        status: "published",
-        trigger: "manual_publish",
-        snapshot: "{}",
-        staticAssetUrl: "https://cdn.example.com/menu.html",
-        completedAt: new Date(),
-      },
-    });
-    await prisma.venue.update({
-      where: { id: data.venue.id },
-      data: { publicStatus: "published", publishedAt: new Date() },
-    });
-
-    vi.resetModules();
-    const { GET } = await import("@/app/m/[slug]/route");
-
-    const res = await GET(req("test-cafe"), params("test-cafe"));
-    expect(res.status).toBe(302);
-    expect(res.headers.get("Location")).toBe("https://cdn.example.com/menu.html");
-  });
-
-  it("does NOT redirect for relative paths", async () => {
-    await prisma.menuPublication.create({
-      data: {
-        venueId: data.venue.id,
-        status: "published",
-        trigger: "manual_publish",
-        snapshot: JSON.stringify({
-          venue: { id: data.venue.id, nameFa: "کافه تست", nameEn: null, welcomeMessage: null, accentColor: null, logoUrl: null, slug: "test-cafe" },
-          categories: [],
-          generatedAt: new Date().toISOString(),
-        }),
-        staticAssetUrl: "/uploads/menus/menu.html",
-        completedAt: new Date(),
-      },
-    });
-    await prisma.venue.update({
-      where: { id: data.venue.id },
-      data: { publicStatus: "published", publishedAt: new Date() },
-    });
-
-    vi.resetModules();
-    const { GET } = await import("@/app/m/[slug]/route");
-
-    const res = await GET(req("test-cafe"), params("test-cafe"));
-    expect(res.status).toBe(200);
-  });
-
-  it("does NOT redirect for empty staticAssetUrl", async () => {
-    await prisma.menuPublication.create({
-      data: {
-        venueId: data.venue.id,
-        status: "published",
-        trigger: "manual_publish",
-        snapshot: JSON.stringify({
-          venue: { id: data.venue.id, nameFa: "کافه تست", nameEn: null, welcomeMessage: null, accentColor: null, logoUrl: null, slug: "test-cafe" },
-          categories: [],
-          generatedAt: new Date().toISOString(),
-        }),
-        staticAssetUrl: "",
-        completedAt: new Date(),
-      },
-    });
-    await prisma.venue.update({
-      where: { id: data.venue.id },
-      data: { publicStatus: "published", publishedAt: new Date() },
-    });
-
-    vi.resetModules();
-    const { GET } = await import("@/app/m/[slug]/route");
-
-    const res = await GET(req("test-cafe"), params("test-cafe"));
-    expect(res.status).toBe(200);
+    expect(html).toContain(".category-pill");
+    expect(html).toContain(`#cat-${data.categories.cat1.id}`);
   });
 });

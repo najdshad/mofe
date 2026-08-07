@@ -164,7 +164,6 @@ describe("renderPublicMenu", () => {
                   nameEn: "Mint Tea",
                   description: null,
                   priceToman: 75000,
-                  station: "kitchen",
                   calories: null,
                   soldOut: false,
                 },
@@ -196,7 +195,6 @@ describe("renderPublicMenu", () => {
                   nameEn: null,
                   description: null,
                   priceToman: 175000,
-                  station: "kitchen",
                   calories: null,
                   soldOut: false,
                 },
@@ -224,7 +222,6 @@ describe("renderPublicMenu", () => {
                   nameEn: null,
                   description: null,
                   priceToman: 10000,
-                  station: "kitchen",
                   calories: null,
                   soldOut: false,
                 },
@@ -240,7 +237,6 @@ describe("renderPublicMenu", () => {
                   nameEn: null,
                   description: null,
                   priceToman: 20000,
-                  station: "bar",
                   calories: null,
                   soldOut: false,
                 },
@@ -269,7 +265,6 @@ describe("renderPublicMenu", () => {
                   nameEn: null,
                   description: null,
                   priceToman: 145000,
-                  station: "bar",
                   calories: null,
                   soldOut: false,
                 },
@@ -293,7 +288,6 @@ describe("renderPublicMenu", () => {
           nameEn: "Latte",
           description: "اسپرسو با شیر گرم",
           priceToman: 145000,
-          station: "bar",
           calories: 140,
           soldOut: false,
         },
@@ -370,8 +364,8 @@ describe("renderPublicMenu", () => {
               id: "c1",
               nameFa: "نوشیدنی‌ها",
               items: [
-                { id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 50000, station: "kitchen", calories: null, soldOut: false },
-                { id: "i2", nameFa: "قهوه", nameEn: null, description: null, priceToman: 80000, station: "bar", calories: null, soldOut: false },
+                { id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 50000, calories: null, soldOut: false },
+                { id: "i2", nameFa: "قهوه", nameEn: null, description: null, priceToman: 80000, calories: null, soldOut: false },
               ],
             },
           ],
@@ -396,7 +390,7 @@ describe("renderPublicMenu", () => {
               id: "c1",
               nameFa: "test",
               items: [
-                { id: "i1", nameFa: "<script>alert(1)</script>", nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false },
+                { id: "i1", nameFa: "<script>alert(1)</script>", nameEn: null, description: null, priceToman: 1000, calories: null, soldOut: false },
               ],
             },
           ],
@@ -425,7 +419,7 @@ describe("renderPublicMenu", () => {
           categories: [
             {
               id: "c1", nameFa: "Free", items: [
-                { id: "i1", nameFa: "رایگان", nameEn: null, description: null, priceToman: 0, station: "kitchen", calories: null, soldOut: false },
+                { id: "i1", nameFa: "رایگان", nameEn: null, description: null, priceToman: 0, calories: null, soldOut: false },
               ],
             },
           ],
@@ -441,7 +435,7 @@ describe("renderPublicMenu", () => {
           categories: [
             {
               id: "c1", nameFa: "cat", items: [
-                { id: "i1", nameFa: longName, nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false },
+                { id: "i1", nameFa: longName, nameEn: null, description: null, priceToman: 1000, calories: null, soldOut: false },
               ],
             },
           ],
@@ -518,7 +512,6 @@ describe("Photo mode rendering", () => {
     nameEn: null,
     description: null,
     priceToman: 75000,
-    station: "kitchen",
     calories: null,
     soldOut: false,
     photoUrl: "/uploads/test-photo.webp",
@@ -544,7 +537,7 @@ describe("Photo mode rendering", () => {
     const html = renderPublicMenu(makeSnapshot({
       categories: [{
         id: "c1", nameFa: "نوشیدنی", items: [{
-          id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false,
+          id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 1000, calories: null, soldOut: false,
         }],
       }],
     }));
@@ -567,7 +560,6 @@ describe("Variant rendering", () => {
     nameEn: null,
     description: null,
     priceToman: 50000,
-    station: "bar",
     calories: null,
     soldOut: false,
     variants: [
@@ -616,7 +608,7 @@ describe("Allergen rendering", () => {
     const html = renderPublicMenu(makeSnapshot({
       categories: [{
         id: "c1", nameFa: "نوشیدنی", items: [{
-          id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false,
+          id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 1000, calories: null, soldOut: false,
           allergenCodes: ["dairy", "gluten"],
         }],
       }],
@@ -629,7 +621,7 @@ describe("Allergen rendering", () => {
     const html = renderPublicMenu(makeSnapshot({
       categories: [{
         id: "c1", nameFa: "نوشیدنی", items: [{
-          id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false,
+          id: "i1", nameFa: "چای", nameEn: null, description: null, priceToman: 1000, calories: null, soldOut: false,
         }],
       }],
     }));
@@ -695,7 +687,7 @@ describe("resolveUrl() function", () => {
       venue: { id: "v1", nameFa: "Test", nameEn: null, welcomeMessage: null, accentColor: null, logoUrl: "/uploads/img.png", slug: "test" },
       categories: [{
         id: "c1", nameFa: "cat", items: [{
-          id: "i1", nameFa: "item", nameEn: null, description: null, priceToman: 1000, station: "kitchen", calories: null, soldOut: false,
+          id: "i1", nameFa: "item", nameEn: null, description: null, priceToman: 1000, calories: null, soldOut: false,
           photoUrl: "/uploads/photo.png",
         }],
       }],
@@ -742,22 +734,10 @@ describe("Edge cases", () => {
     const html = renderPublicMenu(makeSnapshot({
       categories: [{
         id: "c1", nameFa: "رایگان", items: [{
-          id: "i1", nameFa: "رایگان", nameEn: null, description: null, priceToman: 0, station: "kitchen", calories: null, soldOut: false,
+          id: "i1", nameFa: "رایگان", nameEn: null, description: null, priceToman: 0, calories: null, soldOut: false,
         }],
       }],
     }));
     expect(html).toContain("۰");
-  });
-
-  it("handles station with special characters without crashing", () => {
-    const html = renderPublicMenu(makeSnapshot({
-      categories: [{
-        id: "c1", nameFa: "تست", items: [{
-          id: "i1", nameFa: "آیتم", nameEn: null, description: null, priceToman: 1000, station: "kitchen & bar", calories: null, soldOut: false,
-        }],
-      }],
-    }));
-    expect(html).toContain("آیتم");
-    expect(html).toContain("کافه نقطه");
   });
 });

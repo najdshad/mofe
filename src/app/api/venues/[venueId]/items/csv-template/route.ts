@@ -3,8 +3,8 @@ import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 
 const BOM = "\uFEFF";
-const HEADERS = "nameFa,nameEn,categoryNameFa,priceToman,station,description,calories,isSoldOut";
-const EXAMPLE = "پیتزا مخلوط,Special Mix Pizza,پیتزا,180000,kitchen,خمیر تازه با پنیر موزارلا,850,false";
+const HEADERS = "nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut";
+const EXAMPLE = "پیتزا مخلوط,Special Mix Pizza,پیتزا,180000,خمیر تازه با پنیر موزارلا,850,false";
 
 export async function GET(
   _request: Request,

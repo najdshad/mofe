@@ -7,7 +7,6 @@ import { Button } from "./Button";
 interface QRCodeExportProps {
   publicUrl: string;
   venueName: string;
-  isUnpublished?: boolean;
 }
 
 // 1x layout constants matching the HTML/CSS preview card:
@@ -38,7 +37,6 @@ const CARD_H_1X =
 export function QRCodeExport({
   publicUrl,
   venueName,
-  isUnpublished,
 }: QRCodeExportProps) {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -186,14 +184,6 @@ export function QRCodeExport({
 
   return (
     <div>
-      {isUnpublished && (
-        <div className="mb-4 rounded-2xl border border-line bg-surface px-4 py-3">
-          <p className="text-sm text-ink-muted">
-            منو منتشر نشده است. بازدیدکنندگان QR صفحه «منو در دسترس نیست» را
-            مشاهده خواهند کرد.
-          </p>
-        </div>
-      )}
       <div className="flex items-center gap-3">
         <Button variant="secondary" onClick={handleDownloadPng} disabled={!qrDataUrl}>
           دانلود PNG

@@ -15,13 +15,13 @@ import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { VenueInfoSection } from "./VenueInfoSection";
 import { useStatusMessage } from "@/hooks/useStatusMessage";
+import { fetchApi } from "@/lib/fetch-api";
 
 interface SettingsClientProps {
   venueId: string;
   nameFa: string;
   nameEn: string | null;
   slug: string;
-  timezone: string;
   welcomeMessage: string | null;
   logoUrl: string | null;
   publicMenuDomain: string;
@@ -32,7 +32,6 @@ export function SettingsClient({
   nameFa: initialNameFa,
   nameEn: initialNameEn,
   slug,
-  timezone: initialTimezone,
   welcomeMessage: initialWelcomeMessage,
   logoUrl: initialLogoUrl,
   publicMenuDomain,
@@ -40,7 +39,6 @@ export function SettingsClient({
   const router = useRouter();
   const [nameFa, setNameFa] = useState(initialNameFa);
   const [nameEn, setNameEn] = useState(initialNameEn ?? "");
-  const [timezone, setTimezone] = useState(initialTimezone);
   const [venueStatus, setVenueStatus] = useState("");
 
   const [welcomeMessage, setWelcomeMessage] = useState(initialWelcomeMessage ?? "");
@@ -50,38 +48,32 @@ export function SettingsClient({
 
   const handleSaveVenue = async () => {
     setVenueStatus("");
-    const res = await fetch(`/api/venues/${venueId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nameFa,
-        nameEn: nameEn || null,
-        timezone,
-      }),
-    });
-
-    if (res.ok) {
+    try {
+      await fetchApi(`/api/venues/${venueId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          nameFa,
+          nameEn: nameEn || null,
+        }),
+      });
       setVenueStatus("تغییرات ذخیره شد");
       setTimeout(() => setVenueStatus(""), 3000);
       router.refresh();
-    } else {
-      const data = await res.json();
-      setVenueStatus(data.error || "خطا در ذخیره تغییرات");
+    } catch (e) {
+      setVenueStatus(e instanceof Error ? e.message : "خطا در ذخیره تغییرات");
     }
   };
 
   const handleSaveAppearance = async () => {
-    const res = await fetch(`/api/venues/${venueId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        welcomeMessage: welcomeMessage || null,
-      }),
-    });
-
-    if (res.ok) {
+    try {
+      await fetchApi(`/api/venues/${venueId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ welcomeMessage: welcomeMessage || null }),
+      });
       showAppearanceStatus("تغییرات ذخیره شد");
       router.refresh();
+    } catch (e) {
+      showAppearanceStatus(e instanceof Error ? e.message : "خطا در ذخیره تغییرات");
     }
   };
 
@@ -174,11 +166,9 @@ export function SettingsClient({
         <VenueInfoSection
           nameFa={nameFa}
           nameEn={nameEn}
-          timezone={timezone}
           venueStatus={venueStatus}
           onNameFaChange={setNameFa}
           onNameEnChange={setNameEn}
-          onTimezoneChange={setTimezone}
           onSave={handleSaveVenue}
         />
 

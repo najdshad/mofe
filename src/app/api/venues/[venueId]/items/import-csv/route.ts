@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { logAudit } from "@/lib/audit";
-import { VALID_STATIONS } from "@/lib/constants";
 import Papa from "papaparse";
 
 const FORMULA_INJECTION_RE = /^[=+\-@\t]/;
@@ -58,10 +56,6 @@ export async function POST(
     "categoryfa", "category_fa", "category-fa",
   );
   const idxPrice = findHeaderIndex(headers, "pricetoman", "price_toman", "price", "قیمت", "price-toman");
-  const idxStation = findHeaderIndex(headers,
-    "station", "ایستگاه",
-    "kitchen|bar", "kitchen-bar", "kitchen_bar", "kitchen/bar",
-  );
   const idxDescription = findHeaderIndex(headers, "description", "توضیحات");
   const idxCalories = findHeaderIndex(headers, "calories", "کالری");
   const idxSoldOut = findHeaderIndex(headers, "issoldout", "is_sold_out", "soldout", "sold_out", "ناموجود");
@@ -155,12 +149,6 @@ export async function POST(
           continue;
         }
 
-        const station = row[idxStation]?.trim().toLowerCase();
-        if (station && !VALID_STATIONS.includes(station as typeof VALID_STATIONS[number])) {
-          results.push({ row: rowNum, status: "skipped", nameFa, message: `ایستگاه "${station}" نامعتبر است (kitchen یا bar)` });
-          continue;
-        }
-
         const nameEn = idxNameEn !== -1 ? sanitizeCsvField(row[idxNameEn]?.trim() ?? "") || null : null;
         const description = idxDescription !== -1 ? sanitizeCsvField(row[idxDescription]?.trim() ?? "") || null : null;
         const caloriesRaw = idxCalories !== -1 ? row[idxCalories]?.trim() : null;
@@ -180,7 +168,6 @@ export async function POST(
               nameEn,
               description,
               priceToman,
-              station: station || "kitchen",
               calories,
               isSoldOut,
               displayOrder: order,
@@ -195,14 +182,7 @@ export async function POST(
     }
   });
 
-  await logAudit({
-    venueId,
-    actorUserId: user.id,
-    action: "import_csv",
-    entityType: "menu",
-    metadata: { total: results.length },
-  });
-
+  
   const created = results.filter((r) => r.status === "created").length;
   const skipped = results.filter((r) => r.status === "skipped").length;
   const errors = results.filter((r) => r.status === "error").length;
