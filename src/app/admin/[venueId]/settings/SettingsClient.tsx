@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Building2,
   Check,
   ExternalLink,
-  Globe2,
+  Globe,
   ImagePlus,
-  Settings,
+  Link2,
+  MessageSquareText,
+  MonitorSmartphone,
   Trash2,
 } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
@@ -119,72 +120,48 @@ export function SettingsClient({
   const displayName = nameEn.trim() || nameFa;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 pb-12">
-      <header className="relative overflow-hidden rounded-[var(--radius-panel)] bg-ink px-5 py-6 text-paper shadow-[0_18px_35px_rgba(17,17,17,0.14)] sm:px-8 sm:py-8">
-        <div className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full border border-paper/10" />
-        <div className="pointer-events-none absolute -bottom-20 right-[-2rem] h-48 w-48 rounded-full border-[22px] border-paper/5" />
-
-        <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-xs tracking-[0.18em] text-paper/55">
-              <Settings className="h-4 w-4" strokeWidth={1.7} />
-              پنل مدیریت مجموعه
-            </div>
-            <h1 className="mt-3 max-w-2xl font-serif text-3xl leading-tight text-paper sm:text-4xl">
-              تنظیمات مجموعه
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-7 text-paper/65">
-              اطلاعات مجموعه و ظاهر منوی عمومی را از همین‌جا مدیریت کنید.
-            </p>
-          </div>
-
-          <a
-            href={publicMenuDomain}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex w-fit items-center gap-2 rounded-full border border-paper/25 bg-paper/10 px-4 py-2.5 text-sm text-paper transition-colors hover:bg-paper hover:text-ink"
-          >
-            <Globe2 className="h-4 w-4" strokeWidth={1.7} />
-            مشاهده منوی عمومی
-            <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.8} />
-          </a>
+    <div className="pb-10">
+      <header className="flex flex-col gap-4 border-b border-line/90 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-bold text-accent">تنظیمات</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">هویت و ظاهر مجموعه</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
+            اطلاعات اصلی و تجربه‌ای را که مهمان‌ها در منوی دیجیتال می‌بینند مدیریت کنید.
+          </p>
         </div>
-
-        <div className="relative mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-paper/10 pt-4 text-xs text-paper/55">
-          <span className="inline-flex items-center gap-2">
-            <Building2 className="h-3.5 w-3.5" strokeWidth={1.7} />
-            {displayName}
-          </span>
-          <span className="hidden h-1 w-1 rounded-full bg-paper/30 sm:block" />
-          <span dir="ltr" className="inline-flex items-center gap-2">
-            /{slug}
-          </span>
-        </div>
+        <a
+          href={publicMenuDomain}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex w-fit items-center gap-2 rounded-xl border border-line bg-panel px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-ink/40 hover:bg-white"
+        >
+          مشاهده منوی عمومی
+          <ExternalLink className="h-4 w-4 text-ink-muted" strokeWidth={1.8} />
+        </a>
       </header>
 
-      <div className="space-y-5">
-        <VenueInfoSection
-          nameFa={nameFa}
-          nameEn={nameEn}
-          venueStatus={venueStatus}
-          onNameFaChange={setNameFa}
-          onNameEnChange={setNameEn}
-          onSave={handleSaveVenue}
-        />
+      <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-5">
+          <VenueInfoSection
+            nameFa={nameFa}
+            nameEn={nameEn}
+            venueStatus={venueStatus}
+            onNameFaChange={setNameFa}
+            onNameEnChange={setNameEn}
+            onSave={handleSaveVenue}
+          />
 
-        <Panel
-          title="ظاهر منوی عمومی"
-          subtitle="با یک پیام کوتاه و لوگوی مناسب، منوی مجموعه را شخصی‌تر کنید."
-          className="overflow-hidden shadow-sm"
-        >
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px]">
+          <Panel title="پیام خوش‌آمدگویی" subtitle="یک پیام کوتاه در ابتدای منو برای مهمان‌ها بنویسید.">
+            <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
+              <MessageSquareText className="h-5 w-5" strokeWidth={1.7} />
+            </div>
             <div>
               <div className="flex items-end justify-between gap-3">
                 <label
                   htmlFor="welcome-message"
-                  className="block text-xs tracking-[0.14em] text-ink-muted"
+                  className="block text-xs font-medium text-ink-muted"
                 >
-                  پیام خوش‌آمدگویی
+                  متن پیام
                 </label>
                 <span className="text-[11px] text-ink-muted">
                   {welcomeMessage.length}/۲۲۰
@@ -195,78 +172,104 @@ export function SettingsClient({
                 value={welcomeMessage}
                 onChange={(e) => setWelcomeMessage(e.target.value)}
                 maxLength={220}
-                rows={6}
+                rows={5}
                 placeholder="مثلاً: خوش آمدید؛ از منوی ما لذت ببرید."
-                className="mt-2 min-h-36 w-full resize-none rounded-[var(--radius-control)] border border-line bg-surface px-4 py-3 text-sm leading-7 text-ink placeholder:text-ink-muted/50 transition-colors focus:border-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+                className="mt-2 min-h-32 w-full resize-none rounded-[var(--radius-control)] border border-line bg-white/70 px-3.5 py-3 text-sm leading-7 text-ink placeholder:text-ink-muted/45 transition-colors focus:border-accent/60 focus:outline-none focus-visible:ring-3 focus-visible:ring-accent/10"
               />
-              <p className="mt-2 text-xs leading-5 text-ink-muted">
-                این پیام در ابتدای منوی عمومی مهمان‌ها نمایش داده می‌شود.
-              </p>
             </div>
 
-            <div className="rounded-[22px] border border-dashed border-line bg-surface/60 p-4">
-              <div className="flex items-center gap-2 text-sm text-ink">
-                <ImagePlus className="h-4 w-4" strokeWidth={1.7} />
-                لوگوی مجموعه
+            <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line/80 pt-4">
+              <Button onClick={handleSaveAppearance}>
+                <Check className="h-4 w-4" strokeWidth={1.8} />
+                ذخیره پیام
+              </Button>
+              {appearanceStatus && (
+                <p className="inline-flex items-center gap-1.5 text-sm text-ink-muted" role="status" aria-live="polite">
+                  <Check className="h-4 w-4 text-success" strokeWidth={1.8} />
+                  {appearanceStatus}
+                </p>
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        <aside className="space-y-5">
+          <Panel title="لوگوی مجموعه" subtitle="برای بهترین نتیجه از تصویر مربع استفاده کنید.">
+            <div className="flex items-center gap-4">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-white text-ink-muted">
+                {logoUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={logoUrl} alt="لوگوی مجموعه" className="h-full w-full object-cover" />
+                ) : (
+                  <ImagePlus className="h-7 w-7" strokeWidth={1.4} />
+                )}
               </div>
-              <div className="mt-4 flex items-center gap-3 lg:block">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-paper text-ink-muted lg:h-28 lg:w-full">
-                  {logoUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={logoUrl}
-                      alt="لوگوی مجموعه"
-                      className="h-full w-full object-cover"
+              <div className="min-w-0">
+                <p className="text-xs leading-5 text-ink-muted">
+                  حداکثر ۵۰۰ پیکسل و کمتر از ۵۰ کیلوبایت.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-ink/40 hover:bg-white">
+                    <ImagePlus className="h-3.5 w-3.5" strokeWidth={1.7} />
+                    {uploading ? "در حال آپلود..." : "انتخاب تصویر"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      disabled={uploading}
+                      className="hidden"
                     />
-                  ) : (
-                    <ImagePlus className="h-7 w-7" strokeWidth={1.4} />
+                  </label>
+                  {logoUrl && (
+                    <button
+                      type="button"
+                      onClick={handleLogoRemove}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl px-2 text-xs text-ink-muted transition-colors hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.7} />
+                      حذف
+                    </button>
                   )}
                 </div>
-                <div className="min-w-0 lg:mt-3">
-                  <p className="text-xs leading-5 text-ink-muted">
-                    تصویر مربع، حداکثر ۵۰۰ پیکسل و کمتر از ۵۰ کیلوبایت.
-                  </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-line bg-paper px-3 py-2 text-xs text-ink transition-colors hover:border-ink">
-                      <ImagePlus className="h-3.5 w-3.5" strokeWidth={1.7} />
-                      {uploading ? "در حال آپلود..." : "انتخاب تصویر"}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        disabled={uploading}
-                        className="hidden"
-                      />
-                    </label>
-                    {logoUrl && (
-                      <button
-                        type="button"
-                        onClick={handleLogoRemove}
-                        className="inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-xs text-ink-muted transition-colors hover:bg-paper hover:text-red-600"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.7} />
-                        حذف
-                      </button>
-                    )}
-                  </div>
-                </div>
               </div>
             </div>
-          </div>
+          </Panel>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4">
-            <Button onClick={handleSaveAppearance}>
-              <Check className="h-4 w-4" strokeWidth={1.8} />
-              ذخیره ظاهر
-            </Button>
-            {appearanceStatus && (
-              <p className="inline-flex items-center gap-1.5 text-sm text-ink-muted" role="status" aria-live="polite">
-                <Check className="h-4 w-4 text-emerald-700" strokeWidth={1.8} />
-                {appearanceStatus}
-              </p>
-            )}
-          </div>
-        </Panel>
+          <section className="overflow-hidden rounded-[var(--radius-panel)] border border-ink bg-ink text-paper shadow-[0_14px_40px_rgba(17,17,17,0.12)]">
+            <div className="flex items-center justify-between border-b border-paper/10 px-5 py-4">
+              <div className="flex items-center gap-2 text-sm font-bold">
+                <MonitorSmartphone className="h-4 w-4" strokeWidth={1.7} />
+                پیش‌نمایش هویت
+              </div>
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            </div>
+            <div className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-paper/10">
+                  {logoUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Globe className="h-5 w-5 text-paper/60" strokeWidth={1.6} />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-bold">{displayName}</p>
+                  <p className="mt-1 text-xs text-paper/55">منوی دیجیتال مجموعه</p>
+                </div>
+              </div>
+              {welcomeMessage && (
+                <p className="mt-5 border-r-2 border-accent pr-3 text-xs leading-6 text-paper/65">
+                  {welcomeMessage}
+                </p>
+              )}
+              <div className="mt-5 flex items-center gap-2 rounded-xl bg-paper/7 px-3 py-2.5 text-xs text-paper/55" dir="ltr">
+                <Link2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">mofe.ir/m/{slug}</span>
+              </div>
+            </div>
+          </section>
+        </aside>
       </div>
     </div>
   );

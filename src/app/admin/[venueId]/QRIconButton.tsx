@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { QRCodeExport } from "@/components/ui/QRCodeExport";
+import { QrCode, X } from "lucide-react";
 
 interface QRIconButtonProps {
   venueName: string;
   publicUrl: string;
+  showLabel?: boolean;
 }
 
-export function QRIconButton({ venueName, publicUrl }: QRIconButtonProps) {
+export function QRIconButton({ venueName, publicUrl, showLabel = false }: QRIconButtonProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -78,18 +80,13 @@ export function QRIconButton({ venueName, publicUrl }: QRIconButtonProps) {
       <button
         ref={triggerRef}
         onClick={() => setOpen(true)}
-        className="p-1.5 text-ink-muted hover:text-ink transition-colors rounded-lg hover:bg-surface"
+        className={`inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-panel text-sm text-ink transition-colors hover:border-ink/40 hover:bg-white ${
+          showLabel ? "w-full px-3 py-2.5" : "h-9 w-9"
+        }`}
         title="خروجی QR"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="2" width="8" height="8" rx="1"/>
-          <rect x="14" y="2" width="8" height="8" rx="1"/>
-          <rect x="2" y="14" width="8" height="8" rx="1"/>
-          <path d="M14 14h3v3h-3z"/>
-          <path d="M19 14h3v3h-3z"/>
-          <path d="M14 19h3v3h-3z"/>
-          <path d="M19 19h3v3h-3z"/>
-        </svg>
+        <QrCode className="h-[18px] w-[18px]" strokeWidth={1.8} />
+        {showLabel && "دریافت QR منو"}
       </button>
       {open && (
         <div
@@ -98,18 +95,19 @@ export function QRIconButton({ venueName, publicUrl }: QRIconButtonProps) {
           aria-modal="true"
           aria-label="خروجی QR"
           tabIndex={-1}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 p-4 backdrop-blur-[2px]"
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
           onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
         >
-          <div className="flex w-full max-w-md flex-col items-center rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-lg">
+          <div className="flex w-full max-w-md flex-col items-center rounded-[var(--radius-panel)] border border-line bg-panel p-6 shadow-2xl">
             <div className="flex w-full items-center justify-between mb-5">
               <h3 className="font-serif text-xl text-ink">خروجی QR</h3>
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-1.5 text-ink-muted hover:bg-surface hover:text-ink transition-colors"
+                className="rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-ink/5 hover:text-ink"
+                aria-label="بستن"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                <X className="h-4 w-4" />
               </button>
             </div>
             <div className="flex w-full flex-col items-center gap-5">

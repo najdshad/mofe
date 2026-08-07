@@ -10,17 +10,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary: "bg-ink text-paper hover:opacity-90 border border-ink",
-  secondary: "bg-transparent text-ink border border-line hover:border-ink",
-  tertiary: "bg-transparent text-ink-muted hover:text-ink border border-transparent",
-  destructive: "bg-transparent text-ink border border-line hover:border-ink hover:text-ink",
+  primary: "border border-ink bg-ink text-paper shadow-[0_1px_1px_rgba(17,17,17,0.12)] hover:bg-ink/90",
+  secondary: "border border-line bg-panel text-ink hover:border-ink/40 hover:bg-white",
+  tertiary: "border border-transparent bg-transparent text-ink-muted hover:bg-ink/5 hover:text-ink",
+  destructive: "border border-red-200 bg-red-50 text-red-700 hover:border-red-300 hover:bg-red-100",
   none: "",
 };
 
 const sizeStyles = {
-  sm: "px-3 py-1.5 text-xs",
-  md: "px-5 py-2.5 text-sm",
-  lg: "px-7 py-3 text-base",
+  sm: "min-h-9 px-3 py-1.5 text-xs",
+  md: "min-h-10 px-4 py-2 text-sm",
+  lg: "min-h-12 px-5 py-2.5 text-base",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -28,7 +28,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        className={`inline-flex items-center justify-center gap-2 rounded-full transition-all duration-150 ${variantStyles[variant]} ${sizeStyles[size]} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 ${className}`}
+        className={`inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${variantStyles[variant]} ${sizeStyles[size]} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 ${className}`}
         {...props}
       >
         {children}

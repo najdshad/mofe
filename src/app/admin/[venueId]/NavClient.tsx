@@ -2,33 +2,75 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { Settings2, UtensilsCrossed } from "lucide-react";
 
-export function NavClient({ venueId }: { venueId: string }) {
+export function NavClient({
+  venueId,
+  variant,
+}: {
+  venueId: string;
+  variant: "sidebar" | "mobile";
+}) {
   const pathname = usePathname();
 
   const links = [
-    { href: `/admin/${venueId}/menu`, label: "منو" },
-    { href: `/admin/${venueId}/settings`, label: "تنظیمات" },
+    {
+      href: `/admin/${venueId}/menu`,
+      label: "مدیریت منو",
+      shortLabel: "منو",
+      icon: UtensilsCrossed,
+    },
+    {
+      href: `/admin/${venueId}/settings`,
+      label: "تنظیمات مجموعه",
+      shortLabel: "تنظیمات",
+      icon: Settings2,
+    },
   ];
 
+  if (variant === "mobile") {
+    return (
+      <nav className="grid grid-cols-2 border-t border-line/80 bg-panel/95 px-3 py-2 backdrop-blur">
+        {links.map((link) => {
+          const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
+          const Icon = link.icon;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors ${
+                isActive ? "bg-ink text-paper" : "text-ink-muted hover:bg-ink/5 hover:text-ink"
+              }`}
+            >
+              <Icon className="h-4 w-4" strokeWidth={1.8} />
+              {link.shortLabel}
+            </Link>
+          );
+        })}
+      </nav>
+    );
+  }
+
   return (
-    <div className="mx-auto flex max-w-5xl gap-4 px-4">
+    <nav className="space-y-1.5">
       {links.map((link) => {
         const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
+        const Icon = link.icon;
         return (
           <Link
             key={link.href}
             href={link.href}
-            className={`border-b-2 px-1 py-2.5 text-sm transition-colors ${
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
               isActive
-                ? "border-ink text-ink"
-                : "border-transparent text-ink-muted hover:border-ink hover:text-ink"
+                ? "bg-ink text-paper shadow-sm"
+                : "text-ink-muted hover:bg-ink/5 hover:text-ink"
             }`}
           >
+            <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
             {link.label}
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Languages } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -23,11 +23,10 @@ export function VenueInfoSection({
   onSave,
 }: VenueInfoSectionProps) {
   return (
-    <Panel
-      title="اطلاعات مجموعه"
-      subtitle="نام‌های نمایشی منوی شما."
-      className="overflow-hidden shadow-sm"
-    >
+    <Panel title="نام مجموعه" subtitle="نام‌هایی که در منوی عمومی نمایش داده می‌شوند.">
+      <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
+        <Languages className="h-5 w-5" strokeWidth={1.7} />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Input
           label="نام فارسی"
@@ -42,7 +41,7 @@ export function VenueInfoSection({
         />
       </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-4">
+      <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-line/80 pt-4">
         <Button onClick={onSave}>
           <Check className="h-4 w-4" strokeWidth={1.8} />
           ذخیره اطلاعات

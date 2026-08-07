@@ -34,6 +34,19 @@ import { Modal } from "@/components/ui/Modal";
 import { GripIcon, EditIcon, DeleteIcon } from "@/components/ui/Icons";
 import { fetchApi } from "@/lib/fetch-api";
 import { ALLERGEN_LABELS } from "@/lib/allergens";
+import {
+  CheckCircle2,
+  ChevronDown,
+  Download,
+  ExternalLink,
+  FileSpreadsheet,
+  Layers3,
+  ListChecks,
+  Plus,
+  Search,
+  Upload,
+  Utensils,
+} from "lucide-react";
 
 interface Category {
   id: string;
@@ -91,49 +104,59 @@ function SortableCategoryRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 rounded-2xl border px-3 py-2.5 transition-colors ${
-        selected ? "border-ink bg-ink/5" : "border-line hover:border-ink"
+      className={`group flex items-center gap-2 rounded-xl border px-2.5 py-2 transition-colors ${
+        selected ? "border-ink bg-ink text-paper" : "border-transparent bg-white/45 hover:border-line hover:bg-white"
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab touch-none p-1 text-ink-muted hover:text-ink transition-colors"
+        className={`cursor-grab touch-none rounded-lg p-1 transition-colors ${
+          selected ? "text-paper/45 hover:text-paper" : "text-ink-muted/45 hover:text-ink"
+        }`}
         title="جابجایی"
         suppressHydrationWarning
       >
         <GripIcon size={16} />
       </button>
       <button onClick={onSelect} className="min-w-0 flex-1 text-right">
-        <span className="block truncate text-sm text-ink">{cat.nameFa}</span>
-        <span className="mt-0.5 block text-[11px] text-ink-muted">
+        <span className={`block truncate text-sm font-medium ${selected ? "text-paper" : "text-ink"}`}>{cat.nameFa}</span>
+        <span className={`mt-0.5 block text-[10px] ${selected ? "text-paper/55" : "text-ink-muted"}`}>
           {cat.itemCount} آیتم
         </span>
       </button>
       <div className="shrink-0 flex items-center gap-1">
         <button
           onClick={onEdit}
-          className="p-1 text-ink-muted hover:text-ink transition-colors"
+          className={`rounded-lg p-1.5 transition-colors ${
+            selected ? "text-paper/55 hover:bg-paper/10 hover:text-paper" : "text-ink-muted hover:bg-ink/5 hover:text-ink"
+          }`}
           title="ویرایش"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+          <EditIcon size={13} />
         </button>
         <button
           onClick={onDelete}
-          className="p-1 text-ink-muted hover:text-red-600 transition-colors"
+          className={`rounded-lg p-1.5 transition-colors ${
+            selected ? "text-paper/55 hover:bg-red-400/15 hover:text-red-200" : "text-ink-muted hover:bg-red-50 hover:text-red-700"
+          }`}
           title="حذف"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          <DeleteIcon size={13} />
         </button>
         <div onClick={(e) => e.stopPropagation()}>
-          <Toggle on={cat.active} onChange={(active) => onToggleActive(active)} />
+          <Toggle
+            on={cat.active}
+            onChange={(active) => onToggleActive(active)}
+            aria-label={`${cat.active ? "غیرفعال کردن" : "فعال کردن"} دسته ${cat.nameFa}`}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-const COL_TEMPLATE = "36px 2fr 1fr 1fr 0.5fr";
+const COL_TEMPLATE = "38px minmax(220px,2fr) minmax(110px,0.8fr) minmax(100px,0.8fr) 76px";
 
 function ItemRowContent({
   item,
@@ -148,53 +171,138 @@ function ItemRowContent({
 }) {
   return (
     <>
-      <div className="flex items-center justify-start min-w-0">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line/80 bg-canvas text-ink-muted">
+          {item.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.photoUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <Utensils className="h-4 w-4 opacity-45" strokeWidth={1.6} />
+          )}
+        </div>
         <div className="min-w-0 overflow-hidden">
-          <div className="truncate font-serif text-lg text-ink">{item.nameFa}</div>
+          <div className="truncate text-sm font-bold text-ink">{item.nameFa}</div>
           {item.nameEn && (
-            <div className="truncate mt-0.5 text-sm text-ink-muted">{item.nameEn}</div>
+            <div className="mt-0.5 truncate text-xs text-ink-muted" dir="ltr">{item.nameEn}</div>
           )}
           {item.description && (
-            <div className="mt-1 truncate text-xs leading-relaxed text-ink-muted">
+            <div className="mt-1 truncate text-[11px] leading-relaxed text-ink-muted">
               {item.description}
             </div>
           )}
           {item.calories && <Badge variant="muted">{item.calories} kcal</Badge>}
         </div>
       </div>
-      <div className="flex items-center justify-center">
-        <span className="text-sm text-ink">{item.priceFormatted}</span>
-        <span className="mr-1 text-xs text-ink-muted">تومان</span>
+      <div className="flex items-baseline justify-start">
+        <span className="text-sm font-bold text-ink">{item.priceFormatted}</span>
+        <span className="mr-1 text-[10px] text-ink-muted">تومان</span>
       </div>
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-start">
         <button
           onClick={() => onToggleSoldOut(!item.isSoldOut)}
-          className={`w-full rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
             item.isSoldOut
-              ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
-              : "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+              ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
           }`}
         >
+          <span className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-red-500" : "bg-emerald-500"}`} />
           {item.isSoldOut ? "ناموجود" : "موجود"}
         </button>
       </div>
       <div className="flex items-center justify-center gap-1">
         <button
           onClick={onEdit}
-          className="p-1 text-ink-muted hover:text-ink transition-colors"
+          className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-ink/5 hover:text-ink"
           title="ویرایش"
         >
-          <EditIcon size={14} />
+          <EditIcon size={15} />
         </button>
         <button
           onClick={onDelete}
-          className="p-1 text-ink-muted hover:text-red-600 transition-colors"
+          className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-700"
           title="حذف"
         >
-          <DeleteIcon size={14} />
+          <DeleteIcon size={15} />
         </button>
       </div>
     </>
+  );
+}
+
+function MobileItemRowContent({
+  item,
+  selectionMode,
+  checked,
+  onToggleCheck,
+  onToggleSoldOut,
+  onEdit,
+  onDelete,
+  dragHandle,
+}: {
+  item: Item;
+  selectionMode: boolean;
+  checked: boolean;
+  onToggleCheck: () => void;
+  onToggleSoldOut: (v: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  dragHandle?: React.ReactNode;
+}) {
+  return (
+    <div className="flex gap-3 px-3 py-3 md:hidden">
+      <div className="flex shrink-0 flex-col items-center gap-2 pt-1">
+        {dragHandle}
+        {selectionMode && (
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={onToggleCheck}
+            className="h-4 w-4 rounded border-line text-ink focus:ring-ink"
+          />
+        )}
+      </div>
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line/80 bg-canvas text-ink-muted">
+        {item.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.photoUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <Utensils className="h-5 w-5 opacity-40" strokeWidth={1.6} />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-ink">{item.nameFa}</p>
+            {item.nameEn && <p className="mt-0.5 truncate text-[11px] text-ink-muted" dir="ltr">{item.nameEn}</p>}
+          </div>
+          <p className="shrink-0 text-xs font-bold text-ink">
+            {item.priceFormatted}
+            <span className="mr-1 text-[9px] font-normal text-ink-muted">تومان</span>
+          </p>
+        </div>
+        {item.description && <p className="mt-1 line-clamp-1 text-[11px] text-ink-muted">{item.description}</p>}
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <button
+            onClick={() => onToggleSoldOut(!item.isSoldOut)}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-medium ${
+              item.isSoldOut ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-red-500" : "bg-emerald-500"}`} />
+            {item.isSoldOut ? "ناموجود" : "موجود"}
+          </button>
+          <div className="flex items-center">
+            <button onClick={onEdit} className="rounded-lg p-2 text-ink-muted hover:bg-ink/5 hover:text-ink" aria-label={`ویرایش ${item.nameFa}`}>
+              <EditIcon size={15} />
+            </button>
+            <button onClick={onDelete} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-700" aria-label={`حذف ${item.nameFa}`}>
+              <DeleteIcon size={15} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -227,37 +335,57 @@ function SortableItemRow({
   };
 
   return (
-        <div
-          ref={setNodeRef}
-          style={{ ...style, gridTemplateColumns: COL_TEMPLATE }}
-          className={`grid items-center gap-2 px-3 py-3 ${
-            index !== total - 1 ? "border-b border-line/50" : ""
-          }`}
-        >
-      <div className="flex items-center justify-center gap-1">
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab touch-none p-0.5 text-ink-muted/40 hover:text-ink-muted transition-colors"
-          title="جابجایی"
-          suppressHydrationWarning
-        >
-          <GripIcon size={14} />
-        </button>
-        {selectionMode && (
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={onToggleCheck}
-            className="rounded border-line text-ink focus:ring-ink cursor-pointer"
-          />
-        )}
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${index !== total - 1 ? "border-b border-line/70" : ""} bg-panel transition-colors hover:bg-white`}
+    >
+      <div style={{ gridTemplateColumns: COL_TEMPLATE }} className="hidden items-center gap-2 px-3 py-3 md:grid">
+        <div className="flex items-center justify-center gap-1">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab touch-none rounded-lg p-1 text-ink-muted/35 transition-colors hover:bg-ink/5 hover:text-ink-muted"
+            title="جابجایی"
+            suppressHydrationWarning
+          >
+            <GripIcon size={15} />
+          </button>
+          {selectionMode && (
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={onToggleCheck}
+              className="cursor-pointer rounded border-line text-ink focus:ring-ink"
+            />
+          )}
+        </div>
+        <ItemRowContent
+          item={item}
+          onToggleSoldOut={onToggleSoldOut}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       </div>
-      <ItemRowContent
+      <MobileItemRowContent
         item={item}
+        selectionMode={selectionMode}
+        checked={checked}
+        onToggleCheck={onToggleCheck}
         onToggleSoldOut={onToggleSoldOut}
         onEdit={onEdit}
         onDelete={onDelete}
+        dragHandle={
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab touch-none rounded-lg p-1 text-ink-muted/45"
+            title="جابجایی"
+            suppressHydrationWarning
+          >
+            <GripIcon size={15} />
+          </button>
+        }
       />
     </div>
   );
@@ -520,7 +648,7 @@ function ItemModal({
           placeholder="Espresso"
         />
         <div className="space-y-1.5">
-          <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+          <label className="block text-xs font-medium text-ink-muted">
             دسته
           </label>
           <select
@@ -556,7 +684,7 @@ function ItemModal({
           </div>
         </div>
         <div className="space-y-1.5">
-          <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+          <label className="block text-xs font-medium text-ink-muted">
             توضیحات (اختیاری)
           </label>
           <textarea
@@ -569,7 +697,7 @@ function ItemModal({
         </div>
         {initial && (
           <div className="space-y-1.5">
-            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+            <label className="block text-xs font-medium text-ink-muted">
               عکس
             </label>
 <div className="flex items-center justify-center gap-3">
@@ -605,7 +733,7 @@ function ItemModal({
         )}
         {initial && (
           <div className="space-y-1.5">
-            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+            <label className="block text-xs font-medium text-ink-muted">
               تنوع‌ها / سایزها
             </label>
             <div className="space-y-2">
@@ -668,7 +796,7 @@ function ItemModal({
         )}
         {initial && (
           <div className="space-y-1.5">
-            <label className="block text-xs uppercase tracking-[0.15em] text-ink-muted">
+            <label className="block text-xs font-medium text-ink-muted">
               آلرژن‌ها
             </label>
             <div className="flex flex-wrap gap-2">
@@ -804,6 +932,8 @@ export function MenuClient({
   const selectedCategoryName = selectedCategoryId
     ? categories.find((c) => c.id === selectedCategoryId)?.nameFa ?? null
     : null;
+  const activeCategoryCount = categories.filter((category) => category.active).length;
+  const availableItemCount = items.filter((item) => !item.isSoldOut).length;
 
   const toggleItemSelection = (itemId: string) => {
     setSelectedItems((prev) => {
@@ -1139,47 +1269,85 @@ export function MenuClient({
 
   return (
     <>
-      <div className="mb-4 rounded-2xl border border-line bg-surface px-4 py-2.5">
-        <div className="flex items-center gap-3">
+      <header className="flex flex-col gap-5 border-b border-line/90 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-bold text-accent">منوی دیجیتال</p>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">مدیریت منو</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
+            دسته‌ها، قیمت‌ها و وضعیت موجودی را از یک فضای سریع و مرتب مدیریت کنید.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <a
             href={publicUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:inline text-xs text-ink-muted truncate min-w-0 hover:text-ink hover:underline transition-colors"
-            dir="ltr"
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/40 hover:bg-white"
           >
-            {publicUrl}
+            مشاهده منو
+            <ExternalLink className="h-4 w-4 text-ink-muted" strokeWidth={1.8} />
           </a>
+          <Button onClick={() => handleNewItem(selectedCategoryId ?? undefined)}>
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            افزودن آیتم
+          </Button>
           {dragError && (
             <span className="text-xs text-red-600 shrink-0">{dragError}</span>
           )}
         </div>
+      </header>
+
+      <div className="mt-5 grid grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="rounded-2xl border border-line bg-panel p-3.5 sm:p-4">
+          <div className="flex items-center gap-2 text-ink-muted">
+            <Utensils className="h-4 w-4" strokeWidth={1.7} />
+            <span className="hidden text-xs sm:inline">کل آیتم‌ها</span>
+          </div>
+          <p className="mt-2 text-xl font-bold text-ink sm:text-2xl">{items.length.toLocaleString("fa-IR")}</p>
+        </div>
+        <div className="rounded-2xl border border-line bg-panel p-3.5 sm:p-4">
+          <div className="flex items-center gap-2 text-ink-muted">
+            <Layers3 className="h-4 w-4" strokeWidth={1.7} />
+            <span className="hidden text-xs sm:inline">دسته فعال</span>
+          </div>
+          <p className="mt-2 text-xl font-bold text-ink sm:text-2xl">{activeCategoryCount.toLocaleString("fa-IR")}</p>
+        </div>
+        <div className="rounded-2xl border border-line bg-panel p-3.5 sm:p-4">
+          <div className="flex items-center gap-2 text-ink-muted">
+            <CheckCircle2 className="h-4 w-4" strokeWidth={1.7} />
+            <span className="hidden text-xs sm:inline">آیتم موجود</span>
+          </div>
+          <p className="mt-2 text-xl font-bold text-ink sm:text-2xl">{availableItemCount.toLocaleString("fa-IR")}</p>
+        </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[240px_1fr]">
-        <Panel title="دسته‌ها" subtitle="مدیریت دسته‌بندی آیتم‌ها">
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="lg:sticky lg:top-8">
+        <Panel title="دسته‌بندی‌ها" subtitle={`${categories.length.toLocaleString("fa-IR")} دسته برای مرتب‌سازی منو`}>
           <div className="space-y-2">
             <button
               onClick={() => {
                 setEditingCategory(null);
                 setCategoryModalOpen(true);
               }}
-              className="mb-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-line py-2.5 text-sm text-ink-muted hover:border-ink hover:text-ink transition-colors"
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-white/35 py-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-accent/50 hover:bg-accent-soft/45 hover:text-accent"
             >
-              + افزودن دسته
+              <Plus className="h-4 w-4" />
+              افزودن دسته جدید
             </button>
 
             <button
               onClick={() => setSelectedCategoryId(null)}
-              className={`w-full rounded-2xl border px-3 py-2.5 text-right text-sm transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-right text-sm transition-colors ${
                 selectedCategoryId === null
-                  ? "border-ink bg-ink/5"
-                  : "border-line hover:border-ink"
+                  ? "border-ink bg-ink text-paper"
+                  : "border-transparent bg-white/45 hover:border-line hover:bg-white"
               }`}
             >
-              <span className="text-ink">همه آیتم‌ها</span>
-              <span className="mr-2 text-xs text-ink-muted">
-                ({items.length})
+              <ListChecks className={`h-4 w-4 ${selectedCategoryId === null ? "text-paper/65" : "text-ink-muted"}`} />
+              <span className="flex-1">همه آیتم‌ها</span>
+              <span className={`text-[10px] ${selectedCategoryId === null ? "text-paper/55" : "text-ink-muted"}`}>
+                {items.length.toLocaleString("fa-IR")}
               </span>
             </button>
             {categoryDndIds.length > 0 && (
@@ -1215,25 +1383,24 @@ export function MenuClient({
             )}
           </div>
         </Panel>
+        </div>
 
-        <div className="space-y-3">
-          <Panel title={selectedCategoryName ?? "آیتم‌ها"}>
-            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end">
-              <div className="sm:flex-1">
-                <Input
-                  label="جستجو"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="نام فارسی یا انگلیسی..."
-                />
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  onClick={() => handleNewItem(selectedCategoryId ?? undefined)}
-                  size="sm"
-                >
-                  + افزودن آیتم
-                </Button>
+        <Panel
+          title={selectedCategoryName ?? "همه آیتم‌ها"}
+          subtitle={`${filteredItems.length.toLocaleString("fa-IR")} آیتم در این نما`}
+        >
+            <div className="mb-4 flex flex-col gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted/60" strokeWidth={1.8} />
+                  <input
+                    aria-label="جستجوی آیتم‌ها"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="جستجوی نام فارسی یا انگلیسی"
+                    className="h-10 w-full rounded-xl border border-line bg-white/70 pr-10 pl-3 text-sm text-ink placeholder:text-ink-muted/45 focus:border-accent/60 focus:outline-none focus:ring-3 focus:ring-accent/10"
+                  />
+                </div>
                 <button
                   onClick={() => {
                     if (selectionMode) {
@@ -1243,49 +1410,51 @@ export function MenuClient({
                       setSelectionMode(true);
                     }
                   }}
-                  className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                  className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors ${
                     selectionMode
                       ? "border-ink bg-ink text-paper"
-                      : "border-line text-ink-muted hover:border-ink hover:text-ink"
+                      : "border-line bg-panel text-ink-muted hover:border-ink/40 hover:bg-white hover:text-ink"
                   }`}
                 >
+                  <ListChecks className="h-4 w-4" />
                   {selectionMode ? "پایان انتخاب" : "انتخاب چندتایی"}
                 </button>
-                <div className="flex overflow-hidden rounded-full border border-line">
-                  <button
-                    onClick={handleDownloadTemplate}
-                    className="px-3 py-1.5 text-xs text-ink-muted transition-colors hover:bg-surface hover:text-ink"
-                  >
-                    قالب CSV
-                  </button>
-                  <div className="w-px self-stretch bg-line" />
-                  <button
-                    onClick={handleExportCSV}
-                    className="px-3 py-1.5 text-xs text-ink-muted transition-colors hover:bg-surface hover:text-ink"
-                  >
-                    خروجی CSV
-                  </button>
-                </div>
-                <label
-                  className="rounded-full border border-line px-3 py-1.5 text-xs text-ink-muted hover:border-ink hover:text-ink transition-colors cursor-pointer"
-                >
-                  {importing ? "..." : "ورودی CSV"}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    className="hidden"
-                    onChange={handleImportCSV}
-                    disabled={importing}
-                  />
-                </label>
+                <details className="group relative">
+                  <summary className="flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-line bg-panel px-3 text-xs font-medium text-ink-muted transition-colors hover:border-ink/40 hover:bg-white hover:text-ink">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    ابزار CSV
+                    <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="absolute left-0 top-12 z-20 w-48 overflow-hidden rounded-xl border border-line bg-panel p-1.5 shadow-xl">
+                    <button onClick={handleDownloadTemplate} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-xs text-ink-muted hover:bg-ink/5 hover:text-ink">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      دریافت قالب CSV
+                    </button>
+                    <button onClick={handleExportCSV} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-xs text-ink-muted hover:bg-ink/5 hover:text-ink">
+                      <Download className="h-4 w-4" />
+                      خروجی از منو
+                    </button>
+                    <label className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-right text-xs text-ink-muted hover:bg-ink/5 hover:text-ink">
+                      <Upload className="h-4 w-4" />
+                      {importing ? "در حال ورود..." : "ورود فایل CSV"}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv"
+                        className="hidden"
+                        onChange={handleImportCSV}
+                        disabled={importing}
+                      />
+                    </label>
+                  </div>
+                </details>
               </div>
             </div>
 
             {selectionMode && selectedItems.size > 0 && (
-              <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl border border-ink/20 bg-ink/5 px-3 py-2.5">
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-accent/20 bg-accent-soft/45 px-3 py-2.5">
                 <span className="text-sm text-ink">
-                  {selectedItems.size} آیتم انتخاب شده
+                  {selectedItems.size.toLocaleString("fa-IR")} آیتم انتخاب شده
                 </span>
                 <Button
                   size="sm"
@@ -1303,7 +1472,17 @@ export function MenuClient({
               </div>
             )}
 
-            <div className={`${isDragging ? "overflow-visible" : "overflow-hidden"} rounded-[var(--radius-card)] border border-line`}>
+            <div className={`${isDragging ? "overflow-visible" : "overflow-hidden"} rounded-[var(--radius-card)] border border-line bg-panel`}>
+              <div
+                style={{ gridTemplateColumns: COL_TEMPLATE }}
+                className="hidden items-center gap-2 border-b border-line bg-canvas/70 px-3 py-2 text-[10px] font-bold text-ink-muted md:grid"
+              >
+                <span />
+                <span>آیتم</span>
+                <span>قیمت</span>
+                <span>وضعیت</span>
+                <span className="text-center">عملیات</span>
+              </div>
 
               {selectedCategoryId ? (
                 <DndContext
@@ -1341,25 +1520,41 @@ export function MenuClient({
                 filteredItems.map((item, idx) => (
                   <div
                     key={item.id}
-                    style={{ gridTemplateColumns: selectionMode ? COL_TEMPLATE : "2fr 1fr 1fr 0.5fr" }}
-                    className={`grid items-center gap-2 px-4 py-3 ${
+                    className={`bg-panel transition-colors hover:bg-white ${
                       idx !== filteredItems.length - 1
-                        ? "border-b border-line/50"
+                        ? "border-b border-line/70"
                         : ""
                     }`}
                   >
-                    {selectionMode && (
+                    <div
+                      style={{ gridTemplateColumns: COL_TEMPLATE }}
+                      className="hidden items-center gap-2 px-3 py-3 md:grid"
+                    >
                       <div className="flex items-center justify-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(item.id)}
-                          onChange={() => toggleItemSelection(item.id)}
-                          className="rounded border-line text-ink focus:ring-ink cursor-pointer"
-                        />
+                        {selectionMode && (
+                          <input
+                            type="checkbox"
+                            checked={selectedItems.has(item.id)}
+                            onChange={() => toggleItemSelection(item.id)}
+                            className="cursor-pointer rounded border-line text-ink focus:ring-ink"
+                          />
+                        )}
                       </div>
-                    )}
-                    <ItemRowContent
+                      <ItemRowContent
+                        item={item}
+                        onToggleSoldOut={(v) => handleToggleSoldOut(item.id, v)}
+                        onEdit={() => {
+                          setEditingItem(item);
+                          setItemModalOpen(true);
+                        }}
+                        onDelete={() => setDeletingItem(item)}
+                      />
+                    </div>
+                    <MobileItemRowContent
                       item={item}
+                      selectionMode={selectionMode}
+                      checked={selectedItems.has(item.id)}
+                      onToggleCheck={() => toggleItemSelection(item.id)}
                       onToggleSoldOut={(v) => handleToggleSoldOut(item.id, v)}
                       onEdit={() => {
                         setEditingItem(item);
@@ -1371,13 +1566,16 @@ export function MenuClient({
                 ))
               )}
               {filteredItems.length === 0 && (
-                <div className="px-4 py-8 text-center text-sm text-ink-muted">
-                  هیچ آیتمی یافت نشد
+                <div className="px-4 py-14 text-center">
+                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-canvas text-ink-muted">
+                    <Search className="h-5 w-5" strokeWidth={1.6} />
+                  </div>
+                  <p className="mt-3 text-sm font-bold text-ink">آیتمی پیدا نشد</p>
+                  <p className="mt-1 text-xs text-ink-muted">عبارت جستجو یا دسته انتخاب‌شده را تغییر دهید.</p>
                 </div>
               )}
             </div>
-          </Panel>
-        </div>
+        </Panel>
       </div>
 
       <CategoryModal

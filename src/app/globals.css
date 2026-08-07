@@ -7,9 +7,14 @@
   --ink-muted: #5f5a52;
   --line: #d8d1c4;
   --surface: rgba(255, 255, 255, 0.28);
-  --radius-panel: 28px;
-  --radius-card: 24px;
-  --radius-control: 16px;
+  --canvas: #efede7;
+  --panel: #fbfaf7;
+  --accent: #b94f2c;
+  --accent-soft: #f4ded4;
+  --success: #287451;
+  --radius-panel: 20px;
+  --radius-card: 16px;
+  --radius-control: 12px;
 }
 
 @theme inline {
@@ -19,6 +24,11 @@
   --color-ink-muted: var(--ink-muted);
   --color-line: var(--line);
   --color-surface: var(--surface);
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
   --font-serif: "EB Garamond", "Parastoo", "Vazirmatn", "Times New Roman", serif;
 }
 
@@ -26,6 +36,19 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
 }
 
 @font-face {

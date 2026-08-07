@@ -19,7 +19,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <div className="space-y-1.5">
         <label
           htmlFor={inputId}
-          className="block text-xs uppercase tracking-[0.15em] text-ink-muted"
+          className="block text-xs font-medium text-ink-muted"
         >
           {label}
         </label>
@@ -28,7 +28,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           aria-invalid={!!error}
           aria-describedby={describedBy}
-          className={`w-full rounded-[var(--radius-control)] border bg-surface px-4 py-3 text-sm text-ink placeholder:text-ink-muted/50 transition-colors focus:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20 ${
+          className={`w-full rounded-[var(--radius-control)] border bg-white/70 px-3.5 py-2.5 text-sm text-ink shadow-[0_1px_0_rgba(17,17,17,0.02)] placeholder:text-ink-muted/45 transition-colors focus:border-accent/60 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/10 ${
             error ? "border-red-500" : "border-line"
           } ${className}`}
           {...props}

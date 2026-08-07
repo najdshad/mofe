@@ -109,7 +109,7 @@ export function Modal({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 p-4 backdrop-blur-[2px]"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}
@@ -120,9 +120,9 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="w-full max-w-md rounded-[var(--radius-panel)] border border-line bg-paper p-6 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+        className="w-full max-w-md rounded-[var(--radius-panel)] border border-line bg-panel p-6 shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20"
       >
-        <h3 id={titleId} className="font-serif text-xl text-ink">{title}</h3>
+        <h3 id={titleId} className="text-lg font-bold text-ink">{title}</h3>
         <div className="mt-3 max-h-[55vh] overflow-y-auto text-sm leading-relaxed text-ink-muted">
           {children}
         </div>
