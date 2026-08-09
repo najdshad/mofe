@@ -110,61 +110,12 @@ function resolveUrl(url: string, baseUrl?: string): string {
   return url;
 }
 
-function renderItemCard(item: SnapshotCategoryItem, baseUrl?: string): string {
+function renderItemDetails(item: SnapshotCategoryItem): string {
   const variants = item.variants ?? [];
   const allergenCodes = item.allergenCodes ?? [];
-  const photoUrl = item.photoUrl ?? null;
   const itemPrices = item.prices ?? [];
-  if (photoUrl) {
-    return `
-          <article class="item-card${item.soldOut ? " sold-out" : ""} photo-mode">
-            <div class="item-photo-wrap">
-              <img class="item-photo" src="${esc(resolveUrl(photoUrl, baseUrl))}" alt="${esc(item.nameFa)}" loading="lazy" />
-              ${item.soldOut ? '<div class="item-photo-overlay">ناموجود</div>' : ""}
-            </div>
-            <div class="item-body">
-              <div class="item-header">
-                <div class="item-price-wrap">
-                  <div class="item-price">${formatPrice(item.priceToman)}</div>
-                  <div class="item-price-unit">تومان</div>
-                </div>
-                <div class="item-info">
-                  <h3 class="item-name">${esc(item.nameFa)}</h3>
-                  ${item.nameEn ? `<p class="item-name-en">${esc(item.nameEn)}</p>` : ""}
-                  ${item.description ? `<p class="item-desc">${esc(item.description)}</p>` : ""}
-                  ${allergenCodes.length > 0 ? `
-                  <div class="allergen-badges">
-                    ${allergenCodes.map((code) => `<span class="badge badge-allergen">${ALLERGEN_LABELS[code] || esc(code)}</span>`).join("")}
-                  </div>` : ""}
-                  ${variants.length > 0 ? `
-                  <div class="item-variants">
-                    ${variants.map((v) => `
-                      <span class="variant-pill">
-                        ${esc(v.nameFa)}${v.nameEn ? ` (${esc(v.nameEn)})` : ""}
-                        ${v.priceModifier !== 0 ? `<span class="variant-price">${v.priceModifier > 0 ? "+" : ""}${formatPrice(v.priceModifier)}</span>` : ""}
-                      </span>`).join("")}
-                  </div>` : ""}
-                  ${itemPrices.length > 0 ? `
-                  <div class="item-prices">
-                    ${itemPrices.map((p) => `
-                      <span class="price-bubble">
-                        <span class="price-bubble-amount">${formatPrice(p.priceToman)}</span>
-                        <span class="price-bubble-unit">تومان</span>
-                        ${p.description ? `<span class="price-bubble-desc">${esc(p.description)}</span>` : ""}
-                      </span>`).join("")}
-                  </div>` : ""}
-                  <div class="item-meta">
-                    ${item.soldOut ? '<span class="badge badge-status">ناموجود</span>' : ""}
-                    ${item.calories ? `<span class="badge badge-emphasis">${item.calories} kcal</span>` : ""}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </article>`;
-  }
 
   return `
-          <article class="item-card${item.soldOut ? " sold-out" : ""}">
             <div class="item-header">
               <div class="item-price-wrap">
                 <div class="item-price">${formatPrice(item.priceToman)}</div>
@@ -200,15 +151,30 @@ function renderItemCard(item: SnapshotCategoryItem, baseUrl?: string): string {
                   ${item.calories ? `<span class="badge badge-emphasis">${item.calories} kcal</span>` : ""}
                 </div>
               </div>
+            </div>`;
+}
+
+function renderItemCard(item: SnapshotCategoryItem, baseUrl?: string): string {
+  const photoUrl = item.photoUrl ?? null;
+  const className = `item-card${item.soldOut ? " sold-out" : ""}${photoUrl ? " photo-mode" : ""}`;
+
+  return `
+          <article class="${className}">
+            ${photoUrl ? `
+            <div class="item-photo-wrap">
+              <img class="item-photo" src="${esc(resolveUrl(photoUrl, baseUrl))}" alt="${esc(item.nameFa)}" loading="lazy" decoding="async" />
+              ${item.soldOut ? '<div class="item-photo-overlay">ناموجود</div>' : ""}
+            </div>` : ""}
+            <div class="item-body">
+              ${renderItemDetails(item)}
             </div>
           </article>`;
 }
 
 export function renderPublicMenu(snapshot: Snapshot, baseUrl?: string): string {
   const { venue, categories } = snapshot;
-  const accent = venue.accentColor && venue.accentColor !== "#111111" ? venue.accentColor : null;
   const categoriesWithItems = categories.filter((cat) => cat.items.length > 0);
-  const accentValue = accent ? sanitizeCssColor(accent) : "#111111";
+  const accentValue = venue.accentColor ? sanitizeCssColor(venue.accentColor) : "#b94f2c";
 
   const categoryNav =
     categoriesWithItems.length > 0
@@ -267,171 +233,156 @@ ${FONT_FACE_DECLARATIONS}
       scroll-behavior: smooth;
     }
     body {
-      --paper: #f7f2e8;
-      --paper-strong: #fdfaf2;
-      --line: rgba(17, 17, 17, 0.12);
-      --line-strong: rgba(17, 17, 17, 0.2);
-      --muted: #7a7367;
-      --shadow: 0 20px 55px rgba(17, 17, 17, 0.08);
+      --paper: #f5f0e6;
+      --ink: #111111;
+      --muted: #6f695f;
+      --line: rgba(17, 17, 17, 0.14);
+      --accent: ${accentValue};
       font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
-      background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.95), rgba(247, 242, 232, 0.92) 24%, rgba(247, 242, 232, 1) 60%),
-        #f5f0e6;
-      color: #111111;
+      background: radial-gradient(circle at top, rgba(255, 255, 255, 0.5), transparent 34%), var(--paper);
+      color: var(--ink);
       min-height: 100vh;
-      line-height: 1.6;
-      margin: 0;
-      padding: 18px 14px 28px;
+      line-height: 1.65;
+      padding: 0 20px;
     }
     a {
       color: inherit;
       text-decoration: none;
     }
     .menu-shell {
-      width: min(100%, 510px);
+      width: min(100%, 680px);
       margin: 0 auto;
     }
     .menu-panel {
-      background: linear-gradient(180deg, rgba(255, 251, 243, 0.96), rgba(249, 244, 234, 0.98));
-      border: 1.4px solid rgba(17, 17, 17, 0.72);
-      border-radius: 34px;
-      box-shadow: var(--shadow);
-      padding: 16px;
-    }
-    .menu-frame {
-      border: 1px solid rgba(17, 17, 17, 0.72);
-      border-radius: 28px;
-      padding: 18px 18px 22px;
+      padding: 56px 0 40px;
     }
     .hero {
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 10px;
+      padding-bottom: 36px;
     }
     .hero-row {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 8px;
+      gap: 24px;
     }
     .hero-copy {
       min-width: 0;
       text-align: right;
     }
     .logo-mark {
-      width: 64px;
-      height: 64px;
-      border-radius: 14px;
-      border: 1px solid rgba(17, 17, 17, 0.82);
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
       object-fit: cover;
-      object-position: bottom right;
       flex-shrink: 0;
-    }
-    .qr-mark {
-      width: 46px;
-      height: 46px;
-      border-radius: 16px;
-      border: 1px solid rgba(17, 17, 17, 0.82);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      background: rgba(255, 255, 255, 0.42);
     }
     .brand {
       font-family: "EB Garamond", "Georgia", serif;
-      font-size: 12px;
-      letter-spacing: 0.18em;
+      font-size: 11px;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 2px;
+      margin-bottom: 8px;
     }
     .venue-name {
       font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
-      font-size: 30px;
+      font-size: clamp(34px, 8vw, 52px);
       font-weight: 700;
-      color: #111111;
-      line-height: 1.2;
-      margin-bottom: 0;
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+    }
+    .venue-name-en {
+      margin-top: 5px;
+      font-family: "EB Garamond", "Georgia", serif;
+      font-size: 18px;
+      font-style: italic;
+      color: var(--muted);
     }
     .welcome {
-      font-size: 14px;
-      color: #5d584f;
-      line-height: 1.9;
-      max-width: 28rem;
+      max-width: 32rem;
+      margin-top: 20px;
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.95;
     }
     .category-nav {
       display: flex;
-      gap: 10px;
+      gap: 24px;
       overflow-x: auto;
       scrollbar-width: none;
-      padding: 14px 0 10px;
-      margin-bottom: 8px;
+      padding: 16px 0 14px;
+      margin: 0 0 52px;
       position: sticky;
       top: 0;
-      z-index: 10;
-      background: rgba(253, 250, 242, 0.95);
+      z-index: 20;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: rgba(245, 240, 230, 0.97);
     }
     .category-nav::-webkit-scrollbar {
       display: none;
     }
     .category-pill {
+      position: relative;
       white-space: nowrap;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 8px 16px;
-      font-size: 14px;
-      color: #6e685d;
-      background: rgba(255, 255, 255, 0.5);
-      transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+      padding: 2px 0;
+      font-size: 13px;
+      color: var(--muted);
+      transition: color 160ms ease;
     }
     .category-pill.active,
     .category-pill[aria-current="true"] {
       background: ${accentValue};
-      border-color: ${accentValue};
-      color: #faf6ef;
+      color: var(--paper);
+      border-radius: 999px;
+      padding-right: 12px;
+      padding-left: 12px;
     }
     .category {
-      margin-bottom: 14px;
-      scroll-margin-top: 70px;
+      margin-bottom: 72px;
+      scroll-margin-top: 78px;
     }
     .category:last-of-type {
-      margin-bottom: 0;
+      margin-bottom: 24px;
     }
     .category-head {
-      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .category-head::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: var(--line);
     }
     .cat-title {
-      font-size: 13px;
+      font-size: 23px;
       font-weight: 700;
-      color: #8a8275;
+      letter-spacing: -0.02em;
     }
     .item-card {
-      background: var(--paper-strong);
-      border: 1px solid rgba(17, 17, 17, 0.08);
-      border-radius: 18px;
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+      padding: 24px 0;
+      border-bottom: 1px solid var(--line);
     }
     .item-card.sold-out {
-      background: #eae4d8;
-      border-color: rgba(17, 17, 17, 0.1);
+      color: var(--muted);
     }
     .item-card.sold-out .item-name,
     .item-card.sold-out .item-name-en,
     .item-card.sold-out .item-desc,
     .item-card.sold-out .item-price,
     .item-card.sold-out .item-price-unit {
-      opacity: 0.4;
+      opacity: 0.45;
     }
     .item-header {
       direction: ltr;
       display: grid;
-      grid-template-columns: minmax(80px, 96px) minmax(0, 1fr);
+      grid-template-columns: minmax(84px, auto) minmax(0, 1fr);
       align-items: flex-start;
-      gap: 14px;
+      gap: 24px;
     }
     .item-price-wrap,
     .item-info {
@@ -442,91 +393,77 @@ ${FONT_FACE_DECLARATIONS}
     }
     .item-name {
       font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 700;
-      color: #111111;
-      line-height: 1.3;
+      line-height: 1.35;
     }
     .item-name-en {
       font-family: "EB Garamond", "Georgia", serif;
-      font-size: 15px;
-      color: #6f685c;
-      margin-top: 1px;
+      font-size: 14px;
+      font-style: italic;
+      color: var(--muted);
+      margin-top: 2px;
     }
     .item-desc {
       font-size: 13px;
-      color: #59544b;
-      margin-top: 6px;
-      line-height: 1.7;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.85;
     }
     .allergen-badges {
-      margin-top: 6px;
+      margin-top: 10px;
       display: flex;
-      gap: 3px;
+      gap: 5px;
       flex-wrap: wrap;
     }
     .badge-allergen {
-      border-color: rgba(17, 17, 17, 0.2);
-      color: #6e685d;
+      color: var(--muted);
       font-size: 10px;
-      padding: 1px 6px;
     }
     .item-variants {
-      margin-top: 8px;
+      margin-top: 12px;
       display: flex;
-      gap: 4px;
+      gap: 6px 14px;
       flex-wrap: wrap;
     }
     .variant-pill {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 2px 10px;
-      font-size: 12px;
-      color: #59544b;
-      background: rgba(255, 255, 255, 0.5);
+      gap: 5px;
+      font-size: 11px;
+      color: var(--muted);
     }
     .variant-price {
-      font-family: "EB Garamond", "Georgia", serif;
-      font-size: 12px;
-      color: #111111;
+      color: var(--ink);
     }
     .item-prices {
-      margin-top: 8px;
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
+      margin-top: 12px;
+      display: grid;
+      gap: 5px;
     }
     .price-bubble {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 4px;
-      border: 1px solid rgba(17, 17, 17, 0.52);
-      border-radius: 999px;
-      padding: 3px 12px;
-      font-size: 13px;
-      background: rgba(17, 17, 17, 0.04);
-      line-height: 1.4;
+      gap: 5px;
+      font-size: 11px;
+      line-height: 1.6;
     }
     .price-bubble-amount {
-      font-family: "EB Garamond", "Georgia", serif;
-      font-weight: 500;
-      color: #111111;
+      font-weight: 700;
+      color: var(--ink);
       white-space: nowrap;
     }
     .price-bubble-desc {
-      color: #59544b;
+      color: var(--muted);
     }
     .price-bubble-unit {
       font-size: 10px;
-      color: #7a7367;
+      color: var(--muted);
     }
     .item-meta {
-      margin-top: 8px;
+      margin-top: 10px;
       display: flex;
-      gap: 4px;
+      gap: 6px;
       flex-wrap: wrap;
       justify-content: flex-end;
       direction: ltr;
@@ -535,95 +472,66 @@ ${FONT_FACE_DECLARATIONS}
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 22px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      padding: 1px 8px;
-      font-size: 11px;
-      color: #82796d;
-      background: rgba(255, 255, 255, 0.5);
-      line-height: 1;
+      padding: 2px 8px;
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.4;
     }
     .badge-emphasis {
-      border-color: rgba(17, 17, 17, 0.52);
-      color: #111111;
-      background: transparent;
+      border-color: var(--line);
     }
     .badge-status {
-      background: #111111;
-      color: #f5f0e6;
-      border-color: #111111;
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
       font-weight: 700;
-      letter-spacing: 0.05em;
     }
     .item-price-wrap {
       text-align: left;
-      padding-top: 2px;
+      padding-top: 3px;
     }
     .item-price {
-      font-family: "EB Garamond", "Georgia", serif;
-      font-size: 23px;
-      font-weight: 500;
-      color: #111111;
+      font-size: 17px;
+      font-weight: 700;
       line-height: 1;
+      white-space: nowrap;
     }
     .item-price-unit {
-      margin-top: 6px;
-      font-size: 12px;
-      color: #7a7367;
+      margin-top: 7px;
+      font-size: 10px;
+      color: var(--muted);
     }
     .empty-state {
-      padding: 28px 16px 12px;
+      padding: 64px 16px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
       text-align: center;
-      color: #7a7367;
+      color: var(--muted);
     }
     .footer {
-      margin-top: 18px;
-      padding-top: 18px;
+      margin-top: 56px;
+      padding: 24px 0 8px;
       border-top: 1px solid var(--line);
       text-align: center;
       font-family: "EB Garamond", "Georgia", serif;
-      font-size: 11px;
-      letter-spacing: 0.22em;
+      font-size: 10px;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
-      color: #8a8275;
-    }
-    @media (max-width: 380px) {
-      .menu-panel {
-        padding: 10px;
-      }
-      .menu-frame {
-        padding: 14px 12px 18px;
-      }
-      .item-header {
-        grid-template-columns: 72px minmax(0, 1fr);
-        gap: 12px;
-      }
-      .item-price {
-        font-size: 20px;
-      }
-      .item-name {
-        font-size: 16px;
-      }
-    }
-    @media (min-width: 481px) {
-      body {
-        padding: 28px 18px 40px;
-      }
-      .menu-panel {
-        padding: 16px;
-      }
-      .menu-frame {
-        padding: 16px 16px 20px;
-      }
+      color: var(--muted);
     }
     .photo-mode {
-      padding: 0;
-      overflow: hidden;
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 20px;
     }
-    .photo-mode .item-photo-wrap {
-      background: rgba(17, 17, 17, 0.04);
+    .item-photo-wrap {
       position: relative;
+      align-self: start;
+      overflow: hidden;
+      border-radius: 18px;
+      background: rgba(17, 17, 17, 0.05);
     }
     .item-photo-overlay {
       position: absolute;
@@ -632,31 +540,68 @@ ${FONT_FACE_DECLARATIONS}
       align-items: center;
       justify-content: center;
       background: rgba(17, 17, 17, 0.55);
-      color: #f5f0e6;
-      font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
-      font-size: 14px;
+      color: var(--paper);
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.1em;
     }
     .item-card.sold-out .item-photo {
-      opacity: 0.6;
-    }
-    .photo-mode .item-body {
-      padding: 12px 14px;
+      opacity: 0.55;
     }
     .item-photo {
       width: 100%;
-      height: 200px;
+      aspect-ratio: 1;
       object-fit: cover;
       display: block;
     }
     .item-body {
       direction: rtl;
     }
-
-    @media (min-width: 421px) {
-      .item-photo {
-        height: 240px;
+    @media (max-width: 480px) {
+      body {
+        padding: 0 16px;
+      }
+      .menu-panel {
+        padding-top: 38px;
+      }
+      .hero {
+        padding-bottom: 28px;
+      }
+      .logo-mark {
+        width: 60px;
+        height: 60px;
+      }
+      .welcome {
+        font-size: 14px;
+      }
+      .category-nav {
+        gap: 20px;
+        margin-bottom: 40px;
+      }
+      .category {
+        margin-bottom: 56px;
+      }
+      .cat-title {
+        font-size: 21px;
+      }
+      .item-card {
+        padding: 20px 0;
+      }
+      .item-header {
+        grid-template-columns: 78px minmax(0, 1fr);
+        gap: 14px;
+      }
+      .item-name {
+        font-size: 17px;
+      }
+      .item-price {
+        font-size: 15px;
+      }
+      .photo-mode {
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 14px;
+      }
+      .item-photo-wrap {
+        border-radius: 14px;
       }
     }
     @media print {
@@ -667,10 +612,11 @@ ${FONT_FACE_DECLARATIONS}
       .menu-shell {
         width: 100%;
       }
-      .menu-panel,
-      .menu-frame {
-        border: 0;
-        box-shadow: none;
+      .menu-panel {
+        padding: 0;
+      }
+      .category-nav {
+        position: static;
       }
       .item-card {
         break-inside: avoid;
@@ -681,39 +627,24 @@ ${FONT_FACE_DECLARATIONS}
 <body>
   <main class="menu-shell">
     <section class="menu-panel">
-      <div class="menu-frame">
-        <header class="hero" id="top">
-          <div class="hero-row">
-            <div class="hero-copy">
-              <div class="brand">mofé</div>
-              <h1 class="venue-name">${esc(venue.nameFa)}</h1>
-            </div>
-            ${venue.logoUrl ? `
-            <img class="logo-mark" src="${esc(resolveUrl(venue.logoUrl, baseUrl))}" alt="" aria-hidden="true" />` : `
-            <div class="qr-mark" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="1.5" y="1.5" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
-                <rect x="14.5" y="1.5" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
-                <rect x="1.5" y="14.5" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
-                <rect x="4" y="4" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
-                <rect x="17" y="4" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
-                <rect x="4" y="17" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
-                <rect x="10" y="10" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
-                <rect x="13" y="10" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
-                <rect x="10" y="13" width="1.8" height="1.8" rx="0.4" fill="currentColor"/>
-                <rect x="13" y="13" width="4.8" height="4.8" rx="0.8" stroke="currentColor" stroke-width="1.5"/>
-              </svg>
-            </div>`}
+      <header class="hero" id="top">
+        <div class="hero-row">
+          <div class="hero-copy">
+            <div class="brand">mofé · menu</div>
+            <h1 class="venue-name">${esc(venue.nameFa)}</h1>
+            ${venue.nameEn ? `<p class="venue-name-en">${esc(venue.nameEn)}</p>` : ""}
           </div>
-          ${venue.welcomeMessage ? `<p class="welcome">${esc(venue.welcomeMessage)}</p>` : ""}
-        </header>
+          ${venue.logoUrl ? `
+          <img class="logo-mark" src="${esc(resolveUrl(venue.logoUrl, baseUrl))}" alt="" aria-hidden="true" />` : ""}
+        </div>
+        ${venue.welcomeMessage ? `<p class="welcome">${esc(venue.welcomeMessage)}</p>` : ""}
+      </header>
 
-        ${categoryNav}
+      ${categoryNav}
 
-        ${categoryItems || emptyState}
+      ${categoryItems || emptyState}
 
-        <div class="footer">Powered by mofé</div>
-      </div>
+      <div class="footer">Powered by mofé</div>
     </section>
   </main>
 </body>
@@ -734,60 +665,51 @@ ${FONT_FACE_DECLARATIONS}
     html, body { height: 100%; }
     body {
       font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
-      background:
-        radial-gradient(circle at top, rgba(255, 255, 255, 0.95), rgba(247, 242, 232, 0.92) 24%, rgba(247, 242, 232, 1) 60%),
-        #f5f0e6;
+      background: radial-gradient(circle at top, rgba(255, 255, 255, 0.5), transparent 38%), #f5f0e6;
       color: #111111;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 32px 20px;
       text-align: center;
     }
     .shell {
-      width: min(100%, 480px);
-      background: linear-gradient(180deg, rgba(255, 251, 243, 0.96), rgba(249, 244, 234, 0.98));
-      border: 1.4px solid rgba(17, 17, 17, 0.72);
-      border-radius: 34px;
-      padding: 16px;
-      box-shadow: 0 20px 55px rgba(17, 17, 17, 0.08);
+      width: min(100%, 560px);
     }
     .panel {
-      border: 1px solid rgba(17, 17, 17, 0.72);
-      border-radius: 28px;
-      padding: 32px 20px 60px;
-      position: relative;
+      padding: 48px 0 24px;
+      border-top: 1px solid rgba(17, 17, 17, 0.16);
+      border-bottom: 1px solid rgba(17, 17, 17, 0.16);
     }
     .brand {
       font-family: "EB Garamond", "Georgia", serif;
-      font-size: 11px;
-      letter-spacing: 0.18em;
+      font-size: 10px;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
-      color: #8a8275;
-      margin-bottom: 10px;
+      color: #6f695f;
+      margin-bottom: 18px;
     }
     .name {
       font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
-      font-size: 28px;
+      font-size: clamp(32px, 8vw, 48px);
       font-weight: 700;
       color: #111;
-      margin-bottom: 10px;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+      margin-bottom: 16px;
     }
     .msg {
       font-size: 14px;
-      color: #5d584f;
+      color: #6f695f;
       line-height: 1.9;
     }
     .footer {
-      position: absolute;
-      right: 0;
-      bottom: 20px;
-      left: 0;
+      margin-top: 48px;
       font-family: "EB Garamond", "Georgia", serif;
-      font-size: 11px;
-      letter-spacing: 0.22em;
+      font-size: 10px;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
-      color: #8a8275;
+      color: #6f695f;
     }
   </style>
 </head>
