@@ -23,6 +23,8 @@ services:
     expose:
       - "3000"
     env_file: .env
+    environment:
+      DATABASE_URL: "postgresql://mofe:mofe@db:5432/mofe"
     volumes:
       - mofe-uploads:/app/public/uploads
     depends_on:
