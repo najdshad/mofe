@@ -1,52 +1,35 @@
 #!/usr/bin/env bash
-# ─────────────────────────────────────────────────────────
-# mofé — Initial production deploy script for ArvanCloud VM
-# Run ONCE on a fresh Ubuntu 24.04 VM after SSH'ing in.
-# ─────────────────────────────────────────────────────────
 set -euo pipefail
+cd "$(dirname "$0")/.."
 
-echo "=== 1. System update & Docker install ==="
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y docker.io docker-compose-plugin certbot git
-sudo systemctl enable --now docker
-sudo usermod -aG docker "$USER"
-echo "→ Log out and back in for group change, or run: newgrp docker"
+DOCKER="docker"
+if ! docker info >/dev/null 2>&1; then
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "Installing Docker..."
+    sudo apt-get update -y
+    sudo apt-get install -y docker.io docker-compose-v2 git
+    sudo systemctl enable --now docker
+  fi
+  DOCKER="sudo docker"
+fi
 
-echo "=== 2. Clone repository ==="
-cd /opt
-sudo mkdir -p mofe
-sudo chown "$USER:docker" mofe
-git clone https://github.com/najdshad/mofe-menu.git mofe
-cd mofe
+if [ ! -f .env ]; then
+  umask 077
+  printf 'RUN_SEED=1\n' > .env
+  echo "Created .env with RUN_SEED=1 (demo data)."
+fi
 
-echo "=== 3. Create .env file ==="
-echo "→ Place your .env file at /opt/mofe/.env with all secrets"
-echo "  (DATABASE_URL, S3_*, SMTP_*, etc.)"
-echo "  See the Environment section in AGENTS.md for the full list."
+if [ ! -f letsencrypt/live/mofe.ir/fullchain.pem ]; then
+  echo "Issuing TLS certificate for mofe.ir..."
+  $DOCKER compose -f docker-compose.yml -f docker-compose.prod.yml stop nginx 2>/dev/null || true
+  sudo certbot certonly --non-interactive --agree-tos --standalone \
+    ${CERTBOT_EMAIL:+--email "$CERTBOT_EMAIL"} \
+    ${CERTBOT_EMAIL:---register-unsafely-without-email} \
+    --config-dir "$PWD/letsencrypt" \
+    --work-dir "$PWD/letsencrypt-work" \
+    --logs-dir "$PWD/letsencrypt-logs" \
+    -d mofe.ir -d www.mofe.ir
+fi
 
-echo "=== 4. Obtain SSL certificates ==="
-echo "→ STOP any process on port 80 first, then run:"
-echo "  sudo certbot certonly --standalone -d mofe.ir -d www.mofe.ir"
-
-echo "=== 5. Copy certs for Docker volume mount ==="
-echo "  sudo mkdir -p /opt/mofe/letsencrypt"
-echo "  sudo cp -rL /etc/letsencrypt/* /opt/mofe/letsencrypt/"
-echo "  sudo chown -R $USER:docker /opt/mofe/letsencrypt"
-
-echo "=== 6. Build & start services ==="
-echo "  docker compose -f docker-compose.yml -f docker-compose.prod.yml build"
-echo "  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
-
-echo "=== 7. Verify ==="
-echo "  curl http://localhost:3000/api/health"
-echo "  curl https://mofe.ir/health"
-
-echo "=== 8. Set up auto-renewal ==="
-echo "  crontab -e → add:"
-echo "  0 3 * * * /usr/bin/certbot renew --quiet && docker compose -f /opt/mofe/docker-compose.yml -f /opt/mofe/docker-compose.prod.yml restart nginx"
-
-echo "=== 9. PostgreSQL backup cron ==="
-echo "  0 2 * * * docker exec mofe-db-1 pg_dump -U mofe mofe | gzip > /backups/mofe-\$(date +\%Y\%m\%d).sql.gz"
-
-echo ""
-echo "✅ Done! Follow steps 3-9 manually."
+$DOCKER compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+$DOCKER compose -f docker-compose.yml -f docker-compose.prod.yml ps

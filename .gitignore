@@ -1,5 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+.vmcredentials
+
 # dependencies
 /node_modules
 /.pnp
@@ -74,3 +76,8 @@ next-env.d.ts
 
 # scripts
 run-server.sh
+
+# TLS certs (VM deploy)
+/letsencrypt/
+/letsencrypt-work/
+/letsencrypt-logs/
