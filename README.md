@@ -65,7 +65,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | Database | PostgreSQL, Prisma v7, @prisma/adapter-pg |
 | Auth | Session-based, HTTP-only cookie, bcrypt + SHA-256 |
 | Testing | Vitest |
-| Infrastructure | Docker, nginx |
+| Infrastructure | systemd, nginx, PostgreSQL |
 
 ## Design
 

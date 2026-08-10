@@ -1,8 +1,0 @@
-node_modules/
-.next/
-.git/
-coverage/
-downloads/
-*.md
-.env*
-*.tsbuildinfo
