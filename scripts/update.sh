@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 set -a; . ./.env; set +a
 
 git pull --ff-only
-npm ci
+npm ci --no-audit --no-fund
 npx prisma generate
 npm run db:push
 npm run build

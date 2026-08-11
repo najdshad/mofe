@@ -11,6 +11,15 @@ if ! command -v node >/dev/null 2>&1 || [ "$(node -v | sed 's/^v//' | cut -d. -f
 fi
 sudo apt-get install -y nodejs git nginx postgresql certbot openssl
 
+echo "==> Ensuring swap space (2G for low-RAM VPS)"
+if ! swapon --show | grep -q .; then
+  sudo fallocate -l 2G /swapfile
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile >/dev/null
+  sudo swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+fi
+
 echo "==> Ensuring PostgreSQL role and database"
 sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='mofe'" | grep -q 1 || \
   sudo -u postgres psql -c "CREATE ROLE mofe LOGIN PASSWORD 'mofe';"
@@ -43,7 +52,7 @@ sudo nginx -t
 sudo systemctl enable --now nginx
 
 echo "==> Installing dependencies and building"
-npm ci
+npm ci --no-audit --no-fund
 npx prisma generate
 npm run db:push
 if [ "${RUN_SEED:-0}" = "1" ]; then
