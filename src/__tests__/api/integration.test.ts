@@ -102,13 +102,6 @@ describe("Categories CRUD", () => {
     expect(deleted?.deletedAt).not.toBeNull();
   });
 
-  it("prevents deleting category with items (application-level check)", async () => {
-    const itemsCount = await prisma.menuItem.count({
-      where: { categoryId: data.categories.cat1.id, deletedAt: null },
-    });
-    expect(itemsCount).toBeGreaterThan(0);
-  });
-
   it("reorders categories", async () => {
     const cats = await prisma.category.findMany({
       where: { venueId: data.venue.id, deletedAt: null },
@@ -453,14 +446,12 @@ describe("Cross-venue isolation", () => {
     }
   });
 
-  it("venue A owner cannot create categories in venue B via direct DB", async () => {
+  it("direct DB writes to venue B stay isolated from venue A", async () => {
     const venueB = await otherVenue("کافه B8", "cafe-b8-" + Date.now());
 
-    await expect(
-      prisma.category.create({
-        data: { venueId: venueB.id, nameFa: "نفوذی", displayOrder: 1 },
-      })
-    ).resolves.toBeDefined();
+    await prisma.category.create({
+      data: { venueId: venueB.id, nameFa: "نفوذی", displayOrder: 1 },
+    });
 
     const catsInB = await prisma.category.findMany({ where: { venueId: venueB.id } });
     expect(catsInB).toHaveLength(1);
@@ -571,10 +562,5 @@ describe("HTTP-level integration (#13)", () => {
       where: { id: data.venue.id },
       data: { nameFa: original!.nameFa },
     });
-  });
-
-  it("venue slug should not be changeable through PATCH whitelist", async () => {
-    const allowedFields = ["nameFa", "nameEn", "welcomeMessage"];
-    expect(allowedFields).not.toContain("slug");
   });
 });

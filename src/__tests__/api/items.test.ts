@@ -191,12 +191,14 @@ describe("PATCH /api/venues/[venueId]/items/[itemId]", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns 500 for non-existent item", async () => {
+  it("returns 404 for non-existent item", async () => {
     const res = await PATCH(
       req(data.venue.id, "PATCH", { priceToman: 50000 }),
       itemParams(data.venue.id, "non-existent-id")
     );
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.error).toBe("آیتم مورد نظر یافت نشد");
   });
 
   it("returns 401 when no venue access", async () => {
@@ -219,5 +221,10 @@ describe("DELETE /api/venues/[venueId]/items/[itemId]", () => {
 
     const deleted = await prisma.menuItem.findUnique({ where: { id: item.id } });
     expect(deleted?.deletedAt).not.toBeNull();
+  });
+
+  it("returns 404 for non-existent item", async () => {
+    const res = await DELETE(req(data.venue.id, "DELETE"), itemParams(data.venue.id, "non-existent-id"));
+    expect(res.status).toBe(404);
   });
 });

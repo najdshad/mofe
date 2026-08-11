@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { buildPublicSnapshot } from "@/lib/public-menu/publication";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _request: Request,
@@ -12,7 +13,15 @@ export async function GET(
     const { venueId } = await params;
     await requireVenueAccess(user.id, venueId);
 
-    const snapshot = await buildPublicSnapshot(venueId);
+    const venue = await prisma.venue.findUnique({
+      where: { id: venueId },
+      select: { slug: true },
+    });
+    if (!venue) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const snapshot = await buildPublicSnapshot(venue.slug);
     if (!snapshot) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

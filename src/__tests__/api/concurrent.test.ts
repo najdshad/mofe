@@ -58,5 +58,6 @@ describe.concurrent("Concurrent access patterns", () => {
 
     const updated = await prisma.menuItem.findUnique({ where: { id: itemId } });
     expect(updated).toBeDefined();
+    expect([1000, 2000, 3000]).toContain(updated!.priceToman);
   });
 });

@@ -83,22 +83,28 @@ describe("POST /api/venues/[venueId]/items/[itemId]/photo", () => {
   it("uploads a valid image successfully", async () => {
     const file = new File([testImageBuffer], "test.png", { type: "image/png" });
 
-    const res = await POST(
-      photoFormRequest(data.venue.id, data.items.item1.id, file),
-      params(data.venue.id, data.items.item1.id)
-    );
+    let uploadedUrl: string | null = null;
+    try {
+      const res = await POST(
+        photoFormRequest(data.venue.id, data.items.item1.id, file),
+        params(data.venue.id, data.items.item1.id)
+      );
 
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.photoUrl).toBeTruthy();
-    expect(body.photoUrl).toContain("/uploads/");
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.photoUrl).toBeTruthy();
+      expect(body.photoUrl).toContain("/uploads/");
+      uploadedUrl = body.photoUrl as string;
 
-    const updated = await prisma.menuItem.findUnique({ where: { id: data.items.item1.id } });
-    expect(updated?.photoUrl).toBe(body.photoUrl);
-
-    const filePath = path.join(process.cwd(), "public", body.photoUrl);
-    try { await fs.unlink(filePath); } catch { /* ok */ }
-    await prisma.menuItem.update({ where: { id: data.items.item1.id }, data: { photoUrl: null } });
+      const updated = await prisma.menuItem.findUnique({ where: { id: data.items.item1.id } });
+      expect(updated?.photoUrl).toBe(body.photoUrl);
+    } finally {
+      if (uploadedUrl) {
+        const filePath = path.join(process.cwd(), "public", uploadedUrl);
+        try { await fs.unlink(filePath); } catch { /* ok */ }
+      }
+      await prisma.menuItem.update({ where: { id: data.items.item1.id }, data: { photoUrl: null } });
+    }
   });
 
   it("rejects non-image file", async () => {

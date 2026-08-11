@@ -56,13 +56,21 @@ export async function PATCH(
       if (field in body) data[field] = body[field];
     }
 
-    const item = await prisma.menuItem.update({
+    const item = await prisma.menuItem.findFirst({
+      where: { id: itemId, venueId },
+      select: { id: true },
+    });
+    if (!item) {
+      return NextResponse.json({ error: "آیتم مورد نظر یافت نشد" }, { status: 404 });
+    }
+
+    const updated = await prisma.menuItem.update({
       where: { id: itemId, venueId },
       data,
     });
 
     
-    return NextResponse.json(item);
+    return NextResponse.json(updated);
   } catch (e) {
     return errorResponse(e);
   }
@@ -79,12 +87,16 @@ export async function DELETE(
 
     await validateCsrf();
 
-    const item = await prisma.menuItem.findUnique({
+    const item = await prisma.menuItem.findFirst({
       where: { id: itemId, venueId },
       select: { photoUrl: true, nameFa: true },
     });
 
-    if (item?.photoUrl) {
+    if (!item) {
+      return NextResponse.json({ error: "آیتم مورد نظر یافت نشد" }, { status: 404 });
+    }
+
+    if (item.photoUrl) {
       const filePath = path.join(process.cwd(), "public", item.photoUrl);
       try { await fs.unlink(filePath); } catch { /* ok */ }
     }

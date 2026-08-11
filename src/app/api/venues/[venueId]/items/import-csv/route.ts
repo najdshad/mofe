@@ -101,12 +101,15 @@ export async function POST(
       data: { deletedAt: now },
     });
 
-    // Phase 2: create categories
+    // Phase 2: create categories (upsert resurrects soft-deleted rows with the same name)
     for (let i = 0; i < uniqueCategoryNames.length; i++) {
-      const cat = await tx.category.create({
-        data: {
+      const nameFa = sanitizeCsvField(uniqueCategoryNames[i]);
+      const cat = await tx.category.upsert({
+        where: { venueId_nameFa: { venueId, nameFa } },
+        update: { deletedAt: null, displayOrder: i },
+        create: {
           venueId,
-          nameFa: sanitizeCsvField(uniqueCategoryNames[i]),
+          nameFa,
           displayOrder: i,
         },
       });
@@ -160,8 +163,18 @@ export async function POST(
         categoryOrderCounters.set(categoryId, order + 1);
 
         try {
-          await tx.menuItem.create({
-            data: {
+          await tx.menuItem.upsert({
+            where: { categoryId_nameFa: { categoryId, nameFa } },
+            update: {
+              nameEn,
+              description,
+              priceToman,
+              calories,
+              isSoldOut,
+              displayOrder: order,
+              deletedAt: null,
+            },
+            create: {
               venueId,
               categoryId,
               nameFa,

@@ -87,10 +87,39 @@ describe("POST /api/auth/login", () => {
 });
 
 describe("POST /api/auth/logout", () => {
-  it("redirects to login on successful logout", async () => {
+  it("revokes the session and deletes the cookie", async () => {
+    const { generateToken, hashToken } = await import("@/lib/auth");
+    const admin = await prisma.user.findUniqueOrThrow({ where: { email: "admin@test.ir" } });
+    const token = generateToken();
+    const session = await prisma.session.create({
+      data: {
+        userId: admin.id,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    });
+
+    mockCookieGet.mockReturnValue({ value: token });
+
     const { POST } = await import("@/app/api/auth/logout/route");
     const req = new Request("http://localhost/api/auth/logout", { method: "POST" });
-    (req as unknown as Record<string, unknown>).cookies = { get: () => undefined };
+    const res = await POST(req as never);
+    expect(res.status).toBe(307);
+    expect(res.headers.get("Location")).toContain("/login");
+
+    expect(mockCookieDelete).toHaveBeenCalledWith("mofe_session");
+
+    const revoked = await prisma.session.findUnique({ where: { id: session.id } });
+    expect(revoked?.revokedAt).not.toBeNull();
+
+    await prisma.session.delete({ where: { id: session.id } });
+  });
+
+  it("redirects to login when no session exists", async () => {
+    mockCookieGet.mockReturnValue(undefined);
+
+    const { POST } = await import("@/app/api/auth/logout/route");
+    const req = new Request("http://localhost/api/auth/logout", { method: "POST" });
     const res = await POST(req as never);
     expect(res.status).toBe(307);
     const location = res.headers.get("Location") || "";
