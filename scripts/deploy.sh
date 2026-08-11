@@ -25,11 +25,13 @@ sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='mofe'" | grep 
   sudo -u postgres psql -c "CREATE ROLE mofe LOGIN PASSWORD 'mofe';"
 sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='mofe'" | grep -q 1 || \
   sudo -u postgres createdb -O mofe mofe
+PGPORT=$(sudo -u postgres psql -tAc "SHOW port;" | tr -d ' ')
+echo "PostgreSQL listening on port $PGPORT"
 
 echo "==> Writing .env"
 if [ ! -f .env ]; then
   umask 077
-  printf 'DATABASE_URL="postgresql://mofe:mofe@localhost:5432/mofe"\nRUN_SEED=1\n' > .env
+  printf 'DATABASE_URL="postgresql://mofe:mofe@localhost:%s/mofe"\nRUN_SEED=1\n' "$PGPORT" > .env
   echo "Created .env with RUN_SEED=1 (demo data)."
 fi
 set -a; . ./.env; set +a

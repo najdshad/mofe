@@ -9,7 +9,7 @@
     "lint": "eslint",
     "db:studio": "npx prisma studio",
     "db:migrate": "npx prisma migrate dev",
-    "db:push": "psql \"${DATABASE_URL}\" -c \"DROP TABLE IF EXISTS schema_migrations;\" && npx prisma db push",
+    "db:push": "if [ -f .env ]; then set -a; . ./.env; set +a; fi; psql \"${DATABASE_URL}\" -c \"DROP TABLE IF EXISTS schema_migrations;\" && npx prisma db push",
     "db:reset": "npx prisma migrate reset --force",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
