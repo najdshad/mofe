@@ -455,6 +455,13 @@ describe("renderPublicMenu", () => {
       expect(html).toContain(".category-pill");
     });
 
+    it("includes scroll-spy script for category nav", () => {
+      const html = renderPublicMenu(makeSnapshot());
+      expect(html).toContain("IntersectionObserver");
+      expect(html).toContain("data-category-pill");
+      expect(html).toContain("aria-current");
+    });
+
     it("includes print styles", () => {
       const html = renderPublicMenu(makeSnapshot());
       expect(html).toContain("@media print");

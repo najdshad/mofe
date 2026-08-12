@@ -647,6 +647,30 @@ ${FONT_FACE_DECLARATIONS}
       <div class="footer">Powered by mofé</div>
     </section>
   </main>
+  <script>
+  (function () {
+    var pills = Array.prototype.slice.call(document.querySelectorAll("[data-category-pill]"));
+    if (pills.length === 0 || !("IntersectionObserver" in window)) return;
+    var sections = pills.map(function (p) {
+      return document.getElementById(p.getAttribute("href").slice(1));
+    });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var i = sections.indexOf(entry.target);
+        pills.forEach(function (p) {
+          p.classList.remove("active");
+          p.removeAttribute("aria-current");
+        });
+        pills[i].classList.add("active");
+        pills[i].setAttribute("aria-current", "true");
+      });
+    }, { rootMargin: "-30% 0px -60% 0px" });
+    sections.forEach(function (s) {
+      if (s) io.observe(s);
+    });
+  })();
+  </script>
 </body>
 </html>`;
 }
