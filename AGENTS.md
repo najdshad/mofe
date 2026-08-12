@@ -38,7 +38,7 @@ npx prisma db seed       # Seed demo data (runs src/lib/demo.ts via prisma/seed.
 - **Fonts:** Body: `"Parastoo", "Vazirmatn", "Tahoma", sans-serif`. Headings: `"EB Garamond", "Parastoo", "Vazirmatn", "Times New Roman", serif`.
 - **Photo upload:** Sharp → WebP ≤50KB, max 500px, binary search for quality. Fallback: reduce dimension in 100px steps to 200px.
 - **CSV:** Formula injection sanitized — cells starting with `=`, `+`, `-`, `@`, `\t` get `'` prefix. Template download at `GET /api/venues/[venueId]/items/csv-template` returns headers + example row.
-- **Signup (`POST /api/auth/signup`):** Creates User + Venue(owner) in atomic transaction. Rate-limited 3/IP/day (prod only). Auto-generates slug from Persian name (falls back to `cafe`).
+- **Accounts:** No self-signup. Users + Venues(owner) are created internally (seed or internal scripts, see `prisma/seed.ts`). Auto-generates slug from Persian name (falls back to `cafe`).
 
 ## Environment
 

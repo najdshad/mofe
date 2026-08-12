@@ -12,6 +12,7 @@
     "db:migrate": "npx prisma migrate dev",
     "db:push": "npx prisma db push",
     "db:reset": "rm -f prisma/dev.db && npx prisma db push",
+    "create:account": "tsx src/scripts/create-account.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"

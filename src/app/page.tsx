@@ -172,8 +172,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/login" className="px-3 py-2 text-sm transition-colors hover:text-accent sm:px-4">ورود</Link>
-            <Link href="/signup" className="rounded-full bg-ink px-4 py-2.5 text-sm text-paper transition-transform hover:-translate-y-0.5 sm:px-5">ساخت منو</Link>
+            <Link href="/login" className="rounded-full bg-ink px-4 py-2.5 text-sm text-paper transition-transform hover:-translate-y-0.5 sm:px-5">ورود به پنل</Link>
           </div>
         </nav>
 
@@ -200,8 +199,8 @@ export default function Home() {
             </p>
 
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
-              <Link href="/signup" className="group inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-accent px-7 text-base font-bold text-white shadow-[0_12px_30px_rgba(185,79,44,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#a94325] sm:w-auto">
-                رایگان شروع کنید
+              <Link href="/login" className="group inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-accent px-7 text-base font-bold text-white shadow-[0_12px_30px_rgba(185,79,44,0.22)] transition-all hover:-translate-y-0.5 hover:bg-[#a94325] sm:w-auto">
+                ورود به پنل مدیریت
                 <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
               </Link>
               <a href="#showcase" className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-full border border-ink/15 bg-white/25 px-7 text-sm transition-colors hover:border-ink/40 hover:bg-white/50 sm:w-auto">
@@ -276,8 +275,8 @@ export default function Home() {
             <p className="text-sm text-white/70">منوی تازه، همین امروز</p>
             <h2 className="mt-4 text-4xl font-bold leading-tight sm:text-6xl">میزهای کافه‌تان آماده‌اند؟</h2>
             <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-white/75 sm:text-base">منوی دیجیتال خودتان را بسازید و اولین QR را روی میز بگذارید.</p>
-            <Link href="/signup" className="group mt-8 inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-ink px-8 font-bold text-paper transition-transform hover:-translate-y-0.5">
-              ساخت منوی من
+            <Link href="/login" className="group mt-8 inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-ink px-8 font-bold text-paper transition-transform hover:-translate-y-0.5">
+              ورود به پنل مدیریت
               <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
             </Link>
           </div>
