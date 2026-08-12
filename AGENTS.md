@@ -6,7 +6,7 @@
 
 | # | Rule |
 |---|------|
-| ⚠ | **DATABASE_URL:** `prisma.config.ts` reads `process.env.DATABASE_URL` directly and no `.env` file ships in the repo — export it in the shell before any prisma command. |
+| ⚠ | **SQLite:** DB lives in `prisma/dev.db` (`file:${cwd}/prisma/dev.db`, hardcoded). No server, no env vars. Tests auto-target `prisma/mofe_test.db` via `NODE_ENV=test`. |
 | ⚠ | **Proxy export:** `src/proxy.ts` must export `proxy` (NOT `middleware`) |
 | ⚠ | **Route params:** All `params` are `Promise<{ ... }>` — must `await` |
 | ⚠ | **Prisma schema changes:** After editing schema, run `npx prisma db push && npx prisma generate`, then **restart the dev server** (`kill $(lsof -ti:3000)` then `npm run dev`) |
@@ -21,7 +21,7 @@ npm run build            # Production build
 npm test                 # Vitest (fileParallelism: false is set in vitest.config.ts)
 npm run typecheck        # tsc --noEmit
 npm run lint             # ESLint
-npm run db:push          # one-time legacy schema_migrations drop + npx prisma db push
+npm run db:push          # prisma db push (SQLite file, no server setup)
 npx prisma db seed       # Seed demo data (runs src/lib/demo.ts via prisma/seed.ts)
 ```
 
@@ -42,11 +42,7 @@ npx prisma db seed       # Seed demo data (runs src/lib/demo.ts via prisma/seed.
 
 ## Environment
 
-```env
-DATABASE_URL="postgresql://mofe:mofe@localhost:5432/mofe"
-```
-
-Test suite uses `TEST_DATABASE_URL` (falls back to `postgresql://mofe:mofe@localhost:5432/mofe_test`).
+No env vars required. Dev DB: `prisma/dev.db`. Tests run against `prisma/mofe_test.db` (recreated from scratch each run; `NODE_ENV=test` is set by `global-setup.ts`).
 
 ## Demo Credentials
 

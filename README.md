@@ -30,12 +30,13 @@ Session-based auth with SHA-256 hashed tokens, 7-day TTL, 30-minute idle timeout
 ## Quick Start
 
 ```bash
-export DATABASE_URL="postgresql://mofe:mofe@localhost:5432/mofe"   # prisma.config.ts reads this from the environment; no .env file ships in the repo
 npm install
 npx prisma db push
 npx prisma db seed
 npm run dev
 ```
+
+No database server or env vars needed — data lives in `prisma/dev.db` (SQLite).
 
 Open [http://localhost:3000](http://localhost:3000).
 
@@ -51,9 +52,9 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run typecheck` | TypeScript type check |
 | `npm run lint` | ESLint |
 | `npm run db:studio` | Prisma Studio |
-| `npm run db:push` | db push + schema_migrations drop/recreate dance |
+| `npm run db:push` | Prisma db push onto the SQLite file |
 | `npm run db:migrate` | Prisma migrate dev |
-| `npm run db:reset` | Prisma migrate reset --force |
+| `npm run db:reset` | Delete dev.db + re-run db push |
 | `npx prisma db seed` | Seed demo data |
 
 ## Tech Stack
@@ -62,10 +63,10 @@ Open [http://localhost:3000](http://localhost:3000).
 | --- | --- |
 | Web framework | Next.js 16 (App Router), React 19, TypeScript |
 | Styling | Tailwind CSS v4, custom paper-and-ink design tokens |
-| Database | PostgreSQL, Prisma v7, @prisma/adapter-pg |
+| Database | SQLite (single file), Prisma v7, @prisma/adapter-better-sqlite3 |
 | Auth | Session-based, HTTP-only cookie, bcrypt + SHA-256 |
 | Testing | Vitest |
-| Infrastructure | systemd, nginx, PostgreSQL |
+| Infrastructure | systemd, nginx, SQLite |
 
 ## Design
 

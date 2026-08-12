@@ -1,13 +1,13 @@
 import "dotenv/config";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { DEMO_EMAIL, DEMO_PASSWORD, ensureDemoData } from "../src/lib/demo";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe",
+const prisma = new PrismaClient({
+  adapter: new PrismaBetterSqlite3({
+    url: `file:${process.cwd()}/prisma/dev.db`,
+  }),
 });
-const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 async function main() {
   const { venue } = await ensureDemoData(prisma);

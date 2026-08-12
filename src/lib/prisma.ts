@@ -1,18 +1,15 @@
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@/generated/prisma/client";
-import { Pool } from "pg";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
+const DEFAULT_DB_URL = `file:${process.cwd()}/prisma/dev.db`;
+const TEST_DB_URL = `file:${process.cwd()}/prisma/mofe_test.db`;
+
 function createPrismaClient() {
-  const pool = new Pool({
-    connectionString:
-      process.env.DATABASE_URL ?? "postgresql://localhost:5432/mofe",
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
+  const adapter = new PrismaBetterSqlite3({
+    url: process.env.NODE_ENV === "test" ? TEST_DB_URL : DEFAULT_DB_URL,
   });
-  const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
 

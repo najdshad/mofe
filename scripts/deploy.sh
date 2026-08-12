@@ -5,11 +5,11 @@ cd "$(dirname "$0")/.."
 APP_DIR="$PWD"
 SERVICE=mofe.service
 
-echo "==> Installing system packages (Node 22, PostgreSQL, nginx, certbot)"
+echo "==> Installing system packages (Node 22, nginx, certbot)"
 if ! command -v node >/dev/null 2>&1 || [ "$(node -v | sed 's/^v//' | cut -d. -f1)" -lt 22 ]; then
   curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 fi
-sudo apt-get install -y nodejs git nginx postgresql certbot openssl
+sudo apt-get install -y nodejs git nginx certbot openssl build-essential python3
 
 echo "==> Ensuring swap space (2G for low-RAM VPS)"
 if ! swapon --show | grep -q .; then
@@ -20,18 +20,10 @@ if ! swapon --show | grep -q .; then
   grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 fi
 
-echo "==> Ensuring PostgreSQL role and database"
-sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='mofe'" | grep -q 1 || \
-  sudo -u postgres psql -c "CREATE ROLE mofe LOGIN PASSWORD 'mofe';"
-sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='mofe'" | grep -q 1 || \
-  sudo -u postgres createdb -O mofe mofe
-PGPORT=$(sudo -u postgres psql -tAc "SHOW port;" | tr -d ' ')
-echo "PostgreSQL listening on port $PGPORT"
-
 echo "==> Writing .env"
 if [ ! -f .env ]; then
   umask 077
-  printf 'DATABASE_URL="postgresql://mofe:mofe@localhost:%s/mofe"\nRUN_SEED=1\n' "$PGPORT" > .env
+  printf 'RUN_SEED=1\n' > .env
   echo "Created .env with RUN_SEED=1 (demo data)."
 fi
 set -a; . ./.env; set +a
@@ -67,7 +59,7 @@ echo "==> Installing systemd unit"
 sudo tee /etc/systemd/system/$SERVICE >/dev/null <<EOF
 [Unit]
 Description=mofé menu
-After=network.target postgresql.service
+After=network.target
 
 [Service]
 Type=simple
