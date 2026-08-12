@@ -1,5 +1,6 @@
 import { renderPublicMenu, renderUnavailablePage } from "@/lib/public-menu/renderer";
 import { buildPublicSnapshot } from "@/lib/public-menu/publication";
+import { getCachedMenuHtml } from "@/lib/public-menu/menu-cache";
 
 const CSP_HEADER = "default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; script-src 'none'; font-src 'self'";
 
@@ -7,7 +8,12 @@ const MENU_HEADERS = {
   "Content-Type": "text/html; charset=utf-8",
   "Content-Security-Policy": CSP_HEADER,
   "X-Frame-Options": "DENY",
-  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+  "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+};
+
+const NOT_FOUND_HEADERS = {
+  ...MENU_HEADERS,
+  "Cache-Control": "no-store",
 };
 
 export async function GET(
@@ -17,14 +23,17 @@ export async function GET(
   const { slug } = await params;
   const baseUrl = new URL(request.url).origin;
 
-  const snapshot = await buildPublicSnapshot(slug);
-  if (!snapshot) {
+  const html = await getCachedMenuHtml(slug, async () => {
+    const snapshot = await buildPublicSnapshot(slug);
+    return snapshot ? renderPublicMenu(snapshot, baseUrl) : null;
+  });
+
+  if (!html) {
     return new Response(renderUnavailablePage("منو"), {
       status: 404,
-      headers: MENU_HEADERS,
+      headers: NOT_FOUND_HEADERS,
     });
   }
 
-  const html = renderPublicMenu(snapshot, baseUrl);
   return new Response(html, { headers: MENU_HEADERS });
 }
