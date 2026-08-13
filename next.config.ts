@@ -35,11 +35,34 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   ...(isDev ? { allowedDevOrigins: ["172.25.156.163"] } : {}),
+  async rewrites() {
+    return [
+      { source: "/catalogue", destination: "/catalogue.html" },
+      { source: "/catalogue/", destination: "/catalogue.html" },
+    ];
+  },
   async headers() {
+    const catalogueCsp = isDev
+      ? "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'sha256-TRHYFuilDb7ZdLcs0+k3Bg0br7NwSVDidJcWVjaTs2c='"
+      : "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; script-src 'self' 'sha256-TRHYFuilDb7ZdLcs0+k3Bg0br7NwSVDidJcWVjaTs2c='";
     return [
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      {
+        source: "/catalogue/:path*",
+        headers: [
+          ...securityHeaders.filter((h) => h.key !== "Content-Security-Policy"),
+          { key: "Content-Security-Policy", value: catalogueCsp },
+        ],
+      },
+      {
+        source: "/catalogue.html",
+        headers: [
+          ...securityHeaders.filter((h) => h.key !== "Content-Security-Policy"),
+          { key: "Content-Security-Policy", value: catalogueCsp },
+        ],
       },
     ];
   },
