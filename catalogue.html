@@ -1,0 +1,2862 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f0e6">
+  <meta name="description" content="mofé — an investor introduction to the Persian-first digital menu platform for independent hospitality.">
+  <title>mofé — Investor Catalogue</title>
+  <style>
+    :root {
+      --paper: #f5f0e6;
+      --paper-deep: #ece4d7;
+      --panel: #fbfaf7;
+      --ink: #111111;
+      --muted: #655f56;
+      --line: #d8d1c4;
+      --accent: #b94f2c;
+      --accent-deep: #943b20;
+      --accent-soft: #f1d8cc;
+      --green: #287451;
+      --green-soft: #dce8df;
+      --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+      --sans: Tahoma, Arial, sans-serif;
+      --shadow: 0 30px 80px rgba(48, 31, 21, 0.14);
+      --radius-lg: 32px;
+      --radius-md: 20px;
+      --radius-sm: 13px;
+    }
+
+    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo-Bold.woff2") format("woff2");
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Vazirmatn";
+      src: url("/fonts/Vazirmatn-VariableFont_wght.ttf") format("truetype-variations");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 88px;
+    }
+
+    body {
+      overflow-x: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      color: inherit;
+      font: inherit;
+    }
+
+    ::selection {
+      background: var(--accent-soft);
+      color: var(--ink);
+    }
+
+    .serif {
+      font-family: var(--serif);
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 40px));
+      margin-inline: auto;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .19em;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 22px;
+      height: 1px;
+      background: currentColor;
+      content: "";
+    }
+
+    .section-heading {
+      max-width: 780px;
+      margin-top: 18px;
+      font-family: var(--serif);
+      font-size: clamp(42px, 6vw, 74px);
+      font-weight: 500;
+      letter-spacing: -.045em;
+      line-height: .98;
+    }
+
+    .section-copy {
+      max-width: 610px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: 20px;
+      line-height: 1.65;
+    }
+
+    .topbar {
+      position: fixed;
+      z-index: 100;
+      top: 0;
+      right: 0;
+      left: 0;
+      border-bottom: 1px solid rgba(17, 17, 17, .1);
+      background: rgba(245, 240, 230, .88);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      display: flex;
+      min-height: 72px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .brand-name {
+      font-family: var(--serif);
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -.04em;
+      line-height: 1;
+    }
+
+    .brand-note {
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav-links a {
+      transition: color 160ms ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--ink);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .social-icon {
+      display: inline-grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .28);
+      color: var(--ink);
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .social-icon:hover {
+      transform: translateY(-2px);
+      border-color: rgba(17,17,17,.38);
+      background: rgba(255,255,255,.55);
+    }
+
+    .social-icon svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
+    }
+
+    .language-toggle {
+      display: inline-flex;
+      min-height: 40px;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .28);
+      cursor: pointer;
+      padding: 0 12px;
+      font-family: var(--sans);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+
+    .language-toggle:hover {
+      border-color: rgba(17,17,17,.38);
+      background: rgba(255,255,255,.55);
+    }
+
+    .language-toggle i {
+      width: 1px;
+      height: 13px;
+      background: var(--line);
+    }
+
+    .language-toggle span {
+      opacity: .38;
+      transition: opacity 160ms ease, color 160ms ease;
+    }
+
+    html[lang="en"] .language-toggle .lang-en,
+    html[lang="fa"] .language-toggle .lang-fa {
+      color: var(--accent);
+      opacity: 1;
+    }
+
+    .print-button,
+    .primary-link {
+      display: inline-flex;
+      min-height: 40px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .print-button {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .28);
+      padding: 0 16px;
+    }
+
+    .primary-link {
+      border: 0;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 0 18px;
+    }
+
+    .print-button:hover,
+    .primary-link:hover {
+      transform: translateY(-2px);
+    }
+
+    .progress {
+      position: absolute;
+      right: 0;
+      bottom: -1px;
+      left: 0;
+      height: 2px;
+      transform: scaleX(0);
+      transform-origin: left;
+      background: var(--accent);
+    }
+
+    html[dir="rtl"] .progress {
+      transform-origin: right;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+      padding: 150px 0 86px;
+    }
+
+    .hero::before {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(17,17,17,.08) .65px, transparent .65px);
+      background-size: 9px 9px;
+      content: "";
+      opacity: .28;
+      pointer-events: none;
+    }
+
+    .hero::after {
+      position: absolute;
+      top: -300px;
+      right: -260px;
+      width: 700px;
+      height: 700px;
+      border: 150px solid rgba(185, 79, 44, .07);
+      border-radius: 50%;
+      content: "";
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr);
+      align-items: center;
+      gap: 54px;
+    }
+
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(185, 79, 44, .22);
+      border-radius: 999px;
+      background: rgba(241, 216, 204, .58);
+      color: var(--accent-deep);
+      padding: 8px 13px;
+      font-size: 11px;
+    }
+
+    .hero-kicker .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(185, 79, 44, .12);
+    }
+
+    h1 {
+      max-width: 700px;
+      margin-top: 28px;
+      font-family: var(--serif);
+      font-size: clamp(64px, 8.7vw, 118px);
+      font-weight: 500;
+      letter-spacing: -.065em;
+      line-height: .82;
+    }
+
+    h1 em {
+      position: relative;
+      color: var(--accent);
+      font-weight: 400;
+    }
+
+    h1 em::after {
+      position: absolute;
+      right: 4%;
+      bottom: -2px;
+      left: 2%;
+      height: 7px;
+      border-top: 2px solid rgba(185, 79, 44, .55);
+      border-radius: 50%;
+      content: "";
+      transform: rotate(-1.5deg);
+    }
+
+    .hero-lede {
+      max-width: 590px;
+      margin-top: 34px;
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: clamp(20px, 2vw, 25px);
+      line-height: 1.55;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 34px;
+    }
+
+    .hero-cta {
+      display: inline-flex;
+      min-height: 54px;
+      align-items: center;
+      gap: 12px;
+      border-radius: 999px;
+      padding: 0 24px;
+      font-size: 13px;
+      font-weight: 700;
+      transition: transform 160ms ease;
+    }
+
+    .hero-cta:hover {
+      transform: translateY(-2px);
+    }
+
+    .hero-cta.primary {
+      background: var(--accent);
+      box-shadow: 0 14px 34px rgba(185, 79, 44, .2);
+      color: white;
+    }
+
+    .hero-cta.secondary {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .28);
+    }
+
+    .arrow {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .hero-footnote {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 30px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .hero-footnote span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .hero-footnote span::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      content: "";
+    }
+
+    .product-stage {
+      position: relative;
+      min-height: 650px;
+    }
+
+    .menu-phone {
+      position: absolute;
+      z-index: 3;
+      top: 10px;
+      right: 0;
+      width: 355px;
+      overflow: hidden;
+      border: 10px solid var(--ink);
+      border-radius: 44px;
+      background: #f8f1e4;
+      box-shadow: var(--shadow);
+      transform: rotate(2.4deg);
+    }
+
+    .phone-top {
+      display: flex;
+      height: 31px;
+      align-items: center;
+      justify-content: center;
+      background: var(--ink);
+    }
+
+    .phone-notch {
+      width: 90px;
+      height: 16px;
+      border-radius: 0 0 12px 12px;
+      background: #050505;
+    }
+
+    .menu-screen {
+      min-height: 570px;
+      padding: 27px 24px 23px;
+      direction: rtl;
+      font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
+    }
+
+    .menu-micro {
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: 8px;
+      letter-spacing: .25em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .venue-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .venue-name-fa {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -.04em;
+    }
+
+    .venue-name-en {
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    .venue-mark {
+      display: grid;
+      width: 54px;
+      height: 54px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .welcome-fa {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.9;
+    }
+
+    .cat-pills {
+      display: flex;
+      gap: 7px;
+      margin: 18px -24px 3px;
+      overflow: hidden;
+      border-block: 1px solid rgba(17, 17, 17, .13);
+      padding: 10px 24px;
+      white-space: nowrap;
+    }
+
+    .cat-pill {
+      border-radius: 999px;
+      color: var(--muted);
+      padding: 4px 9px;
+      font-size: 9px;
+    }
+
+    .cat-pill.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .menu-section-title {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-top: 19px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .menu-section-title::after {
+      height: 1px;
+      flex: 1;
+      background: rgba(17, 17, 17, .13);
+      content: "";
+    }
+
+    .dish {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      border-bottom: 1px solid rgba(17, 17, 17, .1);
+      padding: 14px 0;
+    }
+
+    .dish-name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .dish-en {
+      margin-top: 1px;
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: 10px;
+      font-style: italic;
+    }
+
+    .dish-desc {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 8px;
+      line-height: 1.7;
+    }
+
+    .dish-price {
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .dish-price small {
+      display: block;
+      color: var(--muted);
+      font-size: 7px;
+      font-weight: 400;
+    }
+
+    .editor-card {
+      position: absolute;
+      z-index: 2;
+      top: 200px;
+      left: 0;
+      width: 430px;
+      overflow: hidden;
+      border: 1px solid rgba(17, 17, 17, .16);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: 0 26px 60px rgba(48, 31, 21, .13);
+      transform: rotate(-3deg);
+    }
+
+    .editor-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      padding: 15px 18px;
+    }
+
+    .editor-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--serif);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .editor-brand i {
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 12px;
+      font-style: normal;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 5px;
+    }
+
+    .window-dots i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--line);
+    }
+
+    .editor-body {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      min-height: 310px;
+    }
+
+    .editor-side {
+      border-right: 1px solid var(--line);
+      background: #efede7;
+      padding: 15px 10px;
+    }
+
+    .side-label {
+      margin: 0 6px 10px;
+      color: var(--muted);
+      font-size: 7px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .side-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 8px;
+      padding: 7px 8px;
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .side-item::before {
+      width: 7px;
+      height: 7px;
+      border: 1px solid currentColor;
+      border-radius: 2px;
+      content: "";
+    }
+
+    .side-item.active {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .editor-main {
+      padding: 18px;
+    }
+
+    .editor-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .editor-title h3 {
+      font-family: var(--serif);
+      font-size: 21px;
+    }
+
+    .editor-title p {
+      color: var(--muted);
+      font-size: 7px;
+    }
+
+    .mini-add {
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      padding: 7px 9px;
+      font-size: 7px;
+    }
+
+    .editor-tabs {
+      display: flex;
+      gap: 4px;
+      margin-top: 16px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 9px;
+    }
+
+    .editor-tabs span {
+      border-radius: 7px;
+      padding: 4px 7px;
+      color: var(--muted);
+      font-size: 7px;
+    }
+
+    .editor-tabs .active {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .editor-row {
+      display: grid;
+      grid-template-columns: 24px 1.6fr .7fr .65fr;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 0;
+      font-size: 7px;
+    }
+
+    .editor-row .drag {
+      color: var(--line);
+      font-size: 13px;
+      letter-spacing: -3px;
+    }
+
+    .editor-row b {
+      display: block;
+      font-size: 8px;
+    }
+
+    .editor-row small {
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: 7px;
+      font-style: italic;
+    }
+
+    .status {
+      justify-self: start;
+      border-radius: 6px;
+      background: var(--green-soft);
+      color: var(--green);
+      padding: 3px 5px;
+      font-size: 6px;
+    }
+
+    .floating-proof {
+      position: absolute;
+      z-index: 6;
+      right: 255px;
+      bottom: 31px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid rgba(17,17,17,.12);
+      border-radius: 17px;
+      background: #fffaf0;
+      box-shadow: 0 16px 36px rgba(48,31,21,.13);
+      padding: 12px 14px;
+      transform: rotate(-3deg);
+    }
+
+    .proof-check {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--green-soft);
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .floating-proof b {
+      display: block;
+      font-size: 10px;
+    }
+
+    .floating-proof span {
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .signal-strip {
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.22);
+    }
+
+    .signals {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .signal {
+      min-height: 150px;
+      border-left: 1px solid var(--line);
+      padding: 32px 26px;
+    }
+
+    .signal:first-child {
+      border-left: 0;
+    }
+
+    .signal strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: clamp(30px, 4vw, 48px);
+      font-weight: 500;
+      letter-spacing: -.04em;
+      line-height: 1;
+    }
+
+    .signal span {
+      display: block;
+      margin-top: 13px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .section {
+      padding: 116px 0;
+    }
+
+    .section.dark {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .section.dark .eyebrow {
+      color: #dc8d70;
+    }
+
+    .section.dark .section-copy {
+      color: rgba(245, 240, 230, .58);
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: .78fr 1.22fr;
+      gap: 80px;
+      margin-top: 78px;
+    }
+
+    .problem-statement {
+      position: sticky;
+      top: 120px;
+      align-self: start;
+    }
+
+    .problem-statement .quote-mark {
+      color: #dc8d70;
+      font-family: var(--serif);
+      font-size: 78px;
+      line-height: .5;
+    }
+
+    .problem-statement blockquote {
+      max-width: 390px;
+      margin-top: 22px;
+      font-family: var(--serif);
+      font-size: 31px;
+      letter-spacing: -.02em;
+      line-height: 1.25;
+    }
+
+    .problem-statement p {
+      max-width: 350px;
+      margin-top: 22px;
+      color: rgba(245,240,230,.5);
+      font-size: 12px;
+      line-height: 1.75;
+    }
+
+    .problem-list {
+      border-top: 1px solid rgba(245,240,230,.16);
+    }
+
+    .problem-row {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 24px;
+      border-bottom: 1px solid rgba(245,240,230,.16);
+      padding: 32px 0;
+    }
+
+    .problem-row .number {
+      color: #dc8d70;
+      font-family: var(--serif);
+      font-size: 28px;
+      font-style: italic;
+    }
+
+    .problem-row h3 {
+      font-family: var(--serif);
+      font-size: 27px;
+      font-weight: 500;
+    }
+
+    .problem-row p {
+      max-width: 570px;
+      margin-top: 9px;
+      color: rgba(245,240,230,.55);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .product-loop {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      margin-top: 70px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--line);
+    }
+
+    .loop-card {
+      position: relative;
+      min-height: 390px;
+      overflow: hidden;
+      background: var(--panel);
+      padding: 36px;
+    }
+
+    .loop-card:nth-child(2) {
+      background: var(--accent-soft);
+    }
+
+    .loop-card:nth-child(3) {
+      background: var(--green-soft);
+    }
+
+    .loop-no {
+      color: rgba(17,17,17,.18);
+      font-family: var(--serif);
+      font-size: 53px;
+      font-style: italic;
+      line-height: 1;
+    }
+
+    .loop-icon {
+      display: grid;
+      width: 52px;
+      height: 52px;
+      margin-top: 54px;
+      place-items: center;
+      border-radius: 16px;
+      background: var(--ink);
+      color: var(--paper);
+      font-size: 22px;
+    }
+
+    .loop-card h3 {
+      margin-top: 24px;
+      font-family: var(--serif);
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -.025em;
+    }
+
+    .loop-card p {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .loop-label {
+      position: absolute;
+      right: 28px;
+      bottom: 25px;
+      color: rgba(17,17,17,.35);
+      font-size: 8px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .experience-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      margin-top: 68px;
+    }
+
+    .experience-card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+    }
+
+    .experience-copy {
+      padding: 34px 36px 30px;
+    }
+
+    .experience-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .experience-meta span {
+      color: var(--accent);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+    }
+
+    .experience-meta i {
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: 18px;
+    }
+
+    .experience-card h3 {
+      margin-top: 15px;
+      font-family: var(--serif);
+      font-size: 34px;
+      letter-spacing: -.025em;
+      line-height: 1.05;
+    }
+
+    .experience-card p {
+      margin-top: 13px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .feature-canvas {
+      min-height: 390px;
+      border-top: 1px solid var(--line);
+      background: var(--paper-deep);
+      padding: 32px;
+    }
+
+    .admin-window {
+      overflow: hidden;
+      border: 1px solid rgba(17,17,17,.15);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 18px 40px rgba(48,31,21,.1);
+    }
+
+    .admin-chrome {
+      display: flex;
+      height: 38px;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      padding: 0 14px;
+    }
+
+    .admin-chrome b {
+      font-family: var(--serif);
+      font-size: 12px;
+    }
+
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 105px 1fr;
+      min-height: 270px;
+    }
+
+    .admin-nav {
+      border-right: 1px solid var(--line);
+      background: #f0eee8;
+      padding: 13px 9px;
+    }
+
+    .admin-nav div {
+      margin-bottom: 5px;
+      border-radius: 7px;
+      padding: 6px 7px;
+      color: var(--muted);
+      font-size: 7px;
+    }
+
+    .admin-nav div:first-child {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .admin-content {
+      padding: 17px;
+    }
+
+    .admin-content-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .admin-content h4 {
+      font-family: var(--serif);
+      font-size: 16px;
+    }
+
+    .admin-content-top span {
+      border-radius: 7px;
+      background: var(--accent);
+      color: white;
+      padding: 5px 7px;
+      font-size: 6px;
+    }
+
+    .admin-stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin-top: 14px;
+    }
+
+    .admin-stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px;
+    }
+
+    .admin-stat strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 17px;
+    }
+
+    .admin-stat span {
+      color: var(--muted);
+      font-size: 6px;
+    }
+
+    .admin-table {
+      margin-top: 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .admin-table-row {
+      display: grid;
+      grid-template-columns: 1fr .55fr .5fr;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      padding: 8px 9px;
+      font-size: 6px;
+    }
+
+    .admin-table-row:last-child {
+      border-bottom: 0;
+    }
+
+    .admin-table-row b {
+      font-size: 7px;
+    }
+
+    .guest-canvas {
+      position: relative;
+      display: grid;
+      min-height: 390px;
+      place-items: center;
+      overflow: hidden;
+      border-top: 1px solid var(--line);
+      background: var(--ink);
+      padding: 31px;
+    }
+
+    .guest-canvas::before {
+      position: absolute;
+      right: -90px;
+      bottom: -105px;
+      width: 250px;
+      height: 250px;
+      border: 55px solid rgba(185,79,44,.22);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .guest-menu {
+      position: relative;
+      z-index: 2;
+      width: min(315px, 92%);
+      border-radius: 20px;
+      background: var(--paper);
+      box-shadow: 0 20px 50px rgba(0,0,0,.28);
+      padding: 24px;
+      direction: rtl;
+      font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
+      transform: rotate(1.2deg);
+    }
+
+    .guest-brand {
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: 6px;
+      letter-spacing: .2em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .guest-title {
+      margin-top: 12px;
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    .guest-sub {
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: 9px;
+      font-style: italic;
+    }
+
+    .guest-pills {
+      display: flex;
+      gap: 5px;
+      margin-top: 14px;
+      border-block: 1px solid var(--line);
+      padding: 8px 0;
+    }
+
+    .guest-pills span {
+      border-radius: 999px;
+      padding: 3px 6px;
+      color: var(--muted);
+      font-size: 6px;
+    }
+
+    .guest-pills span:first-child {
+      background: var(--accent);
+      color: white;
+    }
+
+    .guest-dish {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      padding: 11px 0;
+    }
+
+    .guest-dish b {
+      display: block;
+      font-size: 8px;
+    }
+
+    .guest-dish span {
+      color: var(--muted);
+      font-family: var(--serif);
+      font-size: 7px;
+      font-style: italic;
+    }
+
+    .guest-dish strong {
+      font-size: 7px;
+    }
+
+    .architecture {
+      display: grid;
+      grid-template-columns: .92fr 1.08fr;
+      align-items: start;
+      gap: 78px;
+      margin-top: 74px;
+    }
+
+    .architecture-map {
+      position: relative;
+      border: 1px solid rgba(245,240,230,.18);
+      border-radius: var(--radius-lg);
+      padding: 30px;
+    }
+
+    .arch-node {
+      position: relative;
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 14px;
+      align-items: center;
+      border: 1px solid rgba(245,240,230,.14);
+      border-radius: 15px;
+      background: rgba(255,255,255,.035);
+      padding: 14px;
+    }
+
+    .arch-node + .arch-node {
+      margin-top: 28px;
+    }
+
+    .arch-node + .arch-node::before {
+      position: absolute;
+      top: -29px;
+      left: 34px;
+      width: 1px;
+      height: 28px;
+      background: rgba(245,240,230,.25);
+      content: "";
+    }
+
+    .arch-icon {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 12px;
+      background: rgba(245,240,230,.09);
+      color: #dc8d70;
+      font-family: var(--serif);
+      font-size: 17px;
+    }
+
+    .arch-node b {
+      display: block;
+      font-family: var(--serif);
+      font-size: 17px;
+    }
+
+    .arch-node span {
+      color: rgba(245,240,230,.5);
+      font-size: 9px;
+    }
+
+    .foundation-list {
+      border-top: 1px solid rgba(245,240,230,.16);
+    }
+
+    .foundation-item {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 17px;
+      border-bottom: 1px solid rgba(245,240,230,.16);
+      padding: 23px 0;
+    }
+
+    .foundation-item i {
+      color: #dc8d70;
+      font-family: var(--serif);
+      font-size: 20px;
+      font-style: italic;
+    }
+
+    .foundation-item h3 {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 500;
+    }
+
+    .foundation-item p {
+      margin-top: 6px;
+      color: rgba(245,240,230,.53);
+      font-size: 11px;
+      line-height: 1.7;
+    }
+
+    .model-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 28px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      padding: 8px 12px;
+      font-size: 10px;
+    }
+
+    .model-note::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      content: "";
+    }
+
+    .model-grid {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 24px;
+      margin-top: 62px;
+    }
+
+    .business-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+      padding: 39px;
+    }
+
+    .business-card.accent {
+      background: var(--accent);
+      color: white;
+    }
+
+    .business-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .business-card:not(.accent) .business-label {
+      color: var(--accent);
+    }
+
+    .business-card.accent .business-label {
+      color: rgba(255,255,255,.68);
+    }
+
+    .business-card h3 {
+      max-width: 480px;
+      margin-top: 18px;
+      font-family: var(--serif);
+      font-size: 38px;
+      font-weight: 500;
+      letter-spacing: -.03em;
+      line-height: 1.08;
+    }
+
+    .business-card > p {
+      margin-top: 17px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .business-card.accent > p {
+      color: rgba(255,255,255,.72);
+    }
+
+    .revenue-stack {
+      margin-top: 29px;
+      border-top: 1px solid var(--line);
+    }
+
+    .revenue-row {
+      display: grid;
+      grid-template-columns: 118px 1fr;
+      gap: 19px;
+      border-bottom: 1px solid var(--line);
+      padding: 18px 0;
+    }
+
+    .revenue-row b {
+      font-family: var(--serif);
+      font-size: 18px;
+    }
+
+    .revenue-row span {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.65;
+    }
+
+    .wedge-list {
+      margin-top: 31px;
+    }
+
+    .wedge {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 12px;
+      padding: 14px 0;
+    }
+
+    .wedge + .wedge {
+      border-top: 1px solid rgba(255,255,255,.2);
+    }
+
+    .wedge i {
+      display: grid;
+      width: 23px;
+      height: 23px;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(17,17,17,.16);
+      font-size: 10px;
+      font-style: normal;
+      font-weight: 700;
+    }
+
+    .wedge b {
+      display: block;
+      font-family: var(--serif);
+      font-size: 18px;
+    }
+
+    .wedge span {
+      display: block;
+      margin-top: 3px;
+      color: rgba(255,255,255,.68);
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .roadmap {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      margin-top: 75px;
+    }
+
+    .roadmap::before {
+      position: absolute;
+      z-index: 0;
+      top: 17px;
+      right: 15%;
+      left: 15%;
+      height: 1px;
+      background: var(--line);
+      content: "";
+    }
+
+    .roadmap-stage {
+      position: relative;
+      z-index: 1;
+    }
+
+    .roadmap-dot {
+      width: 35px;
+      height: 35px;
+      border: 10px solid var(--paper);
+      border-radius: 50%;
+      background: var(--line);
+      box-shadow: 0 0 0 1px var(--line);
+    }
+
+    .roadmap-stage.current .roadmap-dot {
+      background: var(--green);
+    }
+
+    .roadmap-stage.next .roadmap-dot {
+      background: var(--accent);
+    }
+
+    .roadmap-stage h3 {
+      margin-top: 25px;
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 500;
+    }
+
+    .roadmap-stage > span {
+      display: block;
+      margin-top: 5px;
+      color: var(--accent);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .roadmap-stage ul {
+      margin-top: 20px;
+      list-style: none;
+    }
+
+    .roadmap-stage li {
+      position: relative;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      padding: 12px 0 12px 18px;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .roadmap-stage li::before {
+      position: absolute;
+      top: 18px;
+      left: 2px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
+    }
+
+    .ask-section {
+      padding: 30px 0;
+    }
+
+    .ask-panel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 44px;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 74px;
+    }
+
+    .ask-panel::before {
+      position: absolute;
+      top: -170px;
+      left: -130px;
+      width: 390px;
+      height: 390px;
+      border: 90px solid rgba(185,79,44,.25);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .ask-panel::after {
+      position: absolute;
+      right: -100px;
+      bottom: -180px;
+      width: 360px;
+      height: 360px;
+      border: 75px solid rgba(245,240,230,.06);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .ask-grid {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      align-items: end;
+      gap: 70px;
+    }
+
+    .ask-panel .eyebrow {
+      color: #dc8d70;
+    }
+
+    .ask-panel h2 {
+      max-width: 730px;
+      margin-top: 20px;
+      font-family: var(--serif);
+      font-size: clamp(48px, 6vw, 78px);
+      font-weight: 500;
+      letter-spacing: -.045em;
+      line-height: .98;
+    }
+
+    .ask-panel h2 em {
+      color: #dc8d70;
+      font-weight: 400;
+    }
+
+    .ask-panel p {
+      max-width: 590px;
+      margin-top: 24px;
+      color: rgba(245,240,230,.6);
+      font-family: var(--serif);
+      font-size: 19px;
+      line-height: 1.65;
+    }
+
+    .use-of-capital {
+      border-top: 1px solid rgba(245,240,230,.2);
+    }
+
+    .capital-row {
+      display: grid;
+      grid-template-columns: 33px 1fr;
+      gap: 13px;
+      border-bottom: 1px solid rgba(245,240,230,.2);
+      padding: 15px 0;
+    }
+
+    .capital-row i {
+      color: #dc8d70;
+      font-family: var(--serif);
+      font-size: 18px;
+      font-style: italic;
+    }
+
+    .capital-row b {
+      display: block;
+      font-family: var(--serif);
+      font-size: 17px;
+    }
+
+    .capital-row span {
+      display: block;
+      margin-top: 3px;
+      color: rgba(245,240,230,.48);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    footer {
+      padding: 45px 0 54px;
+    }
+
+    .footer-grid {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 30px;
+      border-top: 1px solid var(--line);
+      padding-top: 30px;
+    }
+
+    .footer-brand {
+      font-family: var(--serif);
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -.04em;
+    }
+
+    .footer-copy {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .footer-meta {
+      max-width: 440px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.7;
+      text-align: right;
+    }
+
+    .footer-socials {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .footer-social-link {
+      display: inline-flex;
+      min-height: 38px;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 13px;
+      font-size: 10px;
+      font-weight: 700;
+      transition: transform 160ms ease, border-color 160ms ease;
+    }
+
+    .footer-social-link:hover {
+      transform: translateY(-2px);
+      border-color: rgba(17,17,17,.38);
+    }
+
+    .footer-social-link svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+    }
+
+    html[dir="rtl"] .problem-row,
+    html[dir="rtl"] .foundation-item,
+    html[dir="rtl"] .capital-row,
+    html[dir="rtl"] .wedge,
+    html[dir="rtl"] .revenue-row {
+      text-align: right;
+    }
+
+    html[dir="rtl"] .roadmap-stage li {
+      padding-right: 18px;
+      padding-left: 0;
+    }
+
+    html[dir="rtl"] .roadmap-stage li::before {
+      right: 2px;
+      left: auto;
+    }
+
+    html[dir="rtl"] .footer-meta {
+      text-align: left;
+    }
+
+    html[lang="fa"] body {
+      font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
+    }
+
+    html[lang="fa"] h1,
+    html[lang="fa"] .section-heading,
+    html[lang="fa"] .section-copy,
+    html[lang="fa"] .problem-statement blockquote,
+    html[lang="fa"] .problem-row h3,
+    html[lang="fa"] .loop-card h3,
+    html[lang="fa"] .experience-card h3,
+    html[lang="fa"] .arch-node b,
+    html[lang="fa"] .foundation-item h3,
+    html[lang="fa"] .business-card h3,
+    html[lang="fa"] .revenue-row b,
+    html[lang="fa"] .wedge b,
+    html[lang="fa"] .roadmap-stage h3,
+    html[lang="fa"] .ask-panel h2,
+    html[lang="fa"] .ask-panel p,
+    html[lang="fa"] .capital-row b {
+      font-family: "EB Garamond", "Parastoo", "Vazirmatn", "Times New Roman", serif;
+      letter-spacing: -.035em;
+    }
+
+    html[lang="fa"] h1 {
+      line-height: .98;
+    }
+
+    html[lang="fa"] .section-heading,
+    html[lang="fa"] .ask-panel h2 {
+      line-height: 1.12;
+    }
+
+    html[dir="rtl"] .eyebrow::before {
+      order: 2;
+    }
+
+    html[dir="rtl"] .editor-card {
+      direction: ltr;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 700ms ease, transform 700ms ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1040px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-copy {
+        max-width: 780px;
+      }
+
+      .product-stage {
+        width: min(700px, 100%);
+        min-height: 610px;
+        margin: 35px auto 0;
+      }
+
+      .menu-phone {
+        right: 5%;
+      }
+
+      .editor-card {
+        left: 3%;
+      }
+
+      .problem-grid,
+      .architecture {
+        grid-template-columns: 1fr;
+        gap: 52px;
+      }
+
+      .problem-statement {
+        position: static;
+      }
+
+      .ask-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .nav-links {
+        display: none;
+      }
+
+      .signals {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .signal:nth-child(3) {
+        border-left: 0;
+      }
+
+      .signal:nth-child(n+3) {
+        border-top: 1px solid var(--line);
+      }
+
+      .product-loop,
+      .experience-grid,
+      .model-grid,
+      .roadmap {
+        grid-template-columns: 1fr;
+      }
+
+      .roadmap::before {
+        display: none;
+      }
+
+      .loop-card {
+        min-height: 340px;
+      }
+
+      .ask-panel {
+        padding: 54px 36px;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .shell {
+        width: min(100% - 28px, 1180px);
+      }
+
+      .nav {
+        min-height: 64px;
+      }
+
+      .brand-note,
+      .print-button,
+      .nav-actions > .social-icon {
+        display: none;
+      }
+
+      .primary-link {
+        min-height: 36px;
+        padding: 0 13px;
+        font-size: 10px;
+      }
+
+      .language-toggle {
+        min-height: 36px;
+        padding: 0 10px;
+      }
+
+      .hero {
+        padding: 112px 0 65px;
+      }
+
+      h1 {
+        font-size: clamp(58px, 20vw, 84px);
+      }
+
+      .product-stage {
+        min-height: 690px;
+      }
+
+      .menu-phone {
+        right: 50%;
+        width: min(345px, 96%);
+        transform: translateX(50%) rotate(1.5deg);
+      }
+
+      .editor-card {
+        top: 385px;
+        left: 50%;
+        width: min(390px, 96%);
+        transform: translateX(-50%) rotate(-2deg);
+      }
+
+      .floating-proof {
+        display: none;
+      }
+
+      .signals {
+        grid-template-columns: 1fr;
+      }
+
+      .signal,
+      .signal:nth-child(3) {
+        min-height: 120px;
+        border-top: 1px solid var(--line);
+        border-left: 0;
+      }
+
+      .signal:first-child {
+        border-top: 0;
+      }
+
+      .section {
+        padding: 84px 0;
+      }
+
+      .section-heading {
+        font-size: clamp(40px, 13vw, 58px);
+      }
+
+      .section-copy {
+        font-size: 18px;
+      }
+
+      .problem-row {
+        grid-template-columns: 42px 1fr;
+        gap: 14px;
+      }
+
+      .loop-card,
+      .business-card {
+        padding: 28px;
+      }
+
+      .experience-copy,
+      .feature-canvas {
+        padding: 26px;
+      }
+
+      .admin-layout {
+        grid-template-columns: 80px 1fr;
+      }
+
+      .revenue-row {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+
+      .ask-panel {
+        border-radius: 30px;
+        padding: 48px 25px;
+      }
+
+      .footer-grid {
+        display: block;
+      }
+
+      .footer-meta {
+        margin-top: 24px;
+        text-align: left;
+      }
+
+      .footer-socials {
+        justify-content: flex-start;
+        margin-top: 25px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+
+      .reveal {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @media print {
+      @page {
+        size: A4;
+        margin: 14mm;
+      }
+
+      body {
+        background: white;
+        color: #111;
+      }
+
+      .topbar,
+      .hero-actions,
+      .progress,
+      .footer-socials {
+        display: none !important;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 25px;
+      }
+
+      .section,
+      .ask-section {
+        padding: 45px 0;
+      }
+
+      .section.dark,
+      .ask-panel {
+        background: #111 !important;
+        color: #f5f0e6 !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      .experience-card,
+      .business-card,
+      .loop-card,
+      .architecture-map {
+        break-inside: avoid;
+      }
+
+      .reveal {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell nav">
+      <a class="brand" href="#top" aria-label="mofé investor catalogue">
+        <span class="brand-name">mofé</span>
+        <span class="brand-note">Investor catalogue · 2026</span>
+      </a>
+      <nav class="nav-links" aria-label="Catalogue sections">
+        <a href="#opportunity">Opportunity</a>
+        <a href="#product">Product</a>
+        <a href="#foundation">Foundation</a>
+        <a href="#model">Business model</a>
+        <a href="#roadmap">Roadmap</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="social-icon" href="https://github.com/najdshad/mofe" target="_blank" rel="noopener noreferrer" aria-label="mofé on GitHub" title="GitHub">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7C5.7.7.6 5.9.6 12.3c0 5.1 3.3 9.4 7.8 10.9.6.1.8-.3.8-.6v-2.3c-3.2.7-3.9-1.4-3.9-1.4-.5-1.4-1.3-1.7-1.3-1.7-1.1-.8.1-.8.1-.8 1.2.1 1.8 1.3 1.8 1.3 1.1 1.9 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a10.7 10.7 0 0 1 5.8 0C16.3 4.8 17.3 5 17.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6a11.6 11.6 0 0 0 7.8-10.9C23.4 5.9 18.3.7 12 .7Z"/></svg>
+        </a>
+        <a class="social-icon" href="https://t.me/mofe_app" target="_blank" rel="noopener noreferrer" aria-label="mofé on Telegram" title="Telegram">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.8 3.2 18.6 20c-.2 1.2-.9 1.5-1.8.9l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9.1-8.2c.4-.4-.1-.6-.6-.2L6.1 13.8 1.3 12.3c-1-.3-1.1-1 .2-1.5L20.2 3.6c.9-.3 1.7.2 1.6-.4Z"/></svg>
+        </a>
+        <button class="language-toggle" type="button" aria-label="Switch language" title="English / فارسی">
+          <span class="lang-en">EN</span><i aria-hidden="true"></i><span class="lang-fa">فا</span>
+        </button>
+        <button class="print-button" type="button" onclick="window.print()">Save as PDF</button>
+        <a class="primary-link" href="#investment">Investment lens</a>
+      </div>
+    </div>
+    <div class="progress" aria-hidden="true"></div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div class="hero-copy reveal">
+          <div class="hero-kicker"><span class="dot"></span>Working product foundation · Persian-first</div>
+          <h1>A better menu for <em>local</em> hospitality.</h1>
+          <p class="hero-lede">
+            mofé is a digital menu platform built around how Iranian cafés actually work:
+            Persian by default, effortless to update, beautifully branded, and instant for every guest.
+          </p>
+          <div class="hero-actions">
+            <a class="hero-cta primary" href="#product">See the product <span class="arrow">↓</span></a>
+            <a class="hero-cta secondary" href="#investment">Read the investment thesis <span class="arrow">↗</span></a>
+          </div>
+          <div class="hero-footnote">
+            <span>No guest app</span>
+            <span>Static public delivery</span>
+            <span>Mobile-first RTL</span>
+          </div>
+        </div>
+
+        <div class="product-stage reveal" aria-label="Illustrated preview of the mofé menu editor and guest menu">
+          <div class="editor-card">
+            <div class="editor-top">
+              <div class="editor-brand"><i>m</i> mofé</div>
+              <div class="window-dots"><i></i><i></i><i></i></div>
+            </div>
+            <div class="editor-body">
+              <aside class="editor-side">
+                <div class="side-label">Workspace</div>
+                <div class="side-item active">Menu</div>
+                <div class="side-item">Brand</div>
+                <div class="side-item">QR code</div>
+                <div class="side-item">Settings</div>
+              </aside>
+              <div class="editor-main">
+                <div class="editor-title">
+                  <div><h3>Menu management</h3><p>Noghteh Café · 18 items</p></div>
+                  <button class="mini-add" type="button">+ Add item</button>
+                </div>
+                <div class="editor-tabs"><span class="active">Hot coffee</span><span>Cold</span><span>Pastry</span></div>
+                <div class="editor-row"><span class="drag">••</span><span><b>Caramel latte</b><small>لاته کارامل</small></span><span>145,000</span><span class="status">Available</span></div>
+                <div class="editor-row"><span class="drag">••</span><span><b>Americano</b><small>آمریکانو</small></span><span>98,000</span><span class="status">Available</span></div>
+                <div class="editor-row"><span class="drag">••</span><span><b>Hazelnut mocha</b><small>موکا فندق</small></span><span>165,000</span><span class="status">Available</span></div>
+                <div class="editor-row"><span class="drag">••</span><span><b>Cortado</b><small>کورتادو</small></span><span>112,000</span><span class="status">Available</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-phone">
+            <div class="phone-top"><div class="phone-notch"></div></div>
+            <div class="menu-screen">
+              <div class="menu-micro">mofé · menu</div>
+              <div class="venue-head">
+                <div><div class="venue-name-fa">کافه نقطه</div><div class="venue-name-en">Noghteh Cafe</div></div>
+                <div class="venue-mark">ن</div>
+              </div>
+              <p class="welcome-fa">به کافه نقطه خوش آمدید؛ یک مکثِ خوش‌طعم در میانه‌ی روز.</p>
+              <div class="cat-pills"><span class="cat-pill active">قهوه گرم</span><span class="cat-pill">قهوه سرد</span><span class="cat-pill">کیک و شیرینی</span></div>
+              <div class="menu-section-title">قهوه‌های گرم</div>
+              <div class="dish"><div><div class="dish-name">لاته کارامل</div><div class="dish-en">Caramel latte</div><div class="dish-desc">اسپرسو، شیر و کارامل دست‌ساز</div></div><div class="dish-price">۱۴۵٬۰۰۰<small>تومان</small></div></div>
+              <div class="dish"><div><div class="dish-name">آمریکانو</div><div class="dish-en">Americano</div><div class="dish-desc">دبل اسپرسو و آب داغ</div></div><div class="dish-price">۹۸٬۰۰۰<small>تومان</small></div></div>
+              <div class="dish"><div><div class="dish-name">موکا فندق</div><div class="dish-en">Hazelnut mocha</div></div><div class="dish-price">۱۶۵٬۰۰۰<small>تومان</small></div></div>
+            </div>
+          </div>
+
+          <div class="floating-proof">
+            <div class="proof-check">✓</div>
+            <div><b>Menu is live</b><span>One link, ready for every table</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="signal-strip" aria-label="Product facts">
+      <div class="shell signals">
+        <div class="signal"><strong>RTL</strong><span>Persian-first interface and guest experience</span></div>
+        <div class="signal"><strong>≤50KB</strong><span>Automatic WebP optimization for item photography</span></div>
+        <div class="signal"><strong>14</strong><span>Built-in allergen classifications for richer menus</span></div>
+        <div class="signal"><strong>1 scan</strong><span>No app, account, or installation for the guest</span></div>
+      </div>
+    </section>
+
+    <section class="section dark" id="opportunity">
+      <div class="shell">
+        <div class="reveal">
+          <span class="eyebrow">The opportunity</span>
+          <h2 class="section-heading">The QR code solved access. It did not solve the menu.</h2>
+          <p class="section-copy">
+            Hospitality operators need more than a link to a PDF. They need a living sales surface that feels local,
+            stays current, and is simple enough to manage during a busy service.
+          </p>
+        </div>
+
+        <div class="problem-grid">
+          <div class="problem-statement reveal">
+            <div class="quote-mark">“</div>
+            <blockquote>The menu is where operations, brand, and buying decisions meet.</blockquote>
+            <p>
+              mofé starts with this narrow, high-frequency surface and builds a trusted operating layer around it.
+            </p>
+          </div>
+          <div class="problem-list reveal">
+            <article class="problem-row">
+              <div class="number">01</div>
+              <div><h3>Generic tools flatten local identity.</h3><p>LTR assumptions, poor Persian typography, and template-heavy design make many digital menus feel imported rather than native to the venue and its guests.</p></div>
+            </article>
+            <article class="problem-row">
+              <div class="number">02</div>
+              <div><h3>Static files become stale.</h3><p>Price changes, sold-out items, and seasonal additions require a management workflow—not repeated design exports, file replacements, and reprinted codes.</p></div>
+            </article>
+            <article class="problem-row">
+              <div class="number">03</div>
+              <div><h3>Complex software loses the operator.</h3><p>Independent cafés do not need enterprise restaurant software to maintain a menu. They need the essential controls, in their language, with almost no setup burden.</p></div>
+            </article>
+            <article class="problem-row">
+              <div class="number">04</div>
+              <div><h3>The guest experience is the final test.</h3><p>A menu must open quickly on ordinary phones and weak connections, remain legible one-handed, and ask nothing from the guest before showing what is available.</p></div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="product">
+      <div class="shell">
+        <div class="reveal">
+          <span class="eyebrow">The product loop</span>
+          <h2 class="section-heading">From first item to first scan in three calm steps.</h2>
+          <p class="section-copy">
+            mofé separates the operator’s workspace from the guest-facing output, giving each audience exactly the experience it needs.
+          </p>
+        </div>
+
+        <div class="product-loop reveal">
+          <article class="loop-card">
+            <div class="loop-no">01</div>
+            <div class="loop-icon">≡</div>
+            <h3>Build</h3>
+            <p>Create categories and items, reorder by drag-and-drop, add bilingual names, prices, variants, calories, allergens, and availability.</p>
+            <div class="loop-label">Structured menu data</div>
+          </article>
+          <article class="loop-card">
+            <div class="loop-no">02</div>
+            <div class="loop-icon">◒</div>
+            <h3>Brand</h3>
+            <p>Add the venue identity through its Persian and English names, logo, accent color, and a concise welcome message.</p>
+            <div class="loop-label">Venue-owned identity</div>
+          </article>
+          <article class="loop-card">
+            <div class="loop-no">03</div>
+            <div class="loop-icon">⌁</div>
+            <h3>Share</h3>
+            <p>Use one durable public link and export a print-ready QR card for tables, counters, packaging, and storefronts.</p>
+            <div class="loop-label">Zero-install discovery</div>
+          </article>
+        </div>
+
+        <div class="experience-grid">
+          <article class="experience-card reveal">
+            <div class="experience-copy">
+              <div class="experience-meta"><span>Operator experience</span><i>Manage</i></div>
+              <h3>A focused workbench for the daily reality of a café.</h3>
+              <p>Fast item editing, availability toggles, bulk actions, CSV import/export, photo handling, category control, and venue settings—without enterprise clutter.</p>
+            </div>
+            <div class="feature-canvas">
+              <div class="admin-window">
+                <div class="admin-chrome"><b>mofé / Noghteh</b><div class="window-dots"><i></i><i></i><i></i></div></div>
+                <div class="admin-layout">
+                  <div class="admin-nav"><div>Menu</div><div>Categories</div><div>Appearance</div><div>QR export</div></div>
+                  <div class="admin-content">
+                    <div class="admin-content-top"><h4>Hot coffee</h4><span>+ New item</span></div>
+                    <div class="admin-stat-row"><div class="admin-stat"><strong>18</strong><span>Items</span></div><div class="admin-stat"><strong>4</strong><span>Categories</span></div><div class="admin-stat"><strong>2</strong><span>Sold out</span></div></div>
+                    <div class="admin-table">
+                      <div class="admin-table-row"><b>Caramel latte</b><span>145,000</span><span class="status">Available</span></div>
+                      <div class="admin-table-row"><b>Americano</b><span>98,000</span><span class="status">Available</span></div>
+                      <div class="admin-table-row"><b>Hazelnut mocha</b><span>165,000</span><span class="status">Available</span></div>
+                      <div class="admin-table-row"><b>Cortado</b><span>112,000</span><span class="status">Available</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="experience-card reveal">
+            <div class="experience-copy">
+              <div class="experience-meta"><span>Guest experience</span><i>Discover</i></div>
+              <h3>A menu that behaves like a beautifully typeset page.</h3>
+              <p>Mobile-first RTL composition, sticky category navigation, Persian price formatting, lightweight imagery, sold-out clarity, and no account wall between appetite and choice.</p>
+            </div>
+            <div class="guest-canvas">
+              <div class="guest-menu">
+                <div class="guest-brand">mofé · menu</div>
+                <div class="guest-title">کافه نقطه</div>
+                <div class="guest-sub">Noghteh Cafe</div>
+                <div class="guest-pills"><span>قهوه گرم</span><span>قهوه سرد</span><span>شیرینی</span></div>
+                <div class="guest-dish"><div><b>لاته کارامل</b><span>Caramel latte</span></div><strong>۱۴۵٬۰۰۰</strong></div>
+                <div class="guest-dish"><div><b>آمریکانو</b><span>Americano</span></div><strong>۹۸٬۰۰۰</strong></div>
+                <div class="guest-dish"><div><b>موکا فندق</b><span>Hazelnut mocha</span></div><strong>۱۶۵٬۰۰۰</strong></div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark" id="foundation">
+      <div class="shell">
+        <div class="reveal">
+          <span class="eyebrow">Product foundation</span>
+          <h2 class="section-heading">Lightweight at the table. Serious underneath.</h2>
+          <p class="section-copy">
+            The current implementation already covers the complete data path—from authenticated venue management to a secure, cached public menu.
+          </p>
+        </div>
+
+        <div class="architecture">
+          <div class="architecture-map reveal" aria-label="Simplified product architecture">
+            <div class="arch-node"><div class="arch-icon">01</div><div><b>Operator workspace</b><span>Persian-first menu and venue management</span></div></div>
+            <div class="arch-node"><div class="arch-icon">02</div><div><b>Structured catalogue</b><span>Categories, items, variants, prices, allergens, media</span></div></div>
+            <div class="arch-node"><div class="arch-icon">03</div><div><b>Static menu renderer</b><span>Escaped content, sanitized color, self-hosted typography</span></div></div>
+            <div class="arch-node"><div class="arch-icon">04</div><div><b>Guest delivery</b><span>Cached public HTML through one venue URL</span></div></div>
+          </div>
+          <div class="foundation-list reveal">
+            <article class="foundation-item"><i>A</i><div><h3>Localized by architecture, not translation</h3><p>RTL layout, Persian formatting, bilingual item structure, local currency, and native type choices are present at the data and rendering layers.</p></div></article>
+            <article class="foundation-item"><i>B</i><div><h3>Operational detail already modeled</h3><p>Variants, multiple price descriptions, calories, 14 allergen codes, category states, sold-out flags, ordering, and soft deletion reflect real menu operations.</p></div></article>
+            <article class="foundation-item"><i>C</i><div><h3>Performance is part of the product</h3><p>Photos are converted to compact WebP assets, public output is server-rendered HTML, fonts are self-hosted, and menu responses are cached.</p></div></article>
+            <article class="foundation-item"><i>D</i><div><h3>A security-conscious baseline</h3><p>Hashed sessions, strict cookies, CSRF validation, authorization checks, rate limiting, escaped public content, and formula-safe CSV handling are implemented.</p></div></article>
+            <article class="foundation-item"><i>E</i><div><h3>Simple deployment supports iteration</h3><p>A typed Next.js application, Prisma data layer, SQLite deployment path, and automated test suite keep the MVP compact and understandable.</p></div></article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="model">
+      <div class="shell">
+        <div class="reveal">
+          <span class="eyebrow">Commercialization</span>
+          <h2 class="section-heading">A narrow entry point with room to become a hospitality layer.</h2>
+          <p class="section-copy">
+            The initial product solves one visible, recurring job. The commercial path can begin with simple venue subscriptions and expand only where operator behavior earns it.
+          </p>
+          <div class="model-note">Forward-looking model hypothesis — not current revenue or traction</div>
+        </div>
+
+        <div class="model-grid">
+          <article class="business-card reveal">
+            <div class="business-label">Revenue design</div>
+            <h3>Simple recurring value at the venue level.</h3>
+            <p>A transparent subscription can align price with the number of managed venues and the depth of operational features, while preserving a frictionless guest experience.</p>
+            <div class="revenue-stack">
+              <div class="revenue-row"><b>Core</b><span>Menu management, brand controls, QR export, public hosting, and routine updates.</span></div>
+              <div class="revenue-row"><b>Growth</b><span>Multi-location workflows, roles, analytics, scheduling, and richer operational controls.</span></div>
+              <div class="revenue-row"><b>Services</b><span>Onboarding, menu migration, photography workflows, branded print collateral, and partner-led setup.</span></div>
+            </div>
+          </article>
+
+          <article class="business-card accent reveal">
+            <div class="business-label">Go-to-market wedge</div>
+            <h3>Win the independent café before broadening the platform.</h3>
+            <p>Start with a focused user whose brand matters, whose menu changes often, and whose owner is close to daily operations.</p>
+            <div class="wedge-list">
+              <div class="wedge"><i>1</i><div><b>Design-led acquisition</b><span>The public menu itself is a visible product demonstration on every table.</span></div></div>
+              <div class="wedge"><i>2</i><div><b>Local partner channels</b><span>Printers, photographers, coffee suppliers, and hospitality consultants can bundle setup.</span></div></div>
+              <div class="wedge"><i>3</i><div><b>Venue-to-venue referrals</b><span>Operators encounter the product as guests, creating a natural discovery loop.</span></div></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="roadmap">
+      <div class="shell">
+        <div class="reveal">
+          <span class="eyebrow">Execution path</span>
+          <h2 class="section-heading">Prove the workflow. Prove willingness to pay. Then expand.</h2>
+          <p class="section-copy">
+            The roadmap keeps product ambition disciplined: deepen the current wedge, validate repeatable distribution, and use real operator demand to select adjacent products.
+          </p>
+        </div>
+
+        <div class="roadmap reveal">
+          <article class="roadmap-stage current">
+            <div class="roadmap-dot"></div>
+            <h3>Working foundation</h3>
+            <span>Implemented now</span>
+            <ul>
+              <li>Authenticated venue workspace</li>
+              <li>Full menu data model and editor</li>
+              <li>Branding, QR export, and public menu</li>
+              <li>CSV migration and image optimization</li>
+              <li>Security controls and automated tests</li>
+            </ul>
+          </article>
+          <article class="roadmap-stage next">
+            <div class="roadmap-dot"></div>
+            <h3>Market validation</h3>
+            <span>Recommended next</span>
+            <ul>
+              <li>Instrument activation and menu views</li>
+              <li>Pilot with a focused café cohort</li>
+              <li>Test packaging and willingness to pay</li>
+              <li>Refine onboarding and migration</li>
+              <li>Build a repeatable local sales motion</li>
+            </ul>
+          </article>
+          <article class="roadmap-stage">
+            <div class="roadmap-dot"></div>
+            <h3>Earned expansion</h3>
+            <span>Demand-led options</span>
+            <ul>
+              <li>Multi-location and team workflows</li>
+              <li>Menu analytics and scheduling</li>
+              <li>Ordering or loyalty integrations</li>
+              <li>Hospitality partner ecosystem</li>
+              <li>Regional language and market expansion</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="ask-section" id="investment">
+      <div class="shell">
+        <div class="ask-panel reveal">
+          <div class="ask-grid">
+            <div>
+              <span class="eyebrow">The investment lens</span>
+              <h2>Back the path from a polished MVP to the <em>default local menu layer.</em></h2>
+              <p>
+                mofé combines a sharply defined customer, an already-implemented product foundation, and a visible distribution surface.
+                The next inflection point is not more speculative scope—it is disciplined validation with real venues.
+              </p>
+            </div>
+            <div class="use-of-capital">
+              <div class="capital-row"><i>01</i><div><b>Productization</b><span>Onboarding, billing, observability, analytics, and deployment hardening.</span></div></div>
+              <div class="capital-row"><i>02</i><div><b>Customer learning</b><span>Structured pilots, field research, support loops, and pricing validation.</span></div></div>
+              <div class="capital-row"><i>03</i><div><b>Distribution</b><span>Focused venue acquisition and a measurable partner-led channel.</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-grid">
+      <div>
+        <div class="footer-brand">mofé</div>
+        <div class="footer-copy">The menu should feel like the venue.</div>
+      </div>
+      <div>
+        <div class="footer-socials">
+          <a class="footer-social-link" href="https://github.com/najdshad/mofe" target="_blank" rel="noopener noreferrer" aria-label="Open the mofé GitHub repository">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7C5.7.7.6 5.9.6 12.3c0 5.1 3.3 9.4 7.8 10.9.6.1.8-.3.8-.6v-2.3c-3.2.7-3.9-1.4-3.9-1.4-.5-1.4-1.3-1.7-1.3-1.7-1.1-.8.1-.8.1-.8 1.2.1 1.8 1.3 1.8 1.3 1.1 1.9 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a10.7 10.7 0 0 1 5.8 0C16.3 4.8 17.3 5 17.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6a11.6 11.6 0 0 0 7.8-10.9C23.4 5.9 18.3.7 12 .7Z"/></svg>
+            <span>GitHub repository</span>
+          </a>
+          <a class="footer-social-link" href="https://t.me/mofe_app" target="_blank" rel="noopener noreferrer" aria-label="Open the mofé Telegram channel">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.8 3.2 18.6 20c-.2 1.2-.9 1.5-1.8.9l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9.1-8.2c.4-.4-.1-.6-.6-.2L6.1 13.8 1.3 12.3c-1-.3-1.1-1 .2-1.5L20.2 3.6c.9-.3 1.7.2 1.6-.4Z"/></svg>
+            <span>Telegram channel</span>
+          </a>
+        </div>
+        <p class="footer-meta">
+          Investor introduction based on the implemented mofé codebase and product documentation.
+          Commercial model and roadmap sections are explicitly forward-looking and should be validated through customer evidence.
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      const progress = document.querySelector(".progress");
+      const reveals = document.querySelectorAll(".reveal");
+      const languageToggle = document.querySelector(".language-toggle");
+
+      const fa = {
+        "Investor catalogue · 2026": "کاتالوگ سرمایه‌گذاری · ۲۰۲۶",
+        "Opportunity": "فرصت",
+        "Product": "محصول",
+        "Foundation": "زیرساخت",
+        "Business model": "مدل کسب‌وکار",
+        "Roadmap": "نقشه راه",
+        "Save as PDF": "ذخیره به‌صورت PDF",
+        "Investment lens": "چشم‌انداز سرمایه‌گذاری",
+        "Working product foundation · Persian-first": "محصولی عملیاتی با رویکرد فارسی‌محور",
+        "A better menu for": "منویی بهتر برای",
+        "local": "مهمان‌نوازی محلی",
+        "hospitality.": ".",
+        "mofé is a digital menu platform built around how Iranian cafés actually work:": "موفه پلتفرم منوی دیجیتالی است که بر پایه شیوه واقعی کار کافه‌های ایرانی ساخته شده است:",
+        "Persian by default, effortless to update, beautifully branded, and instant for every guest.": "فارسی از ابتدا، به‌روزرسانی آسان، هویت بصری زیبا و دسترسی فوری برای هر مهمان.",
+        "See the product": "محصول را ببینید",
+        "Read the investment thesis": "تز سرمایه‌گذاری را بخوانید",
+        "No guest app": "بدون اپلیکیشن برای مهمان",
+        "Static public delivery": "ارائه سریع و ایستای منو",
+        "Mobile-first RTL": "راست‌به‌چپ و موبایل‌محور",
+        "Workspace": "فضای کاری",
+        "Menu": "منو",
+        "Brand": "هویت برند",
+        "QR code": "کد QR",
+        "Settings": "تنظیمات",
+        "Menu management": "مدیریت منو",
+        "Noghteh Café · 18 items": "کافه نقطه · ۱۸ آیتم",
+        "+ Add item": "+ افزودن آیتم",
+        "Hot coffee": "قهوه گرم",
+        "Cold": "نوشیدنی سرد",
+        "Pastry": "شیرینی",
+        "Available": "موجود",
+        "145,000": "۱۴۵٬۰۰۰",
+        "98,000": "۹۸٬۰۰۰",
+        "165,000": "۱۶۵٬۰۰۰",
+        "112,000": "۱۱۲٬۰۰۰",
+        "Menu is live": "منو در دسترس است",
+        "One link, ready for every table": "یک لینک، آماده برای هر میز",
+        "Persian-first interface and guest experience": "رابط کاربری و تجربه مهمان، فارسی از ابتدا",
+        "Automatic WebP optimization for item photography": "بهینه‌سازی خودکار تصاویر آیتم‌ها با فرمت WebP",
+        "Built-in allergen classifications for richer menus": "دسته‌بندی داخلی آلرژن‌ها برای منوهای کامل‌تر",
+        "1 scan": "۱ اسکن",
+        "1": "۱",
+        "2": "۲",
+        "3": "۳",
+        "4": "۴",
+        "14": "۱۴",
+        "18": "۱۸",
+        "01": "۰۱",
+        "02": "۰۲",
+        "03": "۰۳",
+        "04": "۰۴",
+        "No app, account, or installation for the guest": "بدون اپلیکیشن، حساب کاربری یا نصب برای مهمان",
+        "The opportunity": "فرصت",
+        "The QR code solved access. It did not solve the menu.": "کد QR دسترسی را حل کرد؛ اما خودِ منو را نه.",
+        "Hospitality operators need more than a link to a PDF. They need a living sales surface that feels local,": "فعالان مهمان‌نوازی به چیزی فراتر از لینک یک فایل PDF نیاز دارند. آن‌ها به یک سطح فروش زنده و بومی نیاز دارند که",
+        "stays current, and is simple enough to manage during a busy service.": "همیشه به‌روز بماند و مدیریت آن حتی در شلوغ‌ترین ساعت کاری ساده باشد.",
+        "The menu is where operations, brand, and buying decisions meet.": "منو نقطه تلاقی عملیات، برند و تصمیم خرید است.",
+        "mofé starts with this narrow, high-frequency surface and builds a trusted operating layer around it.": "موفه از همین نقطه متمرکز و پرتکرار آغاز می‌کند و یک لایه عملیاتی قابل اعتماد پیرامون آن می‌سازد.",
+        "Generic tools flatten local identity.": "ابزارهای عمومی، هویت محلی را کم‌رنگ می‌کنند.",
+        "LTR assumptions, poor Persian typography, and template-heavy design make many digital menus feel imported rather than native to the venue and its guests.": "فرض‌های چپ‌به‌راست، تایپوگرافی ضعیف فارسی و طراحی قالب‌محور باعث می‌شوند بسیاری از منوهای دیجیتال وارداتی به نظر برسند، نه بخشی طبیعی از هویت مجموعه و مهمانانش.",
+        "Static files become stale.": "فایل‌های ایستا به‌سرعت قدیمی می‌شوند.",
+        "Price changes, sold-out items, and seasonal additions require a management workflow—not repeated design exports, file replacements, and reprinted codes.": "تغییر قیمت، ناموجود شدن آیتم‌ها و افزودن گزینه‌های فصلی به یک جریان مدیریت نیاز دارد؛ نه خروجی گرفتن دوباره، جایگزینی فایل و چاپ مجدد کدها.",
+        "Complex software loses the operator.": "نرم‌افزار پیچیده، مدیر مجموعه را از خود دور می‌کند.",
+        "Independent cafés do not need enterprise restaurant software to maintain a menu. They need the essential controls, in their language, with almost no setup burden.": "کافه‌های مستقل برای نگهداری منو به نرم‌افزار سازمانی رستوران نیاز ندارند. آن‌ها کنترل‌های ضروری را به زبان خود و با کمترین بار راه‌اندازی می‌خواهند.",
+        "The guest experience is the final test.": "تجربه مهمان، آزمون نهایی است.",
+        "A menu must open quickly on ordinary phones and weak connections, remain legible one-handed, and ask nothing from the guest before showing what is available.": "منو باید روی گوشی‌های معمولی و اینترنت ضعیف سریع باز شود، با یک دست خوانا بماند و پیش از نمایش گزینه‌های موجود، چیزی از مهمان نخواهد.",
+        "The product loop": "چرخه محصول",
+        "From first item to first scan in three calm steps.": "از اولین آیتم تا اولین اسکن، در سه گام ساده.",
+        "mofé separates the operator’s workspace from the guest-facing output, giving each audience exactly the experience it needs.": "موفه فضای کاری مدیر را از خروجی مهمان جدا می‌کند تا هر گروه دقیقاً تجربه مناسب خود را داشته باشد.",
+        "Build": "ساخت",
+        "Create categories and items, reorder by drag-and-drop, add bilingual names, prices, variants, calories, allergens, and availability.": "دسته‌ها و آیتم‌ها را بسازید، با کشیدن مرتب کنید و نام دوزبانه، قیمت، گونه‌ها، کالری، آلرژن و وضعیت موجودی را اضافه کنید.",
+        "Structured menu data": "داده ساختاریافته منو",
+        "Add the venue identity through its Persian and English names, logo, accent color, and a concise welcome message.": "با نام فارسی و انگلیسی، لوگو، رنگ شاخص و یک پیام خوش‌آمد کوتاه، هویت مجموعه را به منو بیاورید.",
+        "Venue-owned identity": "هویت متعلق به مجموعه",
+        "Share": "اشتراک‌گذاری",
+        "Use one durable public link and export a print-ready QR card for tables, counters, packaging, and storefronts.": "از یک لینک عمومی پایدار استفاده کنید و کارت QR آماده چاپ را برای میز، پیشخوان، بسته‌بندی و ویترین خروجی بگیرید.",
+        "Zero-install discovery": "دسترسی بدون نصب",
+        "Operator experience": "تجربه مدیر مجموعه",
+        "Manage": "مدیریت",
+        "A focused workbench for the daily reality of a café.": "فضای کاری متمرکز برای واقعیت روزمره یک کافه.",
+        "Fast item editing, availability toggles, bulk actions, CSV import/export, photo handling, category control, and venue settings—without enterprise clutter.": "ویرایش سریع آیتم، تغییر موجودی، عملیات گروهی، ورود و خروج CSV، مدیریت عکس، کنترل دسته‌ها و تنظیمات مجموعه؛ بدون شلوغی نرم‌افزارهای سازمانی.",
+        "Categories": "دسته‌ها",
+        "Appearance": "ظاهر",
+        "QR export": "خروجی QR",
+        "+ New item": "+ آیتم جدید",
+        "Items": "آیتم",
+        "Sold out": "ناموجود",
+        "Guest experience": "تجربه مهمان",
+        "Discover": "مشاهده",
+        "A menu that behaves like a beautifully typeset page.": "منویی که مانند یک صفحه خوش‌چین و زیبا رفتار می‌کند.",
+        "Mobile-first RTL composition, sticky category navigation, Persian price formatting, lightweight imagery, sold-out clarity, and no account wall between appetite and choice.": "چیدمان راست‌به‌چپ و موبایل‌محور، ناوبری ثابت دسته‌ها، نمایش فارسی قیمت، تصاویر سبک، وضعیت روشن ناموجودی و بدون هیچ مانعی میان اشتها و انتخاب.",
+        "Product foundation": "زیرساخت محصول",
+        "Lightweight at the table. Serious underneath.": "سبک روی میز؛ جدی در زیرساخت.",
+        "The current implementation already covers the complete data path—from authenticated venue management to a secure, cached public menu.": "پیاده‌سازی فعلی، مسیر کامل داده را پوشش می‌دهد؛ از مدیریت احراز هویت‌شده مجموعه تا منوی عمومی امن و کش‌شده.",
+        "Operator workspace": "فضای کاری مدیر",
+        "Persian-first menu and venue management": "مدیریت فارسی‌محور منو و مجموعه",
+        "Structured catalogue": "کاتالوگ ساختاریافته",
+        "Categories, items, variants, prices, allergens, media": "دسته‌ها، آیتم‌ها، گونه‌ها، قیمت‌ها، آلرژن‌ها و رسانه",
+        "Static menu renderer": "رندرکننده ایستای منو",
+        "Escaped content, sanitized color, self-hosted typography": "محتوای ایمن‌سازی‌شده، رنگ پالایش‌شده و فونت‌های میزبانی‌شده محلی",
+        "Guest delivery": "ارائه به مهمان",
+        "Cached public HTML through one venue URL": "HTML عمومی کش‌شده از طریق یک نشانی پایدار",
+        "A": "الف",
+        "B": "ب",
+        "C": "پ",
+        "D": "ت",
+        "E": "ث",
+        "Localized by architecture, not translation": "بومی‌سازی در معماری، نه فقط ترجمه",
+        "RTL layout, Persian formatting, bilingual item structure, local currency, and native type choices are present at the data and rendering layers.": "چیدمان راست‌به‌چپ، قالب‌بندی فارسی، ساختار دوزبانه آیتم، پول محلی و انتخاب تایپ بومی در لایه‌های داده و رندر حضور دارند.",
+        "Operational detail already modeled": "جزئیات عملیاتی از هم‌اکنون مدل شده‌اند",
+        "Variants, multiple price descriptions, calories, 14 allergen codes, category states, sold-out flags, ordering, and soft deletion reflect real menu operations.": "گونه‌ها، توضیح‌های متعدد قیمت، کالری، ۱۴ کد آلرژن، وضعیت دسته، ناموجودی، ترتیب و حذف نرم، نیازهای واقعی مدیریت منو را بازتاب می‌دهند.",
+        "Performance is part of the product": "کارایی، بخشی از خود محصول است",
+        "Photos are converted to compact WebP assets, public output is server-rendered HTML, fonts are self-hosted, and menu responses are cached.": "عکس‌ها به WebP کم‌حجم تبدیل می‌شوند، خروجی عمومی HTML رندرشده در سرور است، فونت‌ها محلی‌اند و پاسخ منو کش می‌شود.",
+        "A security-conscious baseline": "زیرساختی با نگاه جدی به امنیت",
+        "Hashed sessions, strict cookies, CSRF validation, authorization checks, rate limiting, escaped public content, and formula-safe CSV handling are implemented.": "نشست‌های هش‌شده، کوکی‌های سخت‌گیرانه، اعتبارسنجی CSRF، کنترل مجوز، محدودسازی نرخ، ایمن‌سازی محتوای عمومی و پردازش امن CSV پیاده‌سازی شده‌اند.",
+        "Simple deployment supports iteration": "استقرار ساده، تکرار سریع را ممکن می‌کند",
+        "A typed Next.js application, Prisma data layer, SQLite deployment path, and automated test suite keep the MVP compact and understandable.": "اپلیکیشن تایپ‌شده Next.js، لایه داده Prisma، مسیر استقرار SQLite و مجموعه آزمون خودکار، MVP را فشرده و قابل فهم نگه می‌دارند.",
+        "Commercialization": "تجاری‌سازی",
+        "A narrow entry point with room to become a hospitality layer.": "نقطه ورود متمرکز، با ظرفیت تبدیل شدن به لایه‌ای برای مهمان‌نوازی.",
+        "The initial product solves one visible, recurring job. The commercial path can begin with simple venue subscriptions and expand only where operator behavior earns it.": "محصول اولیه یک کار روشن و تکرارشونده را حل می‌کند. مسیر تجاری می‌تواند با اشتراک ساده هر مجموعه آغاز شود و فقط جایی گسترش یابد که رفتار واقعی مدیران آن را توجیه کند.",
+        "Forward-looking model hypothesis — not current revenue or traction": "فرضیه آینده‌نگر مدل — نه درآمد یا کشش فعلی بازار",
+        "Revenue design": "طراحی درآمد",
+        "Simple recurring value at the venue level.": "ارزش تکرارشونده و ساده در سطح هر مجموعه.",
+        "A transparent subscription can align price with the number of managed venues and the depth of operational features, while preserving a frictionless guest experience.": "اشتراک شفاف می‌تواند قیمت را با تعداد مجموعه‌های مدیریت‌شده و عمق امکانات عملیاتی همسو کند و در عین حال تجربه بی‌اصطکاک مهمان را حفظ کند.",
+        "Core": "پایه",
+        "Menu management, brand controls, QR export, public hosting, and routine updates.": "مدیریت منو، کنترل برند، خروجی QR، میزبانی عمومی و به‌روزرسانی روزمره.",
+        "Growth": "رشد",
+        "Multi-location workflows, roles, analytics, scheduling, and richer operational controls.": "جریان‌های چندشعبه‌ای، نقش‌ها، تحلیل، زمان‌بندی و کنترل‌های عملیاتی کامل‌تر.",
+        "Services": "خدمات",
+        "Onboarding, menu migration, photography workflows, branded print collateral, and partner-led setup.": "راه‌اندازی، انتقال منو، جریان عکاسی، اقلام چاپی برندشده و پیاده‌سازی با شرکای محلی.",
+        "Go-to-market wedge": "نقطه ورود به بازار",
+        "Win the independent café before broadening the platform.": "پیش از گسترش پلتفرم، کافه مستقل را به دست آورید.",
+        "Start with a focused user whose brand matters, whose menu changes often, and whose owner is close to daily operations.": "از کاربری متمرکز آغاز کنید که برند برایش مهم است، منویش مرتب تغییر می‌کند و مالک آن به عملیات روزانه نزدیک است.",
+        "Design-led acquisition": "جذب با محوریت طراحی",
+        "The public menu itself is a visible product demonstration on every table.": "خود منوی عمومی روی هر میز، نمایش زنده‌ای از محصول است.",
+        "Local partner channels": "کانال شرکای محلی",
+        "Printers, photographers, coffee suppliers, and hospitality consultants can bundle setup.": "چاپخانه‌ها، عکاسان، تأمین‌کنندگان قهوه و مشاوران مهمان‌نوازی می‌توانند راه‌اندازی را به خدمات خود اضافه کنند.",
+        "Venue-to-venue referrals": "معرفی مجموعه به مجموعه",
+        "Operators encounter the product as guests, creating a natural discovery loop.": "مدیران مجموعه‌ها در نقش مهمان با محصول روبه‌رو می‌شوند و چرخه‌ای طبیعی برای کشف آن شکل می‌گیرد.",
+        "Execution path": "مسیر اجرا",
+        "Prove the workflow. Prove willingness to pay. Then expand.": "ابتدا جریان کار را اثبات کنید؛ سپس تمایل به پرداخت را؛ بعد گسترش دهید.",
+        "The roadmap keeps product ambition disciplined: deepen the current wedge, validate repeatable distribution, and use real operator demand to select adjacent products.": "نقشه راه، جاه‌طلبی محصول را منضبط نگه می‌دارد: تعمیق نقطه ورود فعلی، اعتبارسنجی توزیع تکرارپذیر و انتخاب محصولات مجاور بر اساس تقاضای واقعی مدیران.",
+        "Working foundation": "زیرساخت عملیاتی",
+        "Implemented now": "پیاده‌سازی‌شده",
+        "Authenticated venue workspace": "فضای کاری احراز هویت‌شده مجموعه",
+        "Full menu data model and editor": "مدل کامل داده و ویرایشگر منو",
+        "Branding, QR export, and public menu": "برندسازی، خروجی QR و منوی عمومی",
+        "CSV migration and image optimization": "انتقال CSV و بهینه‌سازی تصویر",
+        "Security controls and automated tests": "کنترل‌های امنیتی و آزمون‌های خودکار",
+        "Market validation": "اعتبارسنجی بازار",
+        "Recommended next": "گام پیشنهادی بعدی",
+        "Instrument activation and menu views": "اندازه‌گیری فعال‌سازی و بازدید منو",
+        "Pilot with a focused café cohort": "اجرای پایلوت با گروهی متمرکز از کافه‌ها",
+        "Test packaging and willingness to pay": "آزمون بسته‌های محصول و تمایل به پرداخت",
+        "Refine onboarding and migration": "بهبود ورود و انتقال داده",
+        "Build a repeatable local sales motion": "ساخت فرایند فروش محلی تکرارپذیر",
+        "Earned expansion": "گسترش مبتنی بر شواهد",
+        "Demand-led options": "گزینه‌های هدایت‌شده با تقاضا",
+        "Multi-location and team workflows": "جریان‌های چندشعبه‌ای و تیمی",
+        "Menu analytics and scheduling": "تحلیل و زمان‌بندی منو",
+        "Ordering or loyalty integrations": "یکپارچگی سفارش یا وفاداری",
+        "Hospitality partner ecosystem": "اکوسیستم شرکای مهمان‌نوازی",
+        "Regional language and market expansion": "گسترش زبانی و منطقه‌ای بازار",
+        "The investment lens": "چشم‌انداز سرمایه‌گذاری",
+        "Back the path from a polished MVP to the": "از مسیر تبدیل یک MVP پخته به",
+        "default local menu layer.": "لایه پیش‌فرض منوی محلی حمایت کنید.",
+        "mofé combines a sharply defined customer, an already-implemented product foundation, and a visible distribution surface.": "موفه یک مشتری دقیقاً تعریف‌شده، زیرساخت محصول پیاده‌سازی‌شده و یک سطح توزیع قابل مشاهده را کنار هم می‌آورد.",
+        "The next inflection point is not more speculative scope—it is disciplined validation with real venues.": "نقطه عطف بعدی، افزودن دامنه‌ای فرضی نیست؛ بلکه اعتبارسنجی منضبط با مجموعه‌های واقعی است.",
+        "Productization": "تبدیل به محصول آماده بازار",
+        "Onboarding, billing, observability, analytics, and deployment hardening.": "ورود کاربر، پرداخت، مشاهده‌پذیری، تحلیل و مقاوم‌سازی استقرار.",
+        "Customer learning": "یادگیری از مشتری",
+        "Structured pilots, field research, support loops, and pricing validation.": "پایلوت‌های ساختاریافته، پژوهش میدانی، چرخه پشتیبانی و اعتبارسنجی قیمت.",
+        "Distribution": "توزیع",
+        "Focused venue acquisition and a measurable partner-led channel.": "جذب متمرکز مجموعه‌ها و کانال قابل اندازه‌گیری با محوریت شرکا.",
+        "The menu should feel like the venue.": "منو باید حس خودِ مجموعه را داشته باشد.",
+        "GitHub repository": "مخزن گیت‌هاب",
+        "Telegram channel": "کانال تلگرام",
+        "Investor introduction based on the implemented mofé codebase and product documentation.": "معرفی سرمایه‌گذاری بر پایه کد پیاده‌سازی‌شده موفه و مستندات محصول.",
+        "Commercial model and roadmap sections are explicitly forward-looking and should be validated through customer evidence.": "بخش‌های مدل تجاری و نقشه راه صراحتاً آینده‌نگرند و باید با شواهد واقعی مشتری اعتبارسنجی شوند."
+      };
+
+      const translatedAttributes = {
+        "mofé investor catalogue": "کاتالوگ سرمایه‌گذاری موفه",
+        "Catalogue sections": "بخش‌های کاتالوگ",
+        "Switch language": "تغییر زبان",
+        "Illustrated preview of the mofé menu editor and guest menu": "پیش‌نمایش تصویری ویرایشگر منو و منوی مهمان موفه",
+        "Product facts": "ویژگی‌های محصول",
+        "Simplified product architecture": "معماری ساده‌شده محصول",
+        "mofé on GitHub": "موفه در گیت‌هاب",
+        "mofé on Telegram": "موفه در تلگرام",
+        "Open the mofé GitHub repository": "باز کردن مخزن گیت‌هاب موفه",
+        "Open the mofé Telegram channel": "باز کردن کانال تلگرام موفه"
+      };
+
+      const textNodes = [];
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          return node.parentElement?.closest("script, style, svg")
+            ? NodeFilter.FILTER_REJECT
+            : NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (node.nodeValue.trim()) textNodes.push({ node, en: node.nodeValue });
+      }
+
+      const attributeNodes = [];
+      document.querySelectorAll("[aria-label]").forEach((element) => {
+        attributeNodes.push({ element, en: element.getAttribute("aria-label") });
+      });
+
+      const replacePreservingSpace = (source, replacement) => {
+        const leading = source.match(/^\s*/)?.[0] ?? "";
+        const trailing = source.match(/\s*$/)?.[0] ?? "";
+        return `${leading}${replacement}${trailing}`;
+      };
+
+      const setLanguage = (language) => {
+        const isPersian = language === "fa";
+        document.documentElement.lang = isPersian ? "fa" : "en";
+        document.documentElement.dir = isPersian ? "rtl" : "ltr";
+        document.title = isPersian ? "موفه — کاتالوگ سرمایه‌گذاری" : "mofé — Investor Catalogue";
+        document.querySelector('meta[name="description"]').content = isPersian
+          ? "موفه — معرفی سرمایه‌گذاری پلتفرم منوی دیجیتال فارسی‌محور برای مهمان‌نوازی مستقل."
+          : "mofé — an investor introduction to the Persian-first digital menu platform for independent hospitality.";
+
+        textNodes.forEach(({ node, en }) => {
+          const key = en.trim();
+          node.nodeValue = isPersian && fa[key]
+            ? replacePreservingSpace(en, fa[key])
+            : en;
+        });
+
+        attributeNodes.forEach(({ element, en }) => {
+          element.setAttribute("aria-label", isPersian && translatedAttributes[en] ? translatedAttributes[en] : en);
+        });
+
+        languageToggle.setAttribute("aria-pressed", String(isPersian));
+        languageToggle.setAttribute("title", isPersian ? "فارسی / English" : "English / فارسی");
+        try {
+          localStorage.setItem("mofe-catalogue-language", language);
+        } catch {}
+      };
+
+      let initialLanguage = "fa";
+      try {
+        const savedLanguage = localStorage.getItem("mofe-catalogue-language");
+        initialLanguage = savedLanguage === "fa" || (!savedLanguage && navigator.language.toLowerCase().startsWith("fa"))
+          ? "fa"
+          : "en";
+      } catch {}
+      setLanguage(initialLanguage);
+      languageToggle.addEventListener("click", () => {
+        setLanguage(document.documentElement.lang === "fa" ? "en" : "fa");
+      });
+
+      const updateProgress = () => {
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
+        progress.style.transform = `scaleX(${Math.min(1, Math.max(0, ratio))})`;
+      };
+
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.12 });
+        reveals.forEach((element) => observer.observe(element));
+      } else {
+        reveals.forEach((element) => element.classList.add("visible"));
+      }
+
+      updateProgress();
+      window.addEventListener("scroll", updateProgress, { passive: true });
+    })();
+  </script>
+</body>
+</html>
