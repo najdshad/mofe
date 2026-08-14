@@ -2755,7 +2755,14 @@
         "GitHub repository": "مخزن گیت‌هاب",
         "Telegram channel": "کانال تلگرام",
         "Investor introduction based on the implemented mofé codebase and product documentation.": "معرفی سرمایه‌گذاری بر پایه کد پیاده‌سازی‌شده موفه و مستندات محصول.",
-        "Commercial model and roadmap sections are explicitly forward-looking and should be validated through customer evidence.": "بخش‌های مدل تجاری و نقشه راه صراحتاً آینده‌نگرند و باید با شواهد واقعی مشتری اعتبارسنجی شوند."
+        "Commercial model and roadmap sections are explicitly forward-looking and should be validated through customer evidence.": "بخش‌های مدل تجاری و نقشه راه صراحتاً آینده‌نگرند و باید با شواهد واقعی مشتری اعتبارسنجی شوند.",
+        "mofé is a digital menu platform built around how Iranian cafés actually work: Persian by default, effortless to update, beautifully branded, and instant for every guest.": "موفه پلتفرم منوی دیجیتالی است که بر پایه شیوه واقعی کار کافه‌های ایرانی ساخته شده است: فارسی از ابتدا، به‌روزرسانی آسان، هویت بصری زیبا و دسترسی فوری برای هر مهمان.",
+        "Hospitality operators need more than a link to a PDF. They need a living sales surface that feels local, stays current, and is simple enough to manage during a busy service.": "فعالان مهمان‌نوازی به چیزی فراتر از لینک یک فایل PDF نیاز دارند. آن‌ها به یک سطح فروش زنده و بومی نیاز دارند که همیشه به‌روز بماند و مدیریت آن حتی در شلوغ‌ترین ساعت کاری ساده باشد.",
+        "mofé combines a sharply defined customer, an already-implemented product foundation, and a visible distribution surface. The next inflection point is not more speculative scope—it is disciplined validation with real venues.": "موفه یک مشتری دقیقاً تعریف‌شده، زیرساخت محصول پیاده‌سازی‌شده و یک سطح توزیع قابل مشاهده را کنار هم می‌آورد. نقطه عطف بعدی، افزودن دامنه‌ای فرضی نیست؛ بلکه اعتبارسنجی منضبط با مجموعه‌های واقعی است.",
+        "Investor introduction based on the implemented mofé codebase and product documentation. Commercial model and roadmap sections are explicitly forward-looking and should be validated through customer evidence.": "معرفی سرمایه‌گذاری بر پایه کد پیاده‌سازی‌شده موفه و مستندات محصول. بخش‌های مدل تجاری و نقشه راه صراحتاً آینده‌نگرند و باید با شواهد واقعی مشتری اعتبارسنجی شوند.",
+        "RTL": "راست‌به‌چپ",
+        "mofé · menu": "موفه · منو",
+        "mofé / Noghteh": "موفه / کافه نقطه"
       };
 
       const translatedAttributes = {
@@ -2805,7 +2812,7 @@
           : "mofé — an investor introduction to the Persian-first digital menu platform for independent hospitality.";
 
         textNodes.forEach(({ node, en }) => {
-          const key = en.trim();
+          const key = en.trim().replace(/\s+/g, " ");
           node.nodeValue = isPersian && fa[key]
             ? replacePreservingSpace(en, fa[key])
             : en;
