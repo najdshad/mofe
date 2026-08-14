@@ -59,15 +59,6 @@ export default async function AdminLayout({
         </div>
 
         <div className="space-y-2 border-t border-line pt-4">
-          <a
-            href={publicUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between rounded-xl border border-line bg-panel px-3 py-2.5 text-sm text-ink transition-colors hover:border-ink/40 hover:bg-white"
-          >
-            مشاهده منوی عمومی
-            <ExternalLink className="h-4 w-4 text-ink-muted" strokeWidth={1.8} />
-          </a>
           <QRIconButton venueName={venue.nameFa} publicUrl={publicUrl} showLabel />
           <div className="flex items-center justify-between px-2 pt-2">
             <div className="min-w-0">
