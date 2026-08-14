@@ -43,8 +43,8 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     const catalogueCsp = isDev
-      ? "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'sha256-TRHYFuilDb7ZdLcs0+k3Bg0br7NwSVDidJcWVjaTs2c='"
-      : "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; script-src 'self' 'sha256-TRHYFuilDb7ZdLcs0+k3Bg0br7NwSVDidJcWVjaTs2c='";
+      ? "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'sha256-Ku9qB7lYE9Fwcjz98PjBAzBGxHPi2XmMsq1fJsyeqrE='"
+      : "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; script-src 'self' 'sha256-Ku9qB7lYE9Fwcjz98PjBAzBGxHPi2XmMsq1fJsyeqrE='";
     return [
       {
         source: "/(.*)",
