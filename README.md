@@ -10,6 +10,12 @@ Persian-first digital menu for Iranian cafes. Owners build and publish a beautif
 - **Branding** — per-venue accent color, logo, welcome message
 - **Auth & security** — sessions (SHA-256 tokens, 7-day TTL), bcrypt, CSRF on all mutations, DB-backed rate limiting, one owner per venue
 
+## Screenshots
+
+![Screenshot 1](assets/Screenshot%202026-08-14%20171221.png)
+
+![Screenshot 2](assets/Screenshot%202026-08-14%20171310.png)
+
 ## Quick start
 
 ```bash
