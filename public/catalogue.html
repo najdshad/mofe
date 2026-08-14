@@ -2825,7 +2825,9 @@
       let initialLanguage = "fa";
       try {
         const savedLanguage = localStorage.getItem("mofe-catalogue-language");
-        initialLanguage = savedLanguage === "en" ? "en" : "fa";
+        initialLanguage = savedLanguage === "fa" || (!savedLanguage && navigator.language.toLowerCase().startsWith("fa"))
+          ? "fa"
+          : "en";
       } catch {}
       setLanguage(initialLanguage);
       languageToggle.addEventListener("click", () => {
