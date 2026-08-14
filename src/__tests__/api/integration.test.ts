@@ -31,7 +31,7 @@ describe("Auth", () => {
     expect(await verifyPassword("demo1234", user!.passwordHash!)).toBe(true);
 
     const venue = await prisma.venue.findFirst({
-      where: { slug: "noghteh", ownerId: user!.id },
+      where: { slug: "noghteh-test", ownerId: user!.id },
     });
     expect(venue).not.toBeNull();
   });

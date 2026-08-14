@@ -62,7 +62,7 @@ function MenuPreview() {
           <CircleCheck className="h-4 w-4 text-success" />
           منتشر شد
         </div>
-        <p className="mt-1 font-serif text-lg font-bold">mofe.ir/noghteh</p>
+        <p className="mt-1 font-serif text-lg font-bold">mofe.ir/noghteh-test</p>
       </div>
 
       <div className="absolute -right-5 bottom-24 z-20 hidden rotate-6 items-center gap-3 rounded-2xl bg-ink px-4 py-3 text-paper shadow-[0_18px_45px_rgba(48,31,21,0.2)] sm:flex">
