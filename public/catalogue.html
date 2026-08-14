@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f0e6">
-  <meta name="description" content="mofé — an investor introduction to the Persian-first digital menu platform for independent hospitality.">
-  <title>mofé — Investor Catalogue</title>
+  <meta name="description" content="موفه — معرفی سرمایه‌گذاری پلتفرم منوی دیجیتال فارسی‌محور برای مهمان‌نوازی مستقل.">
+  <title>موفه — کاتالوگ سرمایه‌گذاری</title>
   <style>
     :root {
       --paper: #f5f0e6;
@@ -19,8 +19,8 @@
       --accent-soft: #f1d8cc;
       --green: #287451;
       --green-soft: #dce8df;
-      --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-      --sans: Tahoma, Arial, sans-serif;
+      --serif: "EB Garamond", "Parastoo", "Vazirmatn", "Times New Roman", serif;
+      --sans: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
       --shadow: 0 30px 80px rgba(48, 31, 21, 0.14);
       --radius-lg: 32px;
       --radius-md: 20px;
@@ -503,7 +503,7 @@
       min-height: 570px;
       padding: 27px 24px 23px;
       direction: rtl;
-      font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
+      font-family: var(--sans);
     }
 
     .menu-micro {
@@ -1866,8 +1866,8 @@
     html[lang="fa"] .ask-panel h2,
     html[lang="fa"] .ask-panel p,
     html[lang="fa"] .capital-row b {
-      font-family: "EB Garamond", "Parastoo", "Vazirmatn", "Times New Roman", serif;
-      letter-spacing: -.035em;
+      font-family: var(--sans);
+      letter-spacing: normal;
     }
 
     html[lang="fa"] h1 {
@@ -2825,9 +2825,7 @@
       let initialLanguage = "fa";
       try {
         const savedLanguage = localStorage.getItem("mofe-catalogue-language");
-        initialLanguage = savedLanguage === "fa" || (!savedLanguage && navigator.language.toLowerCase().startsWith("fa"))
-          ? "fa"
-          : "en";
+        initialLanguage = savedLanguage === "en" ? "en" : "fa";
       } catch {}
       setLanguage(initialLanguage);
       languageToggle.addEventListener("click", () => {
