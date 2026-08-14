@@ -154,7 +154,7 @@ function renderItemDetails(item: SnapshotCategoryItem): string {
             </div>`;
 }
 
-function renderItemCard(item: SnapshotCategoryItem, baseUrl?: string): string {
+function renderItemCard(item: SnapshotCategoryItem): string {
   const photoUrl = item.photoUrl ?? null;
   const className = `item-card${item.soldOut ? " sold-out" : ""}${photoUrl ? " photo-mode" : ""}`;
 
@@ -162,7 +162,7 @@ function renderItemCard(item: SnapshotCategoryItem, baseUrl?: string): string {
           <article class="${className}">
             ${photoUrl ? `
             <div class="item-photo-wrap">
-              <img class="item-photo" src="${esc(resolveUrl(photoUrl, baseUrl))}" alt="${esc(item.nameFa)}" loading="lazy" decoding="async" />
+              <img class="item-photo" src="${esc(photoUrl)}" alt="${esc(item.nameFa)}" loading="lazy" decoding="async" />
               ${item.soldOut ? '<div class="item-photo-overlay">ناموجود</div>' : ""}
             </div>` : ""}
             <div class="item-body">
@@ -201,7 +201,7 @@ export function renderPublicMenu(snapshot: Snapshot, baseUrl?: string): string {
         <div class="category-head">
           <h2 class="cat-title">${esc(cat.nameFa)}</h2>
         </div>
-        ${cat.items.map((item) => renderItemCard(item, baseUrl)).join("\n")}
+        ${cat.items.map((item) => renderItemCard(item)).join("\n")}
       </section>`
     )
     .join("\n");
@@ -635,7 +635,7 @@ ${FONT_FACE_DECLARATIONS}
             ${venue.nameEn ? `<p class="venue-name-en">${esc(venue.nameEn)}</p>` : ""}
           </div>
           ${venue.logoUrl ? `
-          <img class="logo-mark" src="${esc(resolveUrl(venue.logoUrl, baseUrl))}" alt="" aria-hidden="true" />` : ""}
+          <img class="logo-mark" src="${esc(venue.logoUrl)}" alt="" aria-hidden="true" />` : ""}
         </div>
         ${venue.welcomeMessage ? `<p class="welcome">${esc(venue.welcomeMessage)}</p>` : ""}
       </header>
