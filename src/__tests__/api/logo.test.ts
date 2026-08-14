@@ -61,7 +61,7 @@ beforeEach(() => {
 afterEach(async () => {
   const venue = await prisma.venue.findUnique({ where: { id: data.venue.id } });
   if (venue?.logoUrl) {
-    const filePath = path.join(process.cwd(), "public", venue.logoUrl);
+    const filePath = path.join(process.cwd(), "data", "uploads", path.basename(venue.logoUrl));
     try { await fs.unlink(filePath); } catch { /* ok */ }
   }
   await prisma.venue.update({ where: { id: data.venue.id }, data: { logoUrl: null } });
@@ -74,7 +74,7 @@ describe("POST /api/venues/[venueId]/logo", () => {
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.logoUrl).toContain("/uploads/");
+    expect(body.logoUrl).toContain("/api/uploads/");
     expect(body.logoUrl).toMatch(/\.webp$/);
 
     const venue = await prisma.venue.findUnique({ where: { id: data.venue.id } });
@@ -82,11 +82,11 @@ describe("POST /api/venues/[venueId]/logo", () => {
   });
 
   it("replaces an existing logo and deletes the old file", async () => {
-    const oldPath = path.join(process.cwd(), "public", "uploads", "test-old-logo.webp");
+    const oldPath = path.join(process.cwd(), "data", "uploads", "test-old-logo.webp");
     await fs.writeFile(oldPath, "old");
     await prisma.venue.update({
       where: { id: data.venue.id },
-      data: { logoUrl: "/uploads/test-old-logo.webp" },
+      data: { logoUrl: "/api/uploads/test-old-logo.webp" },
     });
 
     const file = new File([testImageBuffer], "logo.png", { type: "image/png" });
@@ -95,7 +95,7 @@ describe("POST /api/venues/[venueId]/logo", () => {
 
     await expect(fs.access(oldPath)).rejects.toThrow();
     const venue = await prisma.venue.findUnique({ where: { id: data.venue.id } });
-    expect(venue?.logoUrl).not.toBe("/uploads/test-old-logo.webp");
+    expect(venue?.logoUrl).not.toBe("/api/uploads/test-old-logo.webp");
   });
 
   it("returns 429 when the rate limit is exceeded", async () => {
@@ -125,11 +125,11 @@ describe("POST /api/venues/[venueId]/logo", () => {
 
 describe("DELETE /api/venues/[venueId]/logo", () => {
   it("clears the logo and deletes the file", async () => {
-    const filePath = path.join(process.cwd(), "public", "uploads", "test-del-logo.webp");
+    const filePath = path.join(process.cwd(), "data", "uploads", "test-del-logo.webp");
     await fs.writeFile(filePath, "logo");
     await prisma.venue.update({
       where: { id: data.venue.id },
-      data: { logoUrl: "/uploads/test-del-logo.webp" },
+      data: { logoUrl: "/api/uploads/test-del-logo.webp" },
     });
 
     const res = await DELETE(new Request(`http://localhost/api/venues/${data.venue.id}/logo`), params(data.venue.id));

@@ -22,6 +22,7 @@ import { requireAuth } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { ApiError } from "@/lib/api-helpers";
 import { POST } from "@/app/api/venues/[venueId]/items/[itemId]/photo/route";
+import { GET } from "@/app/api/uploads/[...key]/route";
 
 let data: Awaited<ReturnType<typeof seedTestData>>;
 
@@ -93,14 +94,24 @@ describe("POST /api/venues/[venueId]/items/[itemId]/photo", () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.photoUrl).toBeTruthy();
-      expect(body.photoUrl).toContain("/uploads/");
+      expect(body.photoUrl).toContain("/api/uploads/");
       uploadedUrl = body.photoUrl as string;
 
       const updated = await prisma.menuItem.findUnique({ where: { id: data.items.item1.id } });
       expect(updated?.photoUrl).toBe(body.photoUrl);
+
+      const key = (body.photoUrl as string).replace("/api/uploads/", "").split("/");
+      const fetched = await GET(new Request(`http://localhost${body.photoUrl}`), {
+        params: Promise.resolve({ key }),
+      });
+      expect(fetched.status).toBe(200);
+      expect(fetched.headers.get("Content-Type")).toBe("image/webp");
+
+      const storedPath = path.join(process.cwd(), "data", "uploads", path.basename(body.photoUrl as string));
+      await expect(fs.access(storedPath)).resolves.toBeUndefined();
     } finally {
       if (uploadedUrl) {
-        const filePath = path.join(process.cwd(), "public", uploadedUrl);
+        const filePath = path.join(process.cwd(), "data", "uploads", path.basename(uploadedUrl));
         try { await fs.unlink(filePath); } catch { /* ok */ }
       }
       await prisma.menuItem.update({ where: { id: data.items.item1.id }, data: { photoUrl: null } });
