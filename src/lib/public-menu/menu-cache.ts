@@ -5,7 +5,11 @@ type Entry = { html: string | null; expiresAt: number };
 const cache = new Map<string, Entry>();
 
 // ponytail: in-process only, stale ≤ TTL after edits. Multi-instance deploys need a shared store or CDN.
-export function clearMenuCache() {
+export function clearMenuCache(slug?: string) {
+  if (slug) {
+    cache.delete(slug);
+    return;
+  }
   cache.clear();
 }
 

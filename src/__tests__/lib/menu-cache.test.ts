@@ -38,6 +38,20 @@ describe("getCachedMenuHtml", () => {
     expect(fnB).toHaveBeenCalledTimes(1);
   });
 
+  it("can invalidate one slug without clearing the others", async () => {
+    const fnA = build("A");
+    const fnB = build("B");
+
+    await getCachedMenuHtml("a", fnA, 60_000);
+    await getCachedMenuHtml("b", fnB, 60_000);
+    clearMenuCache("a");
+
+    await getCachedMenuHtml("a", fnA, 60_000);
+    await getCachedMenuHtml("b", fnB, 60_000);
+    expect(fnA).toHaveBeenCalledTimes(2);
+    expect(fnB).toHaveBeenCalledTimes(1);
+  });
+
   it("caches not-found results", async () => {
     const fn = build(null);
 

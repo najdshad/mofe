@@ -8,6 +8,7 @@ import { QRIconButton } from "./QRIconButton";
 import { NavClient } from "./NavClient";
 import { LogoutButton } from "./LogoutButton";
 import { ExternalLink, Store } from "lucide-react";
+import { resolveVenueTheme, themeStyleVariables } from "@/lib/themes";
 
 export default async function AdminLayout({
   children,
@@ -22,15 +23,28 @@ export default async function AdminLayout({
   const { venueId } = await params;
   const [access, venue] = await Promise.all([
     requireVenueAccess(user.id, venueId).catch(() => null),
-    prisma.venue.findUnique({ where: { id: venueId }, select: { nameFa: true, slug: true } }),
+    prisma.venue.findUnique({
+      where: { id: venueId },
+      select: {
+        nameFa: true,
+        slug: true,
+        themeId: true,
+        accentColor: true,
+      },
+    }),
   ]);
 
   if (!access || !venue) redirect("/venues");
 
   const publicUrl = getPublicMenuUrl(venue.slug);
+  const theme = resolveVenueTheme(venue.themeId, venue.accentColor);
 
   return (
-    <div className="min-h-screen bg-canvas lg:flex">
+    <div
+      data-admin-theme-root
+      className="min-h-screen bg-canvas lg:flex"
+      style={themeStyleVariables(theme)}
+    >
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-l border-line bg-panel p-4 lg:flex">
         <Link href="/venues" className="flex items-center gap-3 rounded-xl px-2 py-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink font-serif text-lg text-paper">

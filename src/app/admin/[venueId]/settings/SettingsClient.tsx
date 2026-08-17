@@ -15,8 +15,14 @@ import {
 import { Panel } from "@/components/ui/Panel";
 import { Button } from "@/components/ui/Button";
 import { VenueInfoSection } from "./VenueInfoSection";
+import { ThemePresetSection } from "./ThemePresetSection";
 import { useStatusMessage } from "@/hooks/useStatusMessage";
 import { fetchApi } from "@/lib/fetch-api";
+import {
+  resolveVenueTheme,
+  themeStyleVariables,
+  type ThemePresetKey,
+} from "@/lib/themes";
 
 interface SettingsClientProps {
   venueId: string;
@@ -25,6 +31,8 @@ interface SettingsClientProps {
   slug: string;
   welcomeMessage: string | null;
   logoUrl: string | null;
+  themeId: ThemePresetKey;
+  accentColor: string | null;
   publicMenuDomain: string;
 }
 
@@ -35,6 +43,8 @@ export function SettingsClient({
   slug,
   welcomeMessage: initialWelcomeMessage,
   logoUrl: initialLogoUrl,
+  themeId: initialThemeId,
+  accentColor: initialAccentColor,
   publicMenuDomain,
 }: SettingsClientProps) {
   const router = useRouter();
@@ -45,7 +55,52 @@ export function SettingsClient({
   const [welcomeMessage, setWelcomeMessage] = useState(initialWelcomeMessage ?? "");
   const [logoUrl, setLogoUrl] = useState(initialLogoUrl ?? "");
   const [uploading, setUploading] = useState(false);
+  const [themeId, setThemeId] = useState(initialThemeId);
+  const [accentColor, setAccentColor] = useState(initialAccentColor);
+  const [savingTheme, setSavingTheme] = useState(false);
   const { statusMessage: appearanceStatus, showStatus: showAppearanceStatus } = useStatusMessage();
+  const { statusMessage: themeStatus, showStatus: showThemeStatus } = useStatusMessage();
+
+  const applyAdminTheme = (
+    preset: ThemePresetKey,
+    legacyAccentColor: string | null
+  ) => {
+    const root = document.querySelector<HTMLElement>("[data-admin-theme-root]");
+    if (!root) return;
+
+    const variables = themeStyleVariables(
+      resolveVenueTheme(preset, legacyAccentColor)
+    );
+    for (const [property, value] of Object.entries(variables)) {
+      root.style.setProperty(property, String(value));
+    }
+  };
+
+  const handleThemeSelect = async (nextTheme: ThemePresetKey) => {
+    if (savingTheme || (nextTheme === themeId && !accentColor)) return;
+
+    const previousTheme = themeId;
+    const previousAccentColor = accentColor;
+    setThemeId(nextTheme);
+    applyAdminTheme(nextTheme, null);
+    setSavingTheme(true);
+
+    try {
+      await fetchApi(`/api/venues/${venueId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ themeId: nextTheme }),
+      });
+      setAccentColor(null);
+      showThemeStatus("پوسته برای پنل و منوی عمومی ذخیره شد");
+      router.refresh();
+    } catch (e) {
+      setThemeId(previousTheme);
+      applyAdminTheme(previousTheme, previousAccentColor);
+      showThemeStatus(e instanceof Error ? e.message : "خطا در ذخیره پوسته");
+    } finally {
+      setSavingTheme(false);
+    }
+  };
 
   const handleSaveVenue = async () => {
     setVenueStatus("");
@@ -143,6 +198,13 @@ export function SettingsClient({
             onNameFaChange={setNameFa}
             onNameEnChange={setNameEn}
             onSave={handleSaveVenue}
+          />
+
+          <ThemePresetSection
+            selectedTheme={themeId}
+            isSaving={savingTheme}
+            status={themeStatus}
+            onSelect={handleThemeSelect}
           />
 
           <Panel title="پیام خوش‌آمدگویی" subtitle="یک پیام کوتاه در ابتدای منو برای مهمان‌ها بنویسید.">

@@ -1,5 +1,6 @@
 import { ALLERGEN_LABELS } from "@/lib/allergens";
 import { formatPrice } from "@/lib/format";
+import { resolveVenueTheme } from "@/lib/themes";
 
 export interface SnapshotItemPrice {
   description: string;
@@ -38,6 +39,7 @@ export interface Snapshot {
     nameFa: string;
     nameEn: string | null;
     welcomeMessage: string | null;
+    themeId?: string | null;
     accentColor: string | null;
     logoUrl: string | null;
     slug: string;
@@ -92,14 +94,6 @@ function esc(s: string): string {
     .replace(/'/g, "&#039;")
     .replace(/`/g, "&#96;");
 }
-
-function sanitizeCssColor(color: string): string {
-  if (/^#[0-9a-fA-F]{6}$/.test(color)) return color;
-  if (/^#[0-9a-fA-F]{3}$/.test(color)) return color;
-  return "#111111";
-}
-
-
 
 export { formatPrice } from "@/lib/format";
 
@@ -174,7 +168,7 @@ function renderItemCard(item: SnapshotCategoryItem): string {
 export function renderPublicMenu(snapshot: Snapshot, baseUrl?: string): string {
   const { venue, categories } = snapshot;
   const categoriesWithItems = categories.filter((cat) => cat.items.length > 0);
-  const accentValue = venue.accentColor ? sanitizeCssColor(venue.accentColor) : "#b94f2c";
+  const theme = resolveVenueTheme(venue.themeId, venue.accentColor);
 
   const categoryNav =
     categoriesWithItems.length > 0
@@ -215,7 +209,7 @@ export function renderPublicMenu(snapshot: Snapshot, baseUrl?: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f5f0e6" />
+  <meta name="theme-color" content="${theme.paper}" />
   <meta name="format-detection" content="telephone=no" />
   <meta name="description" content="${esc(venue.nameFa)} — منوی کافه" />
   <meta property="og:title" content="${esc(venue.nameFa)}" />
@@ -233,11 +227,12 @@ ${FONT_FACE_DECLARATIONS}
       scroll-behavior: smooth;
     }
     body {
-      --paper: #f5f0e6;
-      --ink: #111111;
-      --muted: #6f695f;
-      --line: rgba(17, 17, 17, 0.14);
-      --accent: ${accentValue};
+      --paper: ${theme.paper};
+      --ink: ${theme.ink};
+      --muted: ${theme.inkMuted};
+      --line: ${theme.line};
+      --accent: ${theme.accent};
+      --panel: ${theme.panel};
       font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
       background: radial-gradient(circle at top, rgba(255, 255, 255, 0.5), transparent 34%), var(--paper);
       color: var(--ink);
@@ -318,7 +313,7 @@ ${FONT_FACE_DECLARATIONS}
       z-index: 20;
       border-top: 1px solid var(--line);
       border-bottom: 1px solid var(--line);
-      background: rgba(245, 240, 230, 0.97);
+      background: ${theme.paper}f7;
     }
     .category-nav::-webkit-scrollbar {
       display: none;
@@ -333,7 +328,7 @@ ${FONT_FACE_DECLARATIONS}
     }
     .category-pill.active,
     .category-pill[aria-current="true"] {
-      background: ${accentValue};
+      background: var(--accent);
       color: var(--paper);
       border-radius: 999px;
       padding-right: 12px;

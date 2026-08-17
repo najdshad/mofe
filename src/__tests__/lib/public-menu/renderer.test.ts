@@ -131,21 +131,28 @@ describe("renderPublicMenu", () => {
     });
   });
 
-  describe("accent color", () => {
-    it("does not inline accent when null", () => {
+  describe("theme colors", () => {
+    it("uses the clay preset by default", () => {
       const html = renderPublicMenu(makeSnapshot({ venue: { accentColor: null } }));
-      expect(html).not.toContain("style=\"--accent");
+      expect(html).toContain("--paper: #f5f0e6");
+      expect(html).toContain("--accent: #b94f2c");
     });
 
-    it("does not inline accent when #111111 (default text color)", () => {
+    it("keeps a valid legacy accent override", () => {
       const html = renderPublicMenu(makeSnapshot({ venue: { accentColor: "#111111" } }));
-      expect(html).toContain("background: #111111");
+      expect(html).toContain("--accent: #111111");
     });
 
-    it("inlines accent when a non-default color is set", () => {
-      const accent = "#c0392b";
-      const html = renderPublicMenu(makeSnapshot({ venue: { accentColor: accent } }));
-      expect(html).toContain(`background: ${accent}`);
+    it("applies a selected preset to the full menu palette", () => {
+      const html = renderPublicMenu(
+        makeSnapshot({
+          venue: { themeId: "olive", accentColor: null },
+        })
+      );
+      expect(html).toContain('name="theme-color" content="#f2f1e8"');
+      expect(html).toContain("--paper: #f2f1e8");
+      expect(html).toContain("--ink: #182019");
+      expect(html).toContain("--accent: #4f6f52");
     });
   });
 

@@ -3,6 +3,7 @@ import { requireVenueAccess } from "@/lib/permissions";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
+import { normalizeThemePreset } from "@/lib/themes";
 import { SettingsClient } from "./SettingsClient";
 
 export default async function SettingsPage({
@@ -20,7 +21,7 @@ export default async function SettingsPage({
     where: { id: venueId },
     select: {
       id: true, nameFa: true, nameEn: true, slug: true,
-      welcomeMessage: true, logoUrl: true,
+      welcomeMessage: true, logoUrl: true, themeId: true, accentColor: true,
     },
   });
 
@@ -34,6 +35,8 @@ export default async function SettingsPage({
       slug={venue.slug}
       welcomeMessage={venue.welcomeMessage}
       logoUrl={venue.logoUrl}
+      themeId={normalizeThemePreset(venue.themeId)}
+      accentColor={venue.accentColor}
       publicMenuDomain={getPublicMenuUrl(venue.slug)}
     />
   );

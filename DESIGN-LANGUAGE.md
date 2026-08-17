@@ -64,6 +64,19 @@ A warm monochrome base with one terracotta accent and a muted green for confirma
 * Success green appears only next to confirmation content.
 * Use muted neutral borders, never colored separators.
 
+### Venue theme presets
+
+Venues may choose one restrained palette from `src/lib/themes.ts`. The same
+tokens must be applied to the venue admin workspace and its public menu.
+
+* `classic` / سفال — the original paper and terracotta palette
+* `olive` / زیتون — natural paper with a muted green accent
+* `saffron` / زعفران — warm cream with a restrained golden accent
+* `pomegranate` / انار — pale rose paper with a deep berry accent
+
+Presets change color tokens only. Typography, spacing, radii, component
+structure, and the one-accent rule remain consistent across every theme.
+
 ### Shadows and depth
 
 Depth should be subtle and directional.

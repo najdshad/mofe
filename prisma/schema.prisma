@@ -28,6 +28,7 @@ model Venue {
   nameFa         String
   nameEn         String?
   slug           String    @unique
+  themeId        String    @default("classic")
   accentColor    String?
   welcomeMessage String?
   logoUrl        String?

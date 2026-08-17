@@ -141,6 +141,32 @@ describe("PATCH /api/venues/[venueId]", () => {
     expect(body.error).toBe("قالب پیام خوش‌آمدگویی نامعتبر است");
   });
 
+  it("updates a valid theme preset and clears a legacy accent", async () => {
+    const res = await patchVenue(
+      jsonReq(url(data.venue.id), "PATCH", { themeId: "olive" }),
+      params(data.venue.id)
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.themeId).toBe("olive");
+    expect(body.accentColor).toBeNull();
+
+    await prisma.venue.update({
+      where: { id: data.venue.id },
+      data: { themeId: "classic", accentColor: "#111111" },
+    });
+  });
+
+  it("returns 400 for an unknown theme preset", async () => {
+    const res = await patchVenue(
+      jsonReq(url(data.venue.id), "PATCH", { themeId: "neon" }),
+      params(data.venue.id)
+    );
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("پوسته انتخاب‌شده نامعتبر است");
+  });
+
   it("returns 401 when no venue access", async () => {
     mockRequireVenueAccess.mockRejectedValue(new ApiError("Unauthorized: no access to this venue", 401));
     const res = await patchVenue(

@@ -6,7 +6,7 @@ export async function buildPublicSnapshot(venueSlug: string) {
     where: { slug: venueSlug },
     select: {
       id: true, slug: true, nameFa: true, nameEn: true,
-      welcomeMessage: true, accentColor: true, logoUrl: true,
+      welcomeMessage: true, themeId: true, accentColor: true, logoUrl: true,
     },
   });
   if (!venue) {
@@ -37,6 +37,7 @@ export async function buildPublicSnapshot(venueSlug: string) {
       nameFa: venue.nameFa,
       nameEn: venue.nameEn,
       welcomeMessage: venue.welcomeMessage,
+      themeId: venue.themeId,
       accentColor: venue.accentColor,
       logoUrl: venue.logoUrl ?? null,
       slug: venue.slug,
