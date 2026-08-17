@@ -26,6 +26,10 @@ export default async function SalesPage({
         nameFa: true,
         priceToman: true,
         category: { select: { nameFa: true } },
+        variants: {
+          select: { id: true, nameFa: true, priceModifier: true },
+          orderBy: { displayOrder: "asc" },
+        },
       },
     }),
     prisma.ledgerEntry.findMany({
@@ -45,6 +49,11 @@ export default async function SalesPage({
         nameFa: item.nameFa,
         categoryNameFa: item.category.nameFa,
         priceToman: item.priceToman,
+        variants: item.variants.map((variant) => ({
+          id: variant.id,
+          nameFa: variant.nameFa,
+          priceModifier: variant.priceModifier,
+        })),
       }))}
       initialEntries={entries.map((entry) => ({
         ...entry,

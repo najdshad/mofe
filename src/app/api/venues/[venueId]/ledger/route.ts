@@ -156,7 +156,7 @@ export async function POST(
       return NextResponse.json({ error: "حداقل یک آیتم برای سفارش انتخاب کنید" }, { status: 400 });
     }
 
-    const quantities = new Map<string, number>();
+    const lines = new Map<string, { menuItemId: string; variantId: string | null; quantity: number }>();
     for (const rawItem of body.items) {
       if (!rawItem || typeof rawItem.menuItemId !== "string") {
         return NextResponse.json({ error: "آیتم سفارش نامعتبر است" }, { status: 400 });
@@ -165,16 +165,28 @@ export async function POST(
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY) {
         return NextResponse.json({ error: "تعداد آیتم باید عددی بین ۱ تا ۱۰۰۰ باشد" }, { status: 400 });
       }
-      quantities.set(rawItem.menuItemId, (quantities.get(rawItem.menuItemId) ?? 0) + quantity);
+      let variantId: string | null;
+      if (rawItem.variantId == null || rawItem.variantId === "") variantId = null;
+      else if (typeof rawItem.variantId === "string") variantId = rawItem.variantId;
+      else {
+        return NextResponse.json({ error: "آیتم سفارش نامعتبر است" }, { status: 400 });
+      }
+      const key = `${rawItem.menuItemId}::${variantId ?? ""}`;
+      const current = lines.get(key);
+      lines.set(key, {
+        menuItemId: rawItem.menuItemId,
+        variantId,
+        quantity: (current?.quantity ?? 0) + quantity,
+      });
     }
 
-    if ([...quantities.values()].some((quantity) => quantity > MAX_QUANTITY)) {
+    if ([...lines.values()].some((line) => line.quantity > MAX_QUANTITY)) {
       return NextResponse.json({ error: "تعداد آیتم باید عددی بین ۱ تا ۱۰۰۰ باشد" }, { status: 400 });
     }
 
     const menuItems = await prisma.menuItem.findMany({
       where: {
-        id: { in: [...quantities.keys()] },
+        id: { in: [...new Set([...lines.values()].map((line) => line.menuItemId))] },
         venueId,
         deletedAt: null,
       },
@@ -182,23 +194,44 @@ export async function POST(
         id: true,
         nameFa: true,
         priceToman: true,
+        variants: {
+          select: { id: true, nameFa: true, priceModifier: true },
+          orderBy: { displayOrder: "asc" },
+        },
       },
     });
 
-    if (menuItems.length !== quantities.size) {
+    const menuItemById = new Map(menuItems.map((item) => [item.id, item]));
+    if (menuItemById.size !== new Set([...lines.values()].map((line) => line.menuItemId)).size) {
       return NextResponse.json({ error: "یک یا چند آیتم منو یافت نشد" }, { status: 400 });
     }
 
-    const saleItems = menuItems.map((item) => {
-      const quantity = quantities.get(item.id) ?? 0;
-      return {
+    const saleItems = [];
+    for (const line of lines.values()) {
+      const item = menuItemById.get(line.menuItemId);
+      if (!item) {
+        return NextResponse.json({ error: "یک یا چند آیتم منو یافت نشد" }, { status: 400 });
+      }
+      const variant = line.variantId
+        ? item.variants.find((candidate) => candidate.id === line.variantId)
+        : null;
+      if (line.variantId && !variant) {
+        return NextResponse.json({ error: "گزینه انتخاب‌شده برای آیتم معتبر نیست" }, { status: 400 });
+      }
+      const unitPriceToman = item.priceToman + (variant?.priceModifier ?? 0);
+      if (unitPriceToman < 0) {
+        return NextResponse.json({ error: "قیمت آیتم با گزینه انتخابی نامعتبر است" }, { status: 400 });
+      }
+      saleItems.push({
         menuItemId: item.id,
+        variantId: variant?.id ?? null,
+        variantName: variant?.nameFa ?? null,
         itemName: item.nameFa,
-        unitPriceToman: item.priceToman,
-        quantity,
-        totalToman: item.priceToman * quantity,
-      };
-    });
+        unitPriceToman,
+        quantity: line.quantity,
+        totalToman: unitPriceToman * line.quantity,
+      });
+    }
     const amountToman = saleItems.reduce((sum, item) => sum + item.totalToman, 0);
 
     if (!Number.isSafeInteger(amountToman) || amountToman > MAX_AMOUNT_TOMAN) {

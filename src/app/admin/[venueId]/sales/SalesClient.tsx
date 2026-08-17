@@ -31,12 +31,14 @@ interface MenuItem {
   nameFa: string;
   categoryNameFa: string;
   priceToman: number;
+  variants: Array<{ id: string; nameFa: string; priceModifier: number }>;
 }
 
 interface SaleLineItem {
   id: string;
   menuItemId: string | null;
   itemName: string;
+  variantName: string | null;
   unitPriceToman: number;
   quantity: number;
   totalToman: number;
@@ -74,6 +76,7 @@ const RANGE_OPTIONS: Array<{ key: RangeKey; label: string }> = [
 
 const moneyFormatter = new Intl.NumberFormat("fa-IR");
 const dateFormatter = new Intl.DateTimeFormat("fa-IR", {
+  calendar: "persian",
   year: "numeric",
   month: "short",
   day: "numeric",
@@ -151,6 +154,7 @@ function buildChartData(
     const label = shortSpan
       ? timeFormatter.format(bucketStart)
       : new Intl.DateTimeFormat("fa-IR", {
+          calendar: "persian",
           month: span > 180 * 24 * 60 * 60 * 1000 ? "short" : undefined,
           day: "numeric",
         }).format(bucketStart);
@@ -211,15 +215,21 @@ function SaleModal({
     type: "sale";
     occurredAt: string;
     description: string | null;
-    items: Array<{ menuItemId: string; quantity: number }>;
+    items: Array<{ menuItemId: string; quantity: number; variantId: string | null }>;
   }) => Promise<void>;
 }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [variantByItem, setVariantByItem] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [occurredAt, setOccurredAt] = useState(toLocalInputValue());
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const priceOf = (item: MenuItem) => {
+    const variant = item.variants.find((candidate) => candidate.id === variantByItem[item.id]);
+    return item.priceToman + (variant?.priceModifier ?? 0);
+  };
 
   const visibleItems = menuItems.filter(
     (item) =>
@@ -227,7 +237,7 @@ function SaleModal({
   );
   const selectedItems = menuItems.filter((item) => (quantities[item.id] ?? 0) > 0);
   const total = selectedItems.reduce(
-    (sum, item) => sum + item.priceToman * (quantities[item.id] ?? 0),
+    (sum, item) => sum + priceOf(item) * (quantities[item.id] ?? 0),
     0,
   );
 
@@ -255,6 +265,7 @@ function SaleModal({
         items: selectedItems.map((item) => ({
           menuItemId: item.id,
           quantity: quantities[item.id],
+          variantId: variantByItem[item.id] || null,
         })),
       });
     } catch (caught) {
@@ -299,8 +310,24 @@ function SaleModal({
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold text-ink">{item.nameFa}</p>
                         <p className="mt-0.5 text-[10px] text-ink-muted">
-                          {item.categoryNameFa} · {formatMoney(item.priceToman)} تومان
+                          {item.categoryNameFa} · {formatMoney(priceOf(item))} تومان
                         </p>
+                        {item.variants.length > 0 && (
+                          <select
+                            value={variantByItem[item.id] ?? ""}
+                            onChange={(event) =>
+                              setVariantByItem((current) => ({ ...current, [item.id]: event.target.value }))
+                            }
+                            className="mt-1.5 w-full max-w-44 rounded-lg border border-line bg-white px-2 py-1 text-[10px] text-ink focus:border-accent/60 focus:outline-none"
+                          >
+                            <option value="">پایه</option>
+                            {item.variants.map((variant) => (
+                              <option key={variant.id} value={variant.id}>
+                                {variant.nameFa} · {formatMoney(item.priceToman + variant.priceModifier)} تومان
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
                       <div className="flex shrink-0 items-center gap-1 rounded-xl border border-line bg-white p-1">
                         <button
@@ -824,7 +851,12 @@ export function SalesClient({
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-ink">
                         {entry.type === "sale"
-                          ? entry.saleItems.map((item) => `${item.itemName} × ${item.quantity.toLocaleString("fa-IR")}`).join("، ")
+                          ? entry.saleItems
+                              .map(
+                                (item) =>
+                                  `${item.itemName}${item.variantName ? ` (${item.variantName})` : ""} × ${item.quantity.toLocaleString("fa-IR")}`,
+                              )
+                              .join("، ")
                           : entry.description || "هزینه ثبت‌شده"}
                       </p>
                       {entry.type === "sale" && entry.description && (

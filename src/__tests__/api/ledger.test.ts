@@ -123,6 +123,59 @@ describe("POST /api/venues/[venueId]/ledger", () => {
     expect(body.amountToman).toBe(data.items.item1.priceToman * 3);
   });
 
+  it("creates a sale with a variant price modifier and records the variant", async () => {
+    const variant = await prisma.menuItemVariant.create({
+      data: { menuItemId: data.items.item1.id, nameFa: "بزرگ", priceModifier: 15000 },
+    });
+
+    const response = await POST(
+      request(data.venue.id, "POST", {
+        type: "sale",
+        items: [
+          { menuItemId: data.items.item1.id, quantity: 2, variantId: variant.id },
+          { menuItemId: data.items.item1.id, quantity: 1 },
+        ],
+      }),
+      params(data.venue.id),
+    );
+
+    expect(response.status).toBe(201);
+    const body = await response.json();
+    expect(body.amountToman).toBe((data.items.item1.priceToman + 15000) * 2 + data.items.item1.priceToman);
+    expect(body.saleItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          menuItemId: data.items.item1.id,
+          variantId: variant.id,
+          variantName: "بزرگ",
+          unitPriceToman: data.items.item1.priceToman + 15000,
+          quantity: 2,
+        }),
+        expect.objectContaining({
+          menuItemId: data.items.item1.id,
+          variantId: null,
+          variantName: null,
+          quantity: 1,
+        }),
+      ]),
+    );
+  });
+
+  it("rejects a variant that does not belong to the item", async () => {
+    const foreignVariant = await prisma.menuItemVariant.create({
+      data: { menuItemId: data.items.item3.id, nameFa: "بزرگ", priceModifier: 10000 },
+    });
+
+    const response = await POST(
+      request(data.venue.id, "POST", {
+        type: "sale",
+        items: [{ menuItemId: data.items.item1.id, quantity: 1, variantId: foreignVariant.id }],
+      }),
+      params(data.venue.id),
+    );
+    expect(response.status).toBe(400);
+  });
+
   it("creates an expense with normalized tags", async () => {
     const response = await POST(
       request(data.venue.id, "POST", {
