@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Settings2, UtensilsCrossed } from "lucide-react";
+import { ChartNoAxesCombined, Settings2, UtensilsCrossed } from "lucide-react";
 
 export function NavClient({
   venueId,
@@ -21,6 +21,12 @@ export function NavClient({
       icon: UtensilsCrossed,
     },
     {
+      href: `/admin/${venueId}/sales`,
+      label: "فروش و هزینه‌ها",
+      shortLabel: "فروش",
+      icon: ChartNoAxesCombined,
+    },
+    {
       href: `/admin/${venueId}/settings`,
       label: "تنظیمات مجموعه",
       shortLabel: "تنظیمات",
@@ -30,7 +36,7 @@ export function NavClient({
 
   if (variant === "mobile") {
     return (
-      <nav className="grid grid-cols-2 border-t border-line/80 bg-panel/95 px-3 py-2 backdrop-blur">
+      <nav className="grid grid-cols-3 border-t border-line/80 bg-panel/95 px-3 py-2 backdrop-blur">
         {links.map((link) => {
           const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
           const Icon = link.icon;

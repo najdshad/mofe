@@ -37,6 +37,7 @@ model Venue {
   owner      User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   categories Category[]
   menuItems  MenuItem[]
+  ledgerEntries LedgerEntry[]
 
   @@index([ownerId])
 }
@@ -81,6 +82,7 @@ model MenuItem {
   variants MenuItemVariant[]
   prices MenuItemPrice[]
   allergens MenuItemAllergen[]
+  saleLineItems SaleLineItem[]
 
   @@unique([categoryId, nameFa])
   @@index([categoryId])
@@ -129,6 +131,40 @@ model MenuItemAllergen {
   @@unique([menuItemId, allergenCode])
   @@index([menuItemId])
   @@index([allergenCode])
+}
+
+model LedgerEntry {
+  id          String   @id @default(uuid())
+  venueId     String
+  type        String
+  amountToman Int
+  description String?
+  tags        String?
+  occurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  venue     Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  saleItems SaleLineItem[]
+
+  @@index([venueId, occurredAt])
+  @@index([venueId, type, occurredAt])
+}
+
+model SaleLineItem {
+  id             String  @id @default(uuid())
+  ledgerEntryId  String
+  menuItemId     String?
+  itemName       String
+  unitPriceToman Int
+  quantity       Int
+  totalToman     Int
+
+  ledgerEntry LedgerEntry @relation(fields: [ledgerEntryId], references: [id], onDelete: Cascade)
+  menuItem    MenuItem?   @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  @@index([ledgerEntryId])
+  @@index([menuItemId])
 }
 
 model RateLimitEntry {

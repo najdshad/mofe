@@ -3,6 +3,9 @@ import bcrypt from "bcryptjs";
 
 export async function cleanTestData() {
   // Delete child tables first (reverse FK dependency order)
+  // Ledger sale lines reference ledger entries and menu items
+  await prisma.saleLineItem.deleteMany();
+  await prisma.ledgerEntry.deleteMany();
   // Sub-models under MenuItem
   await prisma.menuItemAllergen.deleteMany();
   await prisma.menuItemVariant.deleteMany();

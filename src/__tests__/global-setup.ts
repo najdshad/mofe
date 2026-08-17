@@ -17,6 +17,8 @@ export function setup() {
 
 export async function teardown() {
   const { prisma } = await import("@/lib/prisma");
+  await prisma.saleLineItem.deleteMany();
+  await prisma.ledgerEntry.deleteMany();
   await prisma.menuItemAllergen.deleteMany();
   await prisma.menuItemVariant.deleteMany();
   await prisma.menuItemPrice.deleteMany();
