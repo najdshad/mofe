@@ -3,6 +3,7 @@ import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import Papa from "papaparse";
+import { validateCsrf } from "@/lib/csrf";
 
 const FORMULA_INJECTION_RE = /^[=+\-@\t]/;
 
@@ -32,6 +33,8 @@ export async function POST(
 
     const { venueId } = await params;
     await requireVenueAccess(user.id, venueId);
+
+    await validateCsrf();
 
   const body = await request.json();
   const csvText = body.csv as string;

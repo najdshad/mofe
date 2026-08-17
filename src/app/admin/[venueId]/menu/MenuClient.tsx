@@ -18,15 +18,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Panel } from "@/components/ui/Panel";
 import { Toggle } from "@/components/ui/Toggle";
-
-const CSRF_COOKIE = "mofe_csrf";
-const CSRF_HEADER = "X-CSRF-Token";
-
-function csrfHeaders(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-  const match = document.cookie.match(new RegExp(`(^| )${CSRF_COOKIE}=([^;]+)`));
-  return match ? { [CSRF_HEADER]: match[2] } : {};
-}
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -529,14 +520,11 @@ function ItemModal({
     try {
       const formData = new FormData();
       formData.append("photo", file);
-      const res = await fetch(`/api/venues/${venueId}/items/${initial.id}/photo`, {
+      const data = await fetchApi(`/api/venues/${venueId}/items/${initial.id}/photo`, {
         method: "POST",
         body: formData,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setPhotoAssetId(data.photoUrl);
-      }
+      setPhotoAssetId(data.photoUrl);
     } catch (e) {
       console.error("Photo upload failed:", e);
     } finally {
@@ -549,12 +537,10 @@ function ItemModal({
     if (!initial) return;
     setPhotoLoading(true);
     try {
-      const res = await fetch(`/api/venues/${venueId}/items/${initial.id}/photo`, {
+      await fetchApi(`/api/venues/${venueId}/items/${initial.id}/photo`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        setPhotoAssetId(null);
-      }
+      setPhotoAssetId(null);
     } catch (e) {
       console.error("Photo delete failed:", e);
     } finally {
@@ -584,9 +570,8 @@ function ItemModal({
         isSoldOut,
       });
       if (initial && variants) {
-        await fetch(`/api/venues/${venueId}/items/${initial.id}/variants`, {
+        await fetchApi(`/api/venues/${venueId}/items/${initial.id}/variants`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             variants: variants.map((v) => ({
               nameFa: v.nameFa,
@@ -597,9 +582,8 @@ function ItemModal({
         });
       }
       if (initial && prices) {
-        await fetch(`/api/venues/${venueId}/items/${initial.id}/prices`, {
+        await fetchApi(`/api/venues/${venueId}/items/${initial.id}/prices`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prices: prices.map((p) => ({
               description: p.description,
@@ -609,9 +593,8 @@ function ItemModal({
         });
       }
       if (initial) {
-        await fetch(`/api/venues/${venueId}/items/${initial.id}/allergens`, {
+        await fetchApi(`/api/venues/${venueId}/items/${initial.id}/allergens`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ allergenCodes }),
         });
       }
@@ -953,12 +936,14 @@ export function MenuClient({
     if (selectedItems.size === 0) return;
     if (!window.confirm(`آیا از حذف ${selectedItems.size} آیتم انتخاب شده اطمینان دارید؟`)) return;
     const itemIds = Array.from(selectedItems);
-    const res = await fetch(`/api/venues/${venueId}/items/bulk-delete`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...csrfHeaders() },
-      body: JSON.stringify({ itemIds }),
-    });
-    if (!res.ok) return;
+    try {
+      await fetchApi(`/api/venues/${venueId}/items/bulk-delete`, {
+        method: "POST",
+        body: JSON.stringify({ itemIds }),
+      });
+    } catch {
+      return;
+    }
     const deletedItems = items.filter((i) => itemIds.includes(i.id));
     const countsByCategory: Record<string, number> = {};
     for (const item of deletedItems) {
@@ -997,12 +982,10 @@ export function MenuClient({
     );
     setDragError("");
     try {
-      const res = await fetch(`/api/venues/${venueId}/categories/reorder`, {
+      await fetchApi(`/api/venues/${venueId}/categories/reorder`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...csrfHeaders() },
         body: JSON.stringify({ orders: updates }),
       });
-      if (!res.ok) throw new Error("Reorder failed");
     } catch {
       setCategories(prev);
       setDragError("خطا در ذخیره ترتیب دسته‌ها");
@@ -1031,12 +1014,10 @@ export function MenuClient({
     );
     setDragError("");
     try {
-      const res = await fetch(`/api/venues/${venueId}/items/reorder`, {
+      await fetchApi(`/api/venues/${venueId}/items/reorder`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...csrfHeaders() },
         body: JSON.stringify({ orders: updates }),
       });
-      if (!res.ok) throw new Error("Reorder failed");
     } catch {
       setItems(prev);
       setDragError("خطا در ذخیره ترتیب آیتم‌ها");
@@ -1092,9 +1073,8 @@ export function MenuClient({
         c.id === categoryId ? { ...c, active } : c
       )
     );
-    await fetch(`/api/venues/${venueId}/categories/${categoryId}`, {
+    await fetchApi(`/api/venues/${venueId}/categories/${categoryId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", ...csrfHeaders() },
       body: JSON.stringify({ active }),
     });
   };
@@ -1211,9 +1191,8 @@ export function MenuClient({
         i.id === itemId ? { ...i, isSoldOut: soldOut } : i
       )
     );
-    await fetch(`/api/venues/${venueId}/items/${itemId}`, {
+    await fetchApi(`/api/venues/${venueId}/items/${itemId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", ...csrfHeaders() },
       body: JSON.stringify({ isSoldOut: soldOut }),
     });
   };
@@ -1238,20 +1217,18 @@ export function MenuClient({
     setImporting(true);
     try {
       const text = await file.text();
-      const res = await fetch(`/api/venues/${venueId}/items/import-csv`, {
+      const data = await fetchApi(`/api/venues/${venueId}/items/import-csv`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ csv: text }),
       });
-      const data = await res.json();
       setImportResults(data);
       if (data.summary?.created > 0) {
         window.location.reload();
       }
-    } catch {
+    } catch (e) {
       setImportResults({
         summary: { total: 0, created: 0, skipped: 0, errors: 1 },
-        details: [{ row: 0, status: "error", nameFa: "", message: "خطا در خواندن فایل" }],
+        details: [{ row: 0, status: "error", nameFa: "", message: e instanceof Error ? e.message : "خطا در خواندن فایل" }],
       });
     } finally {
       setImporting(false);

@@ -86,34 +86,28 @@ export function SettingsClient({
     const formData = new FormData();
     formData.append("logo", file);
 
-    const res = await fetch(`/api/venues/${venueId}/logo`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (res.ok) {
-      const data = await res.json();
+    try {
+      const data = await fetchApi(`/api/venues/${venueId}/logo`, {
+        method: "POST",
+        body: formData,
+      });
       setLogoUrl(data.logoUrl);
       showAppearanceStatus("لوگو با موفقیت آپلود شد");
       router.refresh();
-    } else {
-      const data = await res.json();
-      showAppearanceStatus(data.error || "خطا در آپلود لوگو");
+    } catch (e) {
+      showAppearanceStatus(e instanceof Error ? e.message : "خطا در آپلود لوگو");
     }
     setUploading(false);
   };
 
   const handleLogoRemove = async () => {
-    const res = await fetch(`/api/venues/${venueId}/logo`, {
-      method: "DELETE",
-    });
-
-    if (res.ok) {
+    try {
+      await fetchApi(`/api/venues/${venueId}/logo`, { method: "DELETE" });
       setLogoUrl("");
       showAppearanceStatus("لوگو حذف شد");
       router.refresh();
-    } else {
-      showAppearanceStatus("خطا در حذف لوگو");
+    } catch (e) {
+      showAppearanceStatus(e instanceof Error ? e.message : "خطا در حذف لوگو");
     }
   };
 

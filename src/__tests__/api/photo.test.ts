@@ -13,6 +13,10 @@ vi.mock("@/lib/permissions", () => ({
   requireVenueAccess: vi.fn(),
 }));
 
+vi.mock("@/lib/csrf", () => ({
+  validateCsrf: vi.fn().mockResolvedValue(undefined),
+}));
+
 const testImageBuffer = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
   "base64"

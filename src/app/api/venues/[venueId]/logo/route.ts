@@ -8,6 +8,7 @@ import path from "path";
 import crypto from "crypto";
 import sharp from "sharp";
 import { compressToTarget, MAX_SIZE_BYTES } from "@/lib/compress-image";
+import { validateCsrf } from "@/lib/csrf";
 
 async function isValidImage(buffer: Buffer): Promise<boolean> {
   try {
@@ -26,6 +27,8 @@ export async function POST(
     const user = await requireAuth();
     const { venueId } = await params;
     await requireVenueAccess(user.id, venueId);
+
+    await validateCsrf();
 
     const rateCheck = await rateLimit(`logo-upload:${user.id}`, 10, 60000);
     if (!rateCheck.allowed) {
@@ -94,6 +97,8 @@ export async function DELETE(
     const user = await requireAuth();
     const { venueId } = await params;
     await requireVenueAccess(user.id, venueId);
+
+    await validateCsrf();
 
     const venue = await prisma.venue.findUnique({ where: { id: venueId }, select: { logoUrl: true } });
     if (!venue) {

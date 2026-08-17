@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { getPublicMenuUrl } from "@/lib/config";
 import { QRIconButton } from "./QRIconButton";
 import { NavClient } from "./NavClient";
-import { ExternalLink, LogOut, Store } from "lucide-react";
+import { LogoutButton } from "./LogoutButton";
+import { ExternalLink, Store } from "lucide-react";
 
 export default async function AdminLayout({
   children,
@@ -65,16 +66,7 @@ export default async function AdminLayout({
               <p className="truncate text-xs font-bold text-ink">{user.name}</p>
               <p className="text-[10px] text-ink-muted">مدیر مجموعه</p>
             </div>
-            <form action="/api/auth/logout" method="POST">
-              <button
-                type="submit"
-                className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-700"
-                aria-label="خروج از حساب"
-                title="خروج"
-              >
-                <LogOut className="h-4 w-4" strokeWidth={1.8} />
-              </button>
-            </form>
+            <LogoutButton />
           </div>
         </div>
       </aside>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { validateCsrf } from "@/lib/csrf";
 
 export async function GET(
   _request: Request,
@@ -39,6 +40,8 @@ export async function POST(
     const user = await requireAuth();
     const { venueId, itemId } = await params;
     await requireVenueAccess(user.id, venueId);
+
+    await validateCsrf();
 
     const item = await prisma.menuItem.findFirst({
       where: { id: itemId, venueId },

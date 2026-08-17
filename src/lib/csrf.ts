@@ -17,7 +17,7 @@ export const csrfCookieOptions = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict" as const,
   path: "/",
-  maxAge: 60 * 60,
+  maxAge: 7 * 24 * 60 * 60,
 };
 
 export async function validateCsrf(): Promise<void> {

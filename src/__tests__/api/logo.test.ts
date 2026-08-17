@@ -17,6 +17,10 @@ vi.mock("@/lib/rate-limit", () => ({
   rateLimit: vi.fn(),
 }));
 
+vi.mock("@/lib/csrf", () => ({
+  validateCsrf: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { requireAuth } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { ApiError } from "@/lib/api-helpers";

@@ -15,10 +15,12 @@ function csrfHeaders(): Record<string, string> {
 }
 
 export async function fetchApi(url: string, options?: RequestInit) {
-  const res = await fetch(url, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...csrfHeaders(), ...options?.headers },
-  });
+  const headers: Record<string, string> = {
+    ...csrfHeaders(),
+    ...(options?.headers as Record<string, string> | undefined),
+  };
+  if (!(options?.body instanceof FormData)) headers["Content-Type"] = "application/json";
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new FetchError(body.error || `Request failed: ${res.status}`, res.status);

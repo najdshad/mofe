@@ -131,6 +131,26 @@ describe("CSRF enforcement on mutation routes (real validateCsrf)", () => {
     expect(body.error).toBe("CSRF token validation failed");
   });
 
+  it("rejects item-detail mutations (allergens) without a matching CSRF header", async () => {
+    const { generateToken, hashToken } = await import("@/lib/auth");
+    const token = generateToken();
+    await prisma.session.create({
+      data: {
+        userId: data.user.id,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    });
+    cookieStore.set("mofe_session", token);
+
+    const { POST } = await import("@/app/api/venues/[venueId]/items/[itemId]/allergens/route");
+    const res = await POST(
+      jsonReq(`http://localhost/api/venues/${data.venue.id}/items/${data.items.item1.id}/allergens`, "POST", { allergenCodes: [] }),
+      { params: Promise.resolve({ venueId: data.venue.id, itemId: data.items.item1.id }) }
+    );
+    expect(res.status).toBe(403);
+  });
+
   it("allows a mutation with a matching CSRF cookie and header", async () => {
     const { generateToken, hashToken } = await import("@/lib/auth");
     const token = generateToken();
