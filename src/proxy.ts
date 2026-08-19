@@ -30,7 +30,7 @@ function authGuard(pathname: string, sessionCookie: { value: string } | undefine
   if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/")) {
     return null;
   }
-  if (pathname.startsWith("/api/health")) {
+  if (pathname.startsWith("/api/health") || pathname.startsWith("/api/uploads")) {
     return null;
   }
   if (sessionCookie?.value && isValidSessionToken(sessionCookie.value)) {

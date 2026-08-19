@@ -3,6 +3,7 @@ import { cleanTestData, seedTestData } from "../helpers";
 import { prisma } from "@/lib/prisma";
 import path from "path";
 import fs from "fs/promises";
+import { uploadsDir } from "@/lib/storage";
 
 vi.mock("@/lib/api-helpers", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api-helpers")>("@/lib/api-helpers");
@@ -65,7 +66,7 @@ beforeEach(() => {
 afterEach(async () => {
   const venue = await prisma.venue.findUnique({ where: { id: data.venue.id } });
   if (venue?.logoUrl) {
-    const filePath = path.join(process.cwd(), "data", "uploads", path.basename(venue.logoUrl));
+    const filePath = path.join(uploadsDir, path.basename(venue.logoUrl));
     try { await fs.unlink(filePath); } catch { /* ok */ }
   }
   await prisma.venue.update({ where: { id: data.venue.id }, data: { logoUrl: null } });
@@ -86,7 +87,7 @@ describe("POST /api/venues/[venueId]/logo", () => {
   });
 
   it("replaces an existing logo and deletes the old file", async () => {
-    const oldPath = path.join(process.cwd(), "data", "uploads", "test-old-logo.webp");
+    const oldPath = path.join(uploadsDir, "test-old-logo.webp");
     await fs.writeFile(oldPath, "old");
     await prisma.venue.update({
       where: { id: data.venue.id },
@@ -129,7 +130,7 @@ describe("POST /api/venues/[venueId]/logo", () => {
 
 describe("DELETE /api/venues/[venueId]/logo", () => {
   it("clears the logo and deletes the file", async () => {
-    const filePath = path.join(process.cwd(), "data", "uploads", "test-del-logo.webp");
+    const filePath = path.join(uploadsDir, "test-del-logo.webp");
     await fs.writeFile(filePath, "logo");
     await prisma.venue.update({
       where: { id: data.venue.id },

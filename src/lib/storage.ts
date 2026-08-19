@@ -1,7 +1,11 @@
 import { writeFile, unlink, access, mkdir } from "fs/promises";
 import { join } from "path";
 
-export const uploadsDir = join(process.cwd(), "data", "uploads");
+export const uploadsDir = join(
+  process.cwd(),
+  "data",
+  process.env.NODE_ENV === "test" ? "uploads-test" : "uploads"
+);
 
 export async function saveFile(key: string, buffer: Buffer): Promise<{ url: string; byteSize: number }> {
   const filePath = join(uploadsDir, key);

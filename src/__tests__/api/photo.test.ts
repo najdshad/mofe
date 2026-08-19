@@ -3,6 +3,7 @@ import { cleanTestData, seedTestData } from "../helpers";
 import { prisma } from "@/lib/prisma";
 import path from "path";
 import fs from "fs/promises";
+import { uploadsDir } from "@/lib/storage";
 
 vi.mock("@/lib/api-helpers", async () => {
   const actual = await vi.importActual<typeof import("@/lib/api-helpers")>("@/lib/api-helpers");
@@ -111,11 +112,11 @@ describe("POST /api/venues/[venueId]/items/[itemId]/photo", () => {
       expect(fetched.status).toBe(200);
       expect(fetched.headers.get("Content-Type")).toBe("image/webp");
 
-      const storedPath = path.join(process.cwd(), "data", "uploads", path.basename(body.photoUrl as string));
+      const storedPath = path.join(uploadsDir, path.basename(body.photoUrl as string));
       await expect(fs.access(storedPath)).resolves.toBeUndefined();
     } finally {
       if (uploadedUrl) {
-        const filePath = path.join(process.cwd(), "data", "uploads", path.basename(uploadedUrl));
+        const filePath = path.join(uploadsDir, path.basename(uploadedUrl));
         try { await fs.unlink(filePath); } catch { /* ok */ }
       }
       await prisma.menuItem.update({ where: { id: data.items.item1.id }, data: { photoUrl: null } });
