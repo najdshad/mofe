@@ -29,6 +29,17 @@ describe("themes", () => {
     expect(variables["--panel"]).toBe("#fdfaf2");
   });
 
+  it("exposes high-contrast and dark presets", () => {
+    const highContrast = resolveVenueTheme("high-contrast");
+    const dark = resolveVenueTheme("midnight");
+
+    expect(highContrast.contrast).toBe("high");
+    expect(highContrast.mode).toBe("light");
+    expect(dark.mode).toBe("dark");
+    expect(dark.paper).toBe("#121722");
+    expect(dark.panel).toBe("#1a2130");
+  });
+
   it("supports valid legacy accent colors without accepting CSS injection", () => {
     expect(resolveVenueTheme("classic", "#123456").accent).toBe("#123456");
     expect(resolveVenueTheme("classic", "red; color: transparent").accent).toBe(

@@ -229,12 +229,14 @@ ${FONT_FACE_DECLARATIONS}
     body {
       --paper: ${theme.paper};
       --ink: ${theme.ink};
+      --ink-strong: ${theme.inkStrong};
       --muted: ${theme.inkMuted};
       --line: ${theme.line};
       --accent: ${theme.accent};
       --panel: ${theme.panel};
       font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
-      background: radial-gradient(circle at top, rgba(255, 255, 255, 0.5), transparent 34%), var(--paper);
+      color-scheme: ${theme.mode};
+      background: radial-gradient(circle at top, ${theme.mode === "dark" ? "rgba(255, 255, 255, 0.06)" : "rgba(255, 255, 255, 0.5)"}, transparent 34%), var(--paper);
       color: var(--ink);
       min-height: 100vh;
       line-height: 1.65;

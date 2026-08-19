@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Palette } from "lucide-react";
+import { Check, Contrast, Moon, Palette, Sun } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import {
   THEME_PRESETS,
@@ -88,7 +88,35 @@ export function ThemePresetSection({
 
               <span className="mt-3 flex items-start justify-between gap-3 px-0.5">
                 <span>
-                  <span className="block text-sm font-bold">{preset.label}</span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="block text-sm font-bold">{preset.label}</span>
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium"
+                      style={{
+                        borderColor: palette.line,
+                        color: palette.inkMuted,
+                      }}
+                    >
+                      {palette.mode === "dark" ? (
+                        <Moon className="h-3 w-3" strokeWidth={1.8} />
+                      ) : (
+                        <Sun className="h-3 w-3" strokeWidth={1.8} />
+                      )}
+                      {palette.mode === "dark" ? "تیره" : "روشن"}
+                    </span>
+                    {palette.contrast === "high" && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
+                        style={{
+                          backgroundColor: palette.accentSoft,
+                          color: palette.accent,
+                        }}
+                      >
+                        <Contrast className="h-3 w-3" strokeWidth={1.8} />
+                        کنتراست بالا
+                      </span>
+                    )}
+                  </span>
                   <span
                     className="mt-1 block text-[11px] leading-5"
                     style={{ color: palette.inkMuted }}

@@ -42,6 +42,8 @@ export default async function AdminLayout({
   return (
     <div
       data-admin-theme-root
+      data-theme-mode={theme.mode}
+      data-theme-contrast={theme.contrast}
       className="min-h-screen bg-canvas lg:flex"
       style={themeStyleVariables(theme)}
     >

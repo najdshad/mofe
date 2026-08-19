@@ -17,6 +17,55 @@
   --radius-control: 12px;
 }
 
+[data-admin-theme-root][data-theme-mode="dark"] {
+  color-scheme: dark;
+}
+
+/*
+ * A few legacy admin controls use Tailwind's white utilities directly.
+ * Re-map those surfaces inside dark venue themes so every screen follows
+ * the selected palette without duplicating component variants.
+ */
+[data-admin-theme-root][data-theme-mode="dark"] .bg-white {
+  background-color: var(--panel) !important;
+}
+
+[data-admin-theme-root][data-theme-mode="dark"] .bg-white.shadow-sm {
+  background-color: var(--ink-strong) !important;
+}
+
+[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/95 {
+  background-color: color-mix(in srgb, var(--panel) 95%, transparent) !important;
+}
+
+[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/70 {
+  background-color: color-mix(in srgb, var(--panel) 70%, transparent) !important;
+}
+
+[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/55 {
+  background-color: color-mix(in srgb, var(--panel) 55%, transparent) !important;
+}
+
+[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/50 {
+  background-color: color-mix(in srgb, var(--panel) 50%, transparent) !important;
+}
+
+[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/45 {
+  background-color: color-mix(in srgb, var(--panel) 45%, transparent) !important;
+}
+
+[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/35 {
+  background-color: color-mix(in srgb, var(--panel) 35%, transparent) !important;
+}
+
+[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/25 {
+  background-color: color-mix(in srgb, var(--panel) 25%, transparent) !important;
+}
+
+[data-admin-theme-root][data-theme-mode="dark"] .hover\:bg-white:hover {
+  background-color: var(--panel) !important;
+}
+
 @theme inline {
   --color-paper: var(--paper);
   --color-ink: var(--ink);

@@ -1,6 +1,11 @@
 import type { CSSProperties } from "react";
 
+export type ThemeMode = "light" | "dark";
+export type ThemeContrast = "standard" | "high";
+
 export interface ThemePalette {
+  mode: ThemeMode;
+  contrast: ThemeContrast;
   paper: string;
   ink: string;
   inkStrong: string;
@@ -20,6 +25,8 @@ export const THEME_PRESETS = [
     label: "سفال",
     description: "گرم، صمیمی و نزدیک به هویت اصلی موفه",
     palette: {
+      mode: "light",
+      contrast: "standard",
       paper: "#f5f0e6",
       ink: "#111111",
       inkStrong: "#000000",
@@ -38,6 +45,8 @@ export const THEME_PRESETS = [
     label: "زیتون",
     description: "آرام و طبیعی برای فضاهای روشن و سبز",
     palette: {
+      mode: "light",
+      contrast: "standard",
       paper: "#f2f1e8",
       ink: "#182019",
       inkStrong: "#0d130e",
@@ -56,6 +65,8 @@ export const THEME_PRESETS = [
     label: "زعفران",
     description: "روشن و خوش‌انرژی با گرمای طلایی ملایم",
     palette: {
+      mode: "light",
+      contrast: "standard",
       paper: "#f7f0df",
       ink: "#201a12",
       inkStrong: "#120e09",
@@ -74,6 +85,8 @@ export const THEME_PRESETS = [
     label: "انار",
     description: "ظریف و متمایز با رنگی عمیق و مهمان‌نواز",
     palette: {
+      mode: "light",
+      contrast: "standard",
       paper: "#f5eeee",
       ink: "#24191c",
       inkStrong: "#160d10",
@@ -85,6 +98,86 @@ export const THEME_PRESETS = [
       accent: "#8b3f50",
       accentSoft: "#eed7dc",
       success: "#317052",
+    },
+  },
+  {
+    key: "high-contrast",
+    label: "کنتراست روشن",
+    description: "مرزبندی واضح و خوانایی بیشتر برای استفاده روزمره",
+    palette: {
+      mode: "light",
+      contrast: "high",
+      paper: "#fffdf7",
+      ink: "#080808",
+      inkStrong: "#000000",
+      inkMuted: "#343434",
+      line: "#8a857b",
+      surface: "rgba(255, 255, 255, 0.72)",
+      canvas: "#f1efe9",
+      panel: "#ffffff",
+      accent: "#9d2f0e",
+      accentSoft: "#ffe0d3",
+      success: "#005a32",
+    },
+  },
+  {
+    key: "high-contrast-dark",
+    label: "کنتراست تیره",
+    description: "تیره، پرقدرت و مناسب خوانایی در نور کم",
+    palette: {
+      mode: "dark",
+      contrast: "high",
+      paper: "#101010",
+      ink: "#f8f5ee",
+      inkStrong: "#ffffff",
+      inkMuted: "#d6d1c8",
+      line: "#77736b",
+      surface: "rgba(255, 255, 255, 0.1)",
+      canvas: "#080808",
+      panel: "#1b1b1b",
+      accent: "#ff9a73",
+      accentSoft: "#5a2d20",
+      success: "#7ee2ae",
+    },
+  },
+  {
+    key: "midnight",
+    label: "نیمه‌شب",
+    description: "تیره و آرام با حال‌وهوای آبی برای شب‌های طولانی",
+    palette: {
+      mode: "dark",
+      contrast: "standard",
+      paper: "#121722",
+      ink: "#edf2f7",
+      inkStrong: "#ffffff",
+      inkMuted: "#aeb9ca",
+      line: "#3c485b",
+      surface: "rgba(255, 255, 255, 0.08)",
+      canvas: "#0b0f17",
+      panel: "#1a2130",
+      accent: "#78b7ff",
+      accentSoft: "#233c5a",
+      success: "#74d8a1",
+    },
+  },
+  {
+    key: "espresso",
+    label: "اسپرسو",
+    description: "تیره و گرم با رنگ‌های قهوه‌ای و مسی",
+    palette: {
+      mode: "dark",
+      contrast: "standard",
+      paper: "#1d1714",
+      ink: "#f5ede4",
+      inkStrong: "#fffaf3",
+      inkMuted: "#c4b5a8",
+      line: "#594940",
+      surface: "rgba(255, 255, 255, 0.08)",
+      canvas: "#120e0c",
+      panel: "#28201c",
+      accent: "#f1a36d",
+      accentSoft: "#5c3424",
+      success: "#8ed2a9",
     },
   },
 ] as const satisfies readonly {
