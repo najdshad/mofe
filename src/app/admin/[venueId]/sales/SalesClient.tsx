@@ -798,7 +798,11 @@ export function SalesClient({
           )}
         </Panel>
 
-        <Panel title="آیتم‌های پرفروش" subtitle="بر اساس تعداد فروش در بازه انتخاب‌شده">
+        <Panel
+          className="min-w-0"
+          title="آیتم‌های پرفروش"
+          subtitle="بر اساس تعداد فروش در بازه انتخاب‌شده"
+        >
           {topItems.length ? (
             <div className="space-y-3">
               {topItems.map((item, index) => (
