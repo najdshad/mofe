@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { toCsv } from "@/lib/csv";
 
 export async function GET(
   _request: Request,
@@ -18,35 +19,18 @@ export async function GET(
       orderBy: [{ categoryId: "asc" }, { displayOrder: "asc" }],
     });
 
-    const BOM = "\uFEFF";
-    const headers = "nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut";
-    const FORMULA_INJECTION_RE = /^[=+\-@\t]/;
-    const sanitizeCsvField = (value: string): string => {
-      if (FORMULA_INJECTION_RE.test(value)) {
-        return "'" + value;
-      }
-      return value;
-    };
-
-    const rows = items.map((item) => {
-      const row = [
-        sanitizeCsvField(item.nameFa),
-        sanitizeCsvField(item.nameEn ?? ""),
-        sanitizeCsvField(item.category.nameFa),
+    const csv = toCsv(
+      ["nameFa", "nameEn", "categoryNameFa", "priceToman", "description", "calories", "isSoldOut"],
+      items.map((item) => [
+        item.nameFa,
+        item.nameEn ?? "",
+        item.category.nameFa,
         String(item.priceToman),
-        sanitizeCsvField(item.description ?? ""),
+        item.description ?? "",
         item.calories != null ? String(item.calories) : "",
         item.isSoldOut ? "true" : "false",
-      ];
-      return row.map((cell) => {
-        if (cell.includes(",") || cell.includes('"') || cell.includes("\n")) {
-          return `"${cell.replace(/"/g, '""')}"`;
-        }
-        return cell;
-      }).join(",");
-    });
-
-    const csv = BOM + headers + "\n" + rows.join("\n");
+      ]),
+    );
 
     return new NextResponse(csv, {
       headers: {

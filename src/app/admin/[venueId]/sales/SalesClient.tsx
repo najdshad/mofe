@@ -8,6 +8,7 @@ import {
   ChartNoAxesCombined,
   ChevronDown,
   CircleDollarSign,
+  Download,
   Minus,
   Plus,
   ReceiptText,
@@ -648,6 +649,16 @@ export function SalesClient({
     }
   };
 
+  const downloadCsv = () => {
+    const currentBounds = getRangeBounds(range, customFrom, customTo);
+    if (!currentBounds) return;
+    const searchParams = new URLSearchParams();
+    if (currentBounds.from) searchParams.set("from", currentBounds.from.toISOString());
+    searchParams.set("to", currentBounds.to.toISOString());
+    if (entryFilter !== "all") searchParams.set("type", entryFilter);
+    window.location.href = `/api/venues/${venueId}/ledger/export-csv?${searchParams.toString()}`;
+  };
+
   return (
     <div className="pb-10">
       <header className="flex flex-col gap-5 border-b border-line/90 pb-6 xl:flex-row xl:items-end xl:justify-between">
@@ -659,6 +670,10 @@ export function SalesClient({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={downloadCsv}>
+            <Download className="h-4 w-4 text-accent" strokeWidth={2} />
+            خروجی CSV
+          </Button>
           <Button variant="secondary" onClick={() => setExpenseOpen(true)}>
             <ArrowDownLeft className="h-4 w-4 text-accent" strokeWidth={2} />
             ثبت هزینه
@@ -772,6 +787,7 @@ export function SalesClient({
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.7fr)]">
         <Panel
+          className="min-w-0"
           title="جریان نقدی"
           subtitle="فروش بالای خط و هزینه پایین خط نمایش داده می‌شود."
         >

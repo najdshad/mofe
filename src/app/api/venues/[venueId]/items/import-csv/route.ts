@@ -4,15 +4,7 @@ import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import Papa from "papaparse";
 import { validateCsrf } from "@/lib/csrf";
-
-const FORMULA_INJECTION_RE = /^[=+\-@\t]/;
-
-function sanitizeCsvField(value: string): string {
-  if (FORMULA_INJECTION_RE.test(value)) {
-    return "'" + value;
-  }
-  return value;
-}
+import { sanitizeCsvField } from "@/lib/csv";
 
 function findHeaderIndex(headers: string[], ...names: string[]): number {
   for (const name of names) {
