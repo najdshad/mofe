@@ -20,6 +20,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { JalaliDateTimePicker } from "@/components/ui/JalaliDateTimePicker";
 import { Modal } from "@/components/ui/Modal";
 import { Panel } from "@/components/ui/Panel";
 import { fetchApi } from "@/lib/fetch-api";
@@ -376,15 +377,7 @@ function SaleModal({
           </div>
         )}
 
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-ink-muted">زمان سفارش</span>
-          <input
-            type="datetime-local"
-            value={occurredAt}
-            onChange={(event) => setOccurredAt(event.target.value)}
-            className="w-full rounded-xl border border-line bg-white/70 px-3.5 py-2.5 text-sm text-ink focus:border-accent/60 focus:outline-none"
-          />
-        </label>
+        <JalaliDateTimePicker label="زمان سفارش" value={occurredAt} onChange={setOccurredAt} />
         <label className="block">
           <span className="mb-1.5 block text-xs font-medium text-ink-muted">یادداشت (اختیاری)</span>
           <input
@@ -488,15 +481,7 @@ function ExpenseModal({
           />
           <span className="mt-1.5 block text-[10px] text-ink-muted">برچسب‌ها را با ویرگول جدا کنید.</span>
         </label>
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-medium text-ink-muted">زمان هزینه</span>
-          <input
-            type="datetime-local"
-            value={occurredAt}
-            onChange={(event) => setOccurredAt(event.target.value)}
-            className="w-full rounded-xl border border-line bg-white/70 px-3.5 py-2.5 text-sm text-ink focus:border-accent/60 focus:outline-none"
-          />
-        </label>
+        <JalaliDateTimePicker label="زمان هزینه" value={occurredAt} onChange={setOccurredAt} />
         {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
       </div>
     </Modal>
@@ -716,26 +701,20 @@ export function SalesClient({
         </div>
         {range === "custom" && (
           <div className="mt-2 grid gap-2 border-t border-line/70 px-2 pt-3 sm:grid-cols-2">
-            <label className="flex items-center gap-2 text-xs text-ink-muted">
-              از
-              <input
-                type="date"
-                value={customFrom}
-                max={customTo}
-                onChange={(event) => setCustomFrom(event.target.value)}
-                className="min-w-0 flex-1 rounded-xl border border-line bg-white px-3 py-2 text-ink focus:border-accent/60 focus:outline-none"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-xs text-ink-muted">
-              تا
-              <input
-                type="date"
-                value={customTo}
-                min={customFrom}
-                onChange={(event) => setCustomTo(event.target.value)}
-                className="min-w-0 flex-1 rounded-xl border border-line bg-white px-3 py-2 text-ink focus:border-accent/60 focus:outline-none"
-              />
-            </label>
+            <JalaliDateTimePicker
+              label="از"
+              value={customFrom}
+              showTime={false}
+              maxValue={customTo}
+              onChange={setCustomFrom}
+            />
+            <JalaliDateTimePicker
+              label="تا"
+              value={customTo}
+              showTime={false}
+              minValue={customFrom}
+              onChange={setCustomTo}
+            />
           </div>
         )}
       </section>
