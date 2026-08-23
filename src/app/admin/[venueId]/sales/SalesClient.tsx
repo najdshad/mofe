@@ -86,6 +86,17 @@ const timeFormatter = new Intl.DateTimeFormat("fa-IR", {
   hour: "2-digit",
   minute: "2-digit",
 });
+const chartDateFormatter = new Intl.DateTimeFormat("fa-IR", {
+  calendar: "persian",
+  month: "short",
+  day: "numeric",
+});
+const chartDateWithYearFormatter = new Intl.DateTimeFormat("fa-IR", {
+  calendar: "persian",
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
 
 function formatMoney(value: number) {
   return moneyFormatter.format(value);
@@ -154,11 +165,10 @@ function buildChartData(
     const shortSpan = span <= 24 * 60 * 60 * 1000;
     const label = shortSpan
       ? timeFormatter.format(bucketStart)
-      : new Intl.DateTimeFormat("fa-IR", {
-          calendar: "persian",
-          month: span > 180 * 24 * 60 * 60 * 1000 ? "short" : undefined,
-          day: "numeric",
-        }).format(bucketStart);
+      : (span > 365 * 24 * 60 * 60 * 1000
+          ? chartDateWithYearFormatter
+          : chartDateFormatter
+        ).format(bucketStart);
     return { label, sales: 0, expenses: 0 };
   });
 
@@ -535,7 +545,9 @@ function CashflowChart({
                   title={`هزینه: ${formatMoney(bucket.expenses)} تومان`}
                 />
               </div>
-              <span className="mt-2 whitespace-nowrap text-[9px] text-ink-muted">{bucket.label}</span>
+              <span dir="rtl" className="mt-2 whitespace-nowrap text-[9px] text-ink-muted">
+                {bucket.label}
+              </span>
             </div>
           ))}
         </div>
