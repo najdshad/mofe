@@ -13,6 +13,7 @@
     "db:push": "npx prisma db push",
     "db:reset": "rm -f prisma/dev.db && npx prisma db push",
     "accounts": "tsx src/scripts/accounts.ts",
+    "menu:download": "tsx src/scripts/download-menu.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"

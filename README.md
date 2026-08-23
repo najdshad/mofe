@@ -38,6 +38,17 @@ Demo login: `admin@noghteh` / `demo1234`
 | `npm run typecheck` / `lint` | TypeScript / ESLint |
 | `npm run db:push` / `db:migrate` / `db:studio` / `db:reset` | Prisma ops on the SQLite file |
 | `npx prisma db seed` | Seed demo venue |
+| `npm run menu:download -- --slug <slug> [--output <file>]` | Export the current public menu as one standalone HTML file |
+
+To download a published menu for offline sharing or printing:
+
+```bash
+npm run menu:download -- --slug noghteh-test --output ./exports/noghteh.html
+```
+
+The command uses the same active categories and items as `/m/<slug>`, then
+inlines mofé's self-hosted fonts and locally uploaded images into the output
+file. External image URLs, if present in legacy data, remain as URLs.
 
 ## Stack
 
