@@ -1,17 +1,23 @@
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowDownLeft,
+  ArrowUpRight,
+  BarChart3,
   Check,
   ChevronDown,
   CircleCheck,
   Clock3,
   Image as ImageIcon,
   Languages,
+  Moon,
   Palette,
   QrCode,
   ScanLine,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
+import { THEME_PRESETS } from "@/lib/themes";
 
 const steps = [
   {
@@ -53,6 +59,185 @@ const features = [
     description: "کد منو را دانلود کنید و روی میز، بسته‌بندی یا ویترین قرار دهید.",
   },
 ];
+
+const themePreviewKeys = [
+  "classic",
+  "olive",
+  "saffron",
+  "pomegranate",
+  "high-contrast-dark",
+  "midnight",
+] as const;
+
+const cashflowPreview = [
+  { label: "ش", sales: 72, expense: 24 },
+  { label: "ی", sales: 48, expense: 30 },
+  { label: "د", sales: 86, expense: 20 },
+  { label: "س", sales: 62, expense: 38 },
+  { label: "چ", sales: 94, expense: 26 },
+  { label: "پ", sales: 68, expense: 42 },
+  { label: "ج", sales: 78, expense: 18 },
+];
+
+const ledgerPreviewEntries = [
+  { title: "لاته کارامل × ۲", meta: "امروز · ۱۰:۴۵", amount: "+۲۹۰٬۰۰۰", type: "sale" },
+  { title: "خرید شیر و مواد اولیه", meta: "امروز · ۰۸:۲۰", amount: "−۸۵۰٬۰۰۰", type: "expense" },
+  { title: "آمریکانو × ۳", meta: "دیروز · ۱۹:۱۰", amount: "+۲۹۴٬۰۰۰", type: "sale" },
+];
+
+function ThemePreview() {
+  const themes = themePreviewKeys
+    .map((key) => THEME_PRESETS.find((preset) => preset.key === key))
+    .filter((preset): preset is (typeof THEME_PRESETS)[number] => Boolean(preset));
+
+  return (
+    <div className="relative mx-auto w-full max-w-[560px]" aria-label="پیش‌نمایش پوسته‌های مختلف منو">
+      <div className="absolute -right-3 top-10 z-10 hidden rotate-3 items-center gap-2 rounded-2xl border border-ink/10 bg-[#fffaf0] px-4 py-3 text-xs shadow-[0_18px_45px_rgba(48,31,21,0.12)] sm:flex">
+        <Palette className="h-4 w-4 text-accent" strokeWidth={1.7} />
+        <span>۸ پوسته‌ی آماده</span>
+      </div>
+
+      <div className="rounded-[2.2rem] border border-ink/15 bg-[#fbf8f1] p-3 shadow-[0_24px_65px_rgba(48,31,21,0.14)] sm:p-4">
+        <div className="rounded-[1.7rem] border border-ink/80 bg-[#f5f0e6] p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-4 border-b border-ink/10 pb-4">
+            <div>
+              <p className="text-[10px] tracking-[0.2em] text-ink-muted">MOFE · APPEARANCE</p>
+              <h3 className="mt-2 text-lg font-bold">حال‌وهوای منو را انتخاب کنید</h3>
+            </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-paper">
+              <Moon className="h-4 w-4" strokeWidth={1.7} />
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            {themes.map(({ key, label, palette }) => (
+              <div
+                key={key}
+                className="rounded-2xl border p-2.5"
+                style={{
+                  backgroundColor: palette.panel,
+                  borderColor: palette.line,
+                  color: palette.ink,
+                }}
+              >
+                <div
+                  className="rounded-xl border p-2.5"
+                  style={{ backgroundColor: palette.paper, borderColor: palette.line }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="h-1.5 w-10 rounded-full" style={{ backgroundColor: palette.ink }} />
+                    <span className="h-5 w-5 rounded-lg" style={{ backgroundColor: palette.accentSoft }} />
+                  </div>
+                  <div className="mt-5 space-y-1.5">
+                    <span className="block h-1.5 w-4/5 rounded-full" style={{ backgroundColor: palette.line }} />
+                    <span className="block h-1.5 w-3/5 rounded-full" style={{ backgroundColor: palette.line }} />
+                  </div>
+                  <span className="mt-3 block h-4 w-1/2 rounded-full" style={{ backgroundColor: palette.accent }} />
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2 px-0.5">
+                  <span className="truncate text-[11px] font-bold">{label}</span>
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: palette.accent }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] text-ink-muted">
+            <span className="rounded-full border border-ink/15 px-2.5 py-1">روشن و طبیعی</span>
+            <span className="rounded-full border border-ink/15 px-2.5 py-1">تیره و آرام</span>
+            <span className="rounded-full border border-ink/15 px-2.5 py-1">کنتراست بالا</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LedgerPreview() {
+  return (
+    <div className="relative mx-auto w-full max-w-[600px]" aria-label="پیش‌نمایش داشبورد فروش و هزینه‌ها">
+      <div className="absolute -left-4 bottom-10 z-10 hidden -rotate-3 items-center gap-2 rounded-2xl bg-[#fffaf0] px-4 py-3 text-xs text-ink shadow-[0_18px_45px_rgba(48,31,21,0.16)] sm:flex">
+        <TrendingUp className="h-4 w-4 text-success" strokeWidth={1.8} />
+        <span>تصمیم‌های بهتر، با عددهای واقعی</span>
+      </div>
+
+      <div className="rounded-[2.2rem] border border-paper/15 bg-ink p-3 text-paper shadow-[0_24px_65px_rgba(17,17,17,0.22)] sm:p-4">
+        <div className="rounded-[1.7rem] border border-paper/15 bg-[#1b1b1b] p-4 sm:p-5">
+          <div className="flex flex-col gap-4 border-b border-paper/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] tracking-[0.2em] text-paper/45">MOFE · LEDGER</p>
+              <h3 className="mt-2 text-xl font-bold">فروش و هزینه‌ها</h3>
+              <p className="mt-1 text-xs text-paper/50">گزارش مجموعه در یک نگاه</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-paper/15 px-3 py-1.5 text-[10px] text-paper/60">۳۰ روز گذشته</span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent text-white">
+                <BarChart3 className="h-4 w-4" strokeWidth={1.8} />
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              ["فروش", "۱۲٬۸۴۰٬۰۰۰", "text-[#8fe0b1]"],
+              ["هزینه", "۴٬۲۱۰٬۰۰۰", "text-[#f5b199]"],
+              ["خالص", "۸٬۶۳۰٬۰۰۰", "text-paper"],
+              ["سفارش", "۱۴۸", "text-paper"],
+            ].map(([label, value, color]) => (
+              <div key={label} className="rounded-2xl border border-paper/10 bg-paper/[0.06] p-3">
+                <p className="text-[10px] text-paper/45">{label}</p>
+                <p className={`mt-2 text-sm font-bold ${color}`}>{value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3 rounded-2xl border border-paper/10 bg-paper/[0.04] p-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold">جریان نقدی</p>
+                <p className="mt-1 text-[10px] text-paper/45">فروش بالای خط · هزینه پایین خط</p>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] text-paper/45">
+                <span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[#8fe0b1]" />فروش</span>
+                <span className="inline-flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[#f5b199]" />هزینه</span>
+              </div>
+            </div>
+            <div className="mt-5 flex h-28 items-end justify-between gap-2 border-b border-paper/10 px-1">
+              {cashflowPreview.map((bucket) => (
+                <div key={bucket.label} className="relative flex h-full flex-1 items-end justify-center gap-1 pb-4">
+                  <span className="w-2 rounded-t-full bg-[#8fe0b1]" style={{ height: `${bucket.sales}%` }} />
+                  <span className="w-2 rounded-t-full bg-[#f5b199]" style={{ height: `${bucket.expense}%` }} />
+                  <span className="absolute bottom-0 text-[9px] text-paper/35">{bucket.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-2xl border border-paper/10 bg-paper/[0.04]">
+            <div className="flex items-center justify-between border-b border-paper/10 px-3.5 py-3">
+              <p className="text-sm font-bold">دفتر تراکنش‌ها</p>
+              <span className="text-[10px] text-paper/40">مشاهده همه</span>
+            </div>
+            <div className="divide-y divide-paper/10">
+              {ledgerPreviewEntries.map((entry) => (
+                <div key={entry.title} className="flex items-center gap-3 px-3.5 py-3">
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${entry.type === "sale" ? "bg-[#8fe0b1]/15 text-[#8fe0b1]" : "bg-[#f5b199]/15 text-[#f5b199]"}`}>
+                    {entry.type === "sale" ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownLeft className="h-3.5 w-3.5" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-bold">{entry.title}</p>
+                    <p className="mt-0.5 text-[9px] text-paper/40">{entry.meta}</p>
+                  </div>
+                  <p className={`shrink-0 text-xs font-bold ${entry.type === "sale" ? "text-[#8fe0b1]" : "text-[#f5b199]"}`}>{entry.amount}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function MenuPreview() {
   return (
@@ -168,6 +353,7 @@ export default function Home() {
 
           <div className="hidden items-center gap-7 text-sm text-ink-muted md:flex">
             <a href="#how" className="transition-colors hover:text-ink">چطور کار می‌کند؟</a>
+            <a href="#new-features" className="transition-colors hover:text-ink">تازه‌ها</a>
             <a href="#features" className="transition-colors hover:text-ink">امکانات</a>
           </div>
 
@@ -239,6 +425,60 @@ export default function Home() {
                 <p className="mt-4 max-w-sm text-sm leading-7 text-paper/55">{step.description}</p>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="new-features" className="scroll-mt-16 bg-[#e9e5da] px-5 py-24 sm:px-8 sm:py-32 lg:px-10">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl">
+            <p className="text-xs tracking-[0.18em] text-accent">تازه در موفه</p>
+            <h2 className="mt-4 max-w-2xl text-4xl font-bold leading-tight sm:text-6xl">منو فقط زیبا نیست؛ برای اداره‌ی بهتر مجموعه هم ساخته شده.</h2>
+            <p className="mt-5 max-w-2xl text-base leading-8 text-ink-muted sm:text-lg">
+              ظاهر منو را با برندتان هماهنگ کنید و فروش روزانه را با چند عدد ساده زیر نظر بگیرید.
+            </p>
+          </div>
+
+          <div className="mt-16 space-y-5">
+            <article className="grid items-center gap-10 overflow-hidden rounded-[2.5rem] border border-ink/10 bg-paper p-6 sm:p-10 lg:grid-cols-[0.78fr_1.22fr] lg:p-12">
+              <div className="lg:pr-4">
+                <span className="font-serif text-5xl italic text-accent/35">۰۱</span>
+                <h3 className="mt-8 text-3xl font-bold leading-tight sm:text-4xl">ظاهر منو، با حال‌وهوای کافه‌ی شما.</h3>
+                <p className="mt-5 text-sm leading-8 text-ink-muted sm:text-base">
+                  از پوسته‌های روشن و طبیعی تا حالت‌های تیره و کنتراست بالا انتخاب کنید؛ با یک انتخاب، پنل مدیریت و منوی مهمان‌ها هم‌زمان هماهنگ می‌شوند.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-2 text-xs text-ink-muted">
+                  <span className="rounded-full border border-ink/15 px-3 py-1.5">۸ پوسته‌ی آماده</span>
+                  <span className="rounded-full border border-ink/15 px-3 py-1.5">روشن و تیره</span>
+                  <span className="rounded-full border border-ink/15 px-3 py-1.5">کنتراست بالا</span>
+                </div>
+                <Link href="/login" className="group mt-8 inline-flex items-center gap-2 text-sm font-bold text-accent transition-colors hover:text-ink">
+                  ظاهر منوی خودتان را بسازید
+                  <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                </Link>
+              </div>
+              <ThemePreview />
+            </article>
+
+            <article className="grid items-center gap-10 overflow-hidden rounded-[2.5rem] bg-ink p-6 text-paper sm:p-10 lg:grid-cols-[1.18fr_0.82fr] lg:p-12">
+              <LedgerPreview />
+              <div className="lg:pl-4">
+                <span className="font-serif text-5xl italic text-[#d68a6e]/45">۰۲</span>
+                <h3 className="mt-8 text-3xl font-bold leading-tight sm:text-4xl">فروش را ببینید، نه فقط ثبت کنید.</h3>
+                <p className="mt-5 text-sm leading-8 text-paper/60 sm:text-base">
+                  سفارش‌ها و هزینه‌ها را ثبت کنید، جریان نقدی خالص و آیتم‌های پرفروش را در یک داشبورد ببینید و هر وقت خواستید گزارش CSV بگیرید.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-2 text-xs text-paper/60">
+                  <span className="rounded-full border border-paper/15 px-3 py-1.5">ثبت سفارش و هزینه</span>
+                  <span className="rounded-full border border-paper/15 px-3 py-1.5">نمودار جریان نقدی</span>
+                  <span className="rounded-full border border-paper/15 px-3 py-1.5">خروجی CSV</span>
+                </div>
+                <Link href="/login" className="group mt-8 inline-flex items-center gap-2 text-sm font-bold text-[#f5b199] transition-colors hover:text-white">
+                  دفتر فروش را امتحان کنید
+                  <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                </Link>
+              </div>
+            </article>
           </div>
         </div>
       </section>
