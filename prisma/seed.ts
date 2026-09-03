@@ -178,6 +178,64 @@ async function main() {
   console.log(`  Venue: ${venue.nameFa} (${venue.slug})`);
   console.log(`  Admin email: ${DEMO_EMAIL}`);
   console.log(`  Password: ${DEMO_PASSWORD}`);
+
+  // ponytail: wipe + regenerate demo sales each seed so re-runs stay idempotent
+  await prisma.ledgerEntry.deleteMany({ where: { venueId: venue.id } });
+  const menuItems = await prisma.menuItem.findMany({
+    where: { venueId: venue.id, deletedAt: null },
+  });
+  if (menuItems.length) {
+    const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+    for (let daysAgo = 29; daysAgo >= 0; daysAgo--) {
+      const salesPerDay = 1 + Math.floor(Math.random() * 3);
+      for (let s = 0; s < salesPerDay; s++) {
+        const lines = new Map<string, { item: (typeof menuItems)[number]; qty: number }>();
+        const lineCount = 1 + Math.floor(Math.random() * 3);
+        for (let l = 0; l < lineCount; l++) {
+          const item = pick(menuItems);
+          const prev = lines.get(item.id);
+          lines.set(item.id, { item, qty: (prev?.qty ?? 0) + 1 + Math.floor(Math.random() * 2) });
+        }
+        const saleItems = [...lines.values()].map(({ item, qty }) => ({
+          menuItemId: item.id,
+          itemName: item.nameFa,
+          unitPriceToman: item.priceToman,
+          quantity: qty,
+          totalToman: item.priceToman * qty,
+        }));
+        const occurredAt = new Date();
+        occurredAt.setDate(occurredAt.getDate() - daysAgo);
+        occurredAt.setHours(9 + Math.floor(Math.random() * 13), Math.floor(Math.random() * 60), 0, 0);
+        await prisma.ledgerEntry.create({
+          data: {
+            venueId: venue.id,
+            type: "sale",
+            amountToman: saleItems.reduce((sum, i) => sum + i.totalToman, 0),
+            description: "فروش حضوری",
+            occurredAt,
+            saleItems: { create: saleItems },
+          },
+        });
+      }
+    }
+    const expenses = [
+      { description: "خرید قهوه", amountToman: 2500000, tags: "مواد اولیه" },
+      { description: "حقوق", amountToman: 12000000, tags: "حقوق" },
+      { description: "قبض برق", amountToman: 850000, tags: "قبوض" },
+      { description: "خرید شیر", amountToman: 900000, tags: "مواد اولیه" },
+      { description: "اجاره", amountToman: 20000000, tags: "اجاره" },
+    ];
+    for (const [i, e] of expenses.entries()) {
+      const occurredAt = new Date();
+      occurredAt.setDate(occurredAt.getDate() - i * 5);
+      occurredAt.setHours(12, 0, 0, 0);
+      await prisma.ledgerEntry.create({
+        data: { venueId: venue.id, type: "expense", ...e, occurredAt },
+      });
+    }
+    const saleCount = await prisma.ledgerEntry.count({ where: { venueId: venue.id, type: "sale" } });
+    console.log(`  Sales: ${saleCount} sales + ${expenses.length} expenses (last 30 days)`);
+  }
 }
 
 main()
