@@ -200,13 +200,6 @@ export function SettingsClient({
             onSave={handleSaveVenue}
           />
 
-          <ThemePresetSection
-            selectedTheme={themeId}
-            isSaving={savingTheme}
-            status={themeStatus}
-            onSelect={handleThemeSelect}
-          />
-
           <Panel title="پیام خوش‌آمدگویی" subtitle="یک پیام کوتاه در ابتدای منو برای مهمان‌ها بنویسید.">
             <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-accent-soft text-accent">
               <MessageSquareText className="h-5 w-5" strokeWidth={1.7} />
@@ -247,6 +240,13 @@ export function SettingsClient({
               )}
             </div>
           </Panel>
+
+          <ThemePresetSection
+            selectedTheme={themeId}
+            isSaving={savingTheme}
+            status={themeStatus}
+            onSelect={handleThemeSelect}
+          />
         </div>
 
         <aside className="space-y-5">
