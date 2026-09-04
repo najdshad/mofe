@@ -20,6 +20,8 @@ model User {
 
   sessions    Session[]
   ownedVenues Venue[]
+  subscription Subscription?
+  payments    Payment[]
 }
 
 model Venue {
@@ -194,4 +196,50 @@ model Session {
 
   @@index([expiresAt])
   @@index([userId])
+}
+
+model Subscription {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  plan                   String   @default("trial")
+  status                 String   @default("trialing")
+  provider               String   @default("manual")
+  providerCustomerId     String?
+  providerSubscriptionId String?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  trialEndsAt            DateTime?
+  cancelAtPeriodEnd      Boolean  @default(false)
+  canceledAt             DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([status, currentPeriodEnd])
+}
+
+model Payment {
+  id                    String   @id @default(uuid())
+  userId                String
+  subscriptionId        String?
+  provider              String   @default("manual")
+  providerPaymentId     String?
+  plan                  String
+  amountToman           Int
+  currency              String   @default("IRR")
+  status                String   @default("pending")
+  checkoutUrl           String?
+  paidAt                DateTime?
+  metadata              String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([subscriptionId])
+  @@index([status])
 }

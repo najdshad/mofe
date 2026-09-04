@@ -1,7 +1,9 @@
 import { prisma } from "./prisma";
 import { ApiError } from "./api-helpers";
+import { requireActiveSubscription } from "./subscription";
 
 export async function requireVenueAccess(userId: string, venueId: string) {
+  await requireActiveSubscription(userId);
   const venue = await prisma.venue.findFirst({
     where: { id: venueId, ownerId: userId },
     select: { id: true },

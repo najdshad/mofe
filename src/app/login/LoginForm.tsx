@@ -49,9 +49,9 @@ export function LoginForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[var(--radius-panel)] border border-line bg-paper p-6"
+      className="rounded-[var(--radius-panel)] border border-line bg-panel/85 p-6 shadow-[0_14px_40px_rgba(48,31,21,0.07)] backdrop-blur-sm sm:p-8"
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
         <Input
           label="ایمیل"
           type="text"
@@ -72,9 +72,13 @@ export function LoginForm() {
         />
       </div>
 
-      {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm leading-6 text-red-700">
+          {error}
+        </p>
+      )}
 
-      <Button type="submit" className="mt-6 w-full" disabled={loading}>
+      <Button type="submit" size="lg" className="mt-7 w-full rounded-[var(--radius-control)]" disabled={loading}>
         {loading ? "..." : "ورود"}
       </Button>
     </form>

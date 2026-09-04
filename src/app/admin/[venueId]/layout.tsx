@@ -9,6 +9,7 @@ import { NavClient } from "./NavClient";
 import { LogoutButton } from "./LogoutButton";
 import { ExternalLink, Store } from "lucide-react";
 import { resolveVenueTheme, themeStyleVariables } from "@/lib/themes";
+import { getSubscriptionStatus } from "@/lib/subscription";
 
 export default async function AdminLayout({
   children,
@@ -19,8 +20,10 @@ export default async function AdminLayout({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-
   const { venueId } = await params;
+  const subscription = await getSubscriptionStatus(user.id);
+  if (!subscription.active) redirect(`/account/billing?reason=expired&venueId=${encodeURIComponent(venueId)}`);
+
   const [access, venue] = await Promise.all([
     requireVenueAccess(user.id, venueId).catch(() => null),
     prisma.venue.findUnique({
@@ -56,6 +59,13 @@ export default async function AdminLayout({
             <span className="block font-serif text-xl leading-none text-ink-strong">mofé</span>
             <span className="mt-1 block text-[10px] text-ink-muted">مدیریت منوی دیجیتال</span>
           </span>
+        </Link>
+        <Link
+          href={`/account/billing?venueId=${encodeURIComponent(venueId)}`}
+          className="mt-3 flex items-center justify-between rounded-xl border border-line bg-white/40 px-3 py-2 text-xs text-ink-muted transition-colors hover:border-ink/40 hover:text-ink"
+        >
+          <span>اشتراک و صورتحساب</span>
+          <span className="text-[10px]">مدیریت</span>
         </Link>
 
         <div className="mt-5 rounded-2xl border border-line bg-white/50 p-3">
