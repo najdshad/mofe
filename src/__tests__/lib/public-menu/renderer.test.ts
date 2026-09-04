@@ -100,14 +100,14 @@ describe("renderPublicMenu", () => {
     it("includes Vazirmatn @font-face", () => {
       const html = renderPublicMenu(makeSnapshot());
       expect(html).toContain('font-family: "Vazirmatn"');
-      expect(html).toContain("Vazirmatn-VariableFont_wght.ttf");
+      expect(html).toContain("Vazirmatn-VariableFont_wght.woff2");
     });
 
     it("includes EB Garamond @font-face", () => {
       const html = renderPublicMenu(makeSnapshot());
       expect(html).toContain('font-family: "EB Garamond"');
-      expect(html).toContain("EBGaramond-VariableFont_wght.ttf");
-      expect(html).toContain("EBGaramond-Italic-VariableFont_wght.ttf");
+      expect(html).toContain("EBGaramond-VariableFont_wght.woff2");
+      expect(html).toContain("EBGaramond-Italic-VariableFont_wght.woff2");
     });
   });
 
@@ -502,8 +502,8 @@ describe("renderUnavailablePage", () => {
   it("includes font-face declarations", () => {
     const html = renderUnavailablePage("کافه نقطه");
     expect(html).toContain("Parastoo.woff2");
-    expect(html).toContain("Vazirmatn-VariableFont_wght.ttf");
-    expect(html).toContain("EBGaramond-VariableFont_wght.ttf");
+    expect(html).toContain("Vazirmatn-VariableFont_wght.woff2");
+    expect(html).toContain("EBGaramond-VariableFont_wght.woff2");
   });
 
   it("includes brand mark and footer", () => {

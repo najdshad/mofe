@@ -64,21 +64,21 @@ export const FONT_FACE_DECLARATIONS = `    @font-face {
     }
     @font-face {
       font-family: "Vazirmatn";
-      src: url("/fonts/Vazirmatn-VariableFont_wght.ttf") format("truetype-variations");
+      src: url("/fonts/Vazirmatn-VariableFont_wght.woff2") format("woff2-variations");
       font-weight: 100 900;
       font-style: normal;
       font-display: swap;
     }
     @font-face {
       font-family: "EB Garamond";
-      src: url("/fonts/EBGaramond-VariableFont_wght.ttf") format("truetype-variations");
+      src: url("/fonts/EBGaramond-VariableFont_wght.woff2") format("woff2-variations");
       font-weight: 400 800;
       font-style: normal;
       font-display: swap;
     }
     @font-face {
       font-family: "EB Garamond";
-      src: url("/fonts/EBGaramond-Italic-VariableFont_wght.ttf") format("truetype-variations");
+      src: url("/fonts/EBGaramond-Italic-VariableFont_wght.woff2") format("woff2-variations");
       font-weight: 400 800;
       font-style: italic;
       font-display: swap;
