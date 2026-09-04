@@ -122,7 +122,7 @@ describe("renderPublicMenu", () => {
     it("includes theme-color meta", () => {
       const html = renderPublicMenu(makeSnapshot());
       expect(html).toContain('name="theme-color"');
-      expect(html).toContain("#f5f0e6");
+      expect(html).toContain("#f4efe6");
     });
 
     it("includes format-detection meta", () => {
@@ -134,8 +134,8 @@ describe("renderPublicMenu", () => {
   describe("theme colors", () => {
     it("uses the clay preset by default", () => {
       const html = renderPublicMenu(makeSnapshot({ venue: { accentColor: null } }));
-      expect(html).toContain("--paper: #f5f0e6");
-      expect(html).toContain("--accent: #b94f2c");
+      expect(html).toContain("--paper: #f4efe6");
+      expect(html).toContain("--accent: #a8462a");
     });
 
     it("keeps a valid legacy accent override", () => {
@@ -149,10 +149,10 @@ describe("renderPublicMenu", () => {
           venue: { themeId: "olive", accentColor: null },
         })
       );
-      expect(html).toContain('name="theme-color" content="#f2f1e8"');
-      expect(html).toContain("--paper: #f2f1e8");
-      expect(html).toContain("--ink: #182019");
-      expect(html).toContain("--accent: #4f6f52");
+      expect(html).toContain('name="theme-color" content="#f1f0e7"');
+      expect(html).toContain("--paper: #f1f0e7");
+      expect(html).toContain("--ink: #1d241d");
+      expect(html).toContain("--accent: #496b4e");
     });
   });
 

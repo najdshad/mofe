@@ -19,11 +19,11 @@ export function Toggle({ on, onChange, disabled, "aria-label": ariaLabel }: Togg
       className={`relative h-6 w-10 rounded-full border transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/20 ${
         disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
       } ${
-        on ? "border-success bg-success" : "border-line bg-white"
+        on ? "border-success bg-success" : "border-line bg-control"
       }`}
     >
       <div
-        className={`absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-all duration-150 ${
+        className={`absolute top-0.5 h-[18px] w-[18px] rounded-full bg-panel shadow-sm transition-all duration-150 ${
           on ? "left-[calc(100%-20px)]" : "left-0.5"
         }`}
       />

@@ -71,7 +71,7 @@ export function BillingClient({
               key={plan.key}
               type="button"
               onClick={() => setSelectedPlan(plan.key)}
-              className={`rounded-2xl border p-4 text-right transition-colors ${selectedPlan === plan.key ? "border-ink bg-ink text-paper" : "border-line bg-white/40 text-ink hover:border-ink/50"}`}
+              className={`rounded-2xl border p-4 text-right transition-colors ${selectedPlan === plan.key ? "border-accent bg-accent text-accent-ink" : "border-line bg-control text-ink hover:border-ink/50 hover:bg-control-hover"}`}
             >
               <span className="flex items-center justify-between gap-3">
                 <span className="text-lg font-bold">{plan.label}</span>

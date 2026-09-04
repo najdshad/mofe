@@ -127,7 +127,7 @@ export function ThemePresetSection({
                 <span
                   className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
                   style={{
-                    color: selected ? palette.panel : "transparent",
+                    color: selected ? palette.accentInk : "transparent",
                     backgroundColor: selected ? palette.accent : "transparent",
                     borderColor: selected ? palette.accent : palette.line,
                   }}

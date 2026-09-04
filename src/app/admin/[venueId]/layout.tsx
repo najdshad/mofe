@@ -52,7 +52,7 @@ export default async function AdminLayout({
     >
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-l border-line bg-panel p-4 lg:flex">
         <Link href="/venues" className="flex items-center gap-3 rounded-xl px-2 py-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink font-serif text-lg text-paper">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent font-serif text-lg text-accent-ink">
             m
           </span>
           <span>
@@ -62,13 +62,13 @@ export default async function AdminLayout({
         </Link>
         <Link
           href={`/account/billing?venueId=${encodeURIComponent(venueId)}`}
-          className="mt-3 flex items-center justify-between rounded-xl border border-line bg-white/40 px-3 py-2 text-xs text-ink-muted transition-colors hover:border-ink/40 hover:text-ink"
+          className="mt-3 flex items-center justify-between rounded-xl border border-line bg-surface px-3 py-2 text-xs text-ink-muted transition-colors hover:border-ink/40 hover:bg-control-hover hover:text-ink"
         >
           <span>اشتراک و صورتحساب</span>
           <span className="text-[10px]">مدیریت</span>
         </Link>
 
-        <div className="mt-5 rounded-2xl border border-line bg-white/50 p-3">
+        <div className="mt-5 rounded-2xl border border-line bg-control p-3">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
               <Store className="h-[18px] w-[18px]" strokeWidth={1.8} />

@@ -12,7 +12,7 @@ export default function AdminError({
       <p className="text-sm text-ink-muted">متأسفانه مشکلی پیش آمده. لطفاً دوباره تلاش کنید.</p>
       <button
         onClick={reset}
-        className="rounded-full bg-ink px-5 py-2.5 text-sm text-paper transition-opacity hover:opacity-90"
+        className="rounded-full bg-accent px-5 py-2.5 text-sm text-accent-ink transition-opacity hover:opacity-90"
       >
         تلاش مجدد
       </button>

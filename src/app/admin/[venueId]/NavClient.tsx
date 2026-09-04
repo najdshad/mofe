@@ -45,7 +45,7 @@ export function NavClient({
               key={link.href}
               href={link.href}
               className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors ${
-                isActive ? "bg-ink text-paper" : "text-ink-muted hover:bg-ink/5 hover:text-ink"
+                isActive ? "bg-accent text-accent-ink" : "text-ink-muted hover:bg-control hover:text-ink"
               }`}
             >
               <Icon className="h-4 w-4" strokeWidth={1.8} />
@@ -68,8 +68,8 @@ export function NavClient({
             href={link.href}
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
               isActive
-                ? "bg-ink text-paper shadow-sm"
-                : "text-ink-muted hover:bg-ink/5 hover:text-ink"
+                ? "bg-accent text-accent-ink shadow-sm"
+                : "text-ink-muted hover:bg-control hover:text-ink"
             }`}
           >
             <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />

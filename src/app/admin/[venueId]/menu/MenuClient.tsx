@@ -96,14 +96,14 @@ function SortableCategoryRow({
       ref={setNodeRef}
       style={style}
       className={`group flex items-center gap-2 rounded-xl border px-2.5 py-2 transition-colors ${
-        selected ? "border-ink bg-ink text-paper" : "border-transparent bg-white/45 hover:border-line hover:bg-white"
+        selected ? "border-accent bg-accent text-accent-ink" : "border-transparent bg-control hover:border-line hover:bg-control-hover"
       }`}
     >
       <button
         {...attributes}
         {...listeners}
         className={`cursor-grab touch-none rounded-lg p-1 transition-colors ${
-          selected ? "text-paper/45 hover:text-paper" : "text-ink-muted/45 hover:text-ink"
+          selected ? "text-accent-ink/55 hover:text-accent-ink" : "text-ink-muted/45 hover:text-ink"
         }`}
         title="جابجایی"
         suppressHydrationWarning
@@ -111,8 +111,8 @@ function SortableCategoryRow({
         <GripIcon size={16} />
       </button>
       <button onClick={onSelect} className="min-w-0 flex-1 text-right">
-        <span className={`block truncate text-sm font-medium ${selected ? "text-paper" : "text-ink"}`}>{cat.nameFa}</span>
-        <span className={`mt-0.5 block text-[10px] ${selected ? "text-paper/55" : "text-ink-muted"}`}>
+        <span className={`block truncate text-sm font-medium ${selected ? "text-accent-ink" : "text-ink"}`}>{cat.nameFa}</span>
+        <span className={`mt-0.5 block text-[10px] ${selected ? "text-accent-ink/65" : "text-ink-muted"}`}>
           {cat.itemCount} آیتم
         </span>
       </button>
@@ -120,7 +120,7 @@ function SortableCategoryRow({
         <button
           onClick={onEdit}
           className={`rounded-lg p-1.5 transition-colors ${
-            selected ? "text-paper/55 hover:bg-paper/10 hover:text-paper" : "text-ink-muted hover:bg-ink/5 hover:text-ink"
+            selected ? "text-accent-ink/65 hover:bg-accent-ink/10 hover:text-accent-ink" : "text-ink-muted hover:bg-control-hover hover:text-ink"
           }`}
           title="ویرایش"
         >
@@ -129,7 +129,7 @@ function SortableCategoryRow({
         <button
           onClick={onDelete}
           className={`rounded-lg p-1.5 transition-colors ${
-            selected ? "text-paper/55 hover:bg-red-400/15 hover:text-red-200" : "text-ink-muted hover:bg-red-50 hover:text-red-700"
+            selected ? "text-accent-ink/65 hover:bg-accent-ink/10 hover:text-accent-ink" : "text-ink-muted hover:bg-danger-soft hover:text-danger"
           }`}
           title="حذف"
         >
@@ -193,11 +193,11 @@ function ItemRowContent({
           onClick={() => onToggleSoldOut(!item.isSoldOut)}
           className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
             item.isSoldOut
-              ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              ? "border-danger/35 bg-danger-soft text-danger hover:brightness-95"
+              : "border-success/35 bg-success-soft text-success hover:brightness-95"
           }`}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-red-500" : "bg-emerald-500"}`} />
+          <span className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-danger" : "bg-success"}`} />
           {item.isSoldOut ? "ناموجود" : "موجود"}
         </button>
       </div>
@@ -211,7 +211,7 @@ function ItemRowContent({
         </button>
         <button
           onClick={onDelete}
-          className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-700"
+          className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-danger-soft hover:text-danger"
           title="حذف"
         >
           <DeleteIcon size={15} />
@@ -277,17 +277,17 @@ function MobileItemRowContent({
           <button
             onClick={() => onToggleSoldOut(!item.isSoldOut)}
             className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-medium ${
-              item.isSoldOut ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
+              item.isSoldOut ? "bg-danger-soft text-danger" : "bg-success-soft text-success"
             }`}
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-red-500" : "bg-emerald-500"}`} />
+            <span className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-danger" : "bg-success"}`} />
             {item.isSoldOut ? "ناموجود" : "موجود"}
           </button>
           <div className="flex items-center">
             <button onClick={onEdit} className="rounded-lg p-2 text-ink-muted hover:bg-ink/5 hover:text-ink" aria-label={`ویرایش ${item.nameFa}`}>
               <EditIcon size={15} />
             </button>
-            <button onClick={onDelete} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-700" aria-label={`حذف ${item.nameFa}`}>
+            <button onClick={onDelete} className="rounded-lg p-2 text-ink-muted hover:bg-danger-soft hover:text-danger" aria-label={`حذف ${item.nameFa}`}>
               <DeleteIcon size={15} />
             </button>
           </div>
@@ -329,7 +329,7 @@ function SortableItemRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`${index !== total - 1 ? "border-b border-line/70" : ""} bg-panel transition-colors hover:bg-white`}
+      className={`${index !== total - 1 ? "border-b border-line/70" : ""} bg-panel transition-colors hover:bg-control-hover`}
     >
       <div style={{ gridTemplateColumns: COL_TEMPLATE }} className="hidden items-center gap-2 px-3 py-3 md:grid">
         <div className="flex items-center justify-center gap-1">
@@ -428,7 +428,7 @@ function CategoryModal({
         placeholder="مثلاً: نوشیدنی گرم"
         autoFocus
       />
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
     </Modal>
   );
 }
@@ -706,7 +706,7 @@ function ItemModal({
                 <button
                   onClick={handlePhotoDelete}
                   disabled={photoLoading}
-                  className="text-xs text-ink-muted hover:text-red-600 transition-colors"
+                  className="text-xs text-ink-muted transition-colors hover:text-danger"
                 >
                   حذف
                 </button>
@@ -762,7 +762,7 @@ function ItemModal({
                   />
                   <button
                     onClick={() => setVariants((prev) => (prev ?? []).filter((_, j) => j !== i))}
-                    className="text-xs text-ink-muted hover:text-red-600 transition-colors"
+                    className="text-xs text-ink-muted transition-colors hover:text-danger"
                   >
                     حذف
                   </button>
@@ -788,7 +788,7 @@ function ItemModal({
                   key={code}
                   className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs transition-colors ${
                     allergenCodes.includes(code)
-                      ? "border-ink bg-ink text-paper"
+                      ? "border-accent bg-accent text-accent-ink"
                       : "border-line text-ink-muted hover:border-ink hover:text-ink"
                   }`}
                 >
@@ -810,7 +810,7 @@ function ItemModal({
             </div>
           </div>
         )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
       </div>
     </Modal>
   );
@@ -857,7 +857,7 @@ function DeleteConfirmModal({
       loading={loading}
     >
       {children}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
     </Modal>
   );
 }
@@ -1259,7 +1259,7 @@ export function MenuClient({
             href={publicUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-panel px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/40 hover:bg-white"
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-control px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink/40 hover:bg-control-hover"
           >
             مشاهده منو
             <ExternalLink className="h-4 w-4 text-ink-muted" strokeWidth={1.8} />
@@ -1269,7 +1269,7 @@ export function MenuClient({
             افزودن آیتم
           </Button>
           {dragError && (
-            <span className="text-xs text-red-600 shrink-0">{dragError}</span>
+            <span className="shrink-0 text-xs text-danger">{dragError}</span>
           )}
         </div>
       </header>
@@ -1307,7 +1307,7 @@ export function MenuClient({
                 setEditingCategory(null);
                 setCategoryModalOpen(true);
               }}
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-white/35 py-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-accent/50 hover:bg-accent-soft/45 hover:text-accent"
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line bg-surface py-2.5 text-xs font-medium text-ink-muted transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
             >
               <Plus className="h-4 w-4" />
               افزودن دسته جدید
@@ -1317,13 +1317,13 @@ export function MenuClient({
               onClick={() => setSelectedCategoryId(null)}
               className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-right text-sm transition-colors ${
                 selectedCategoryId === null
-                  ? "border-ink bg-ink text-paper"
-                  : "border-transparent bg-white/45 hover:border-line hover:bg-white"
+                  ? "border-accent bg-accent text-accent-ink"
+                  : "border-transparent bg-control hover:border-line hover:bg-control-hover"
               }`}
             >
-              <ListChecks className={`h-4 w-4 ${selectedCategoryId === null ? "text-paper/65" : "text-ink-muted"}`} />
+              <ListChecks className={`h-4 w-4 ${selectedCategoryId === null ? "text-accent-ink/70" : "text-ink-muted"}`} />
               <span className="flex-1">همه آیتم‌ها</span>
-              <span className={`text-[10px] ${selectedCategoryId === null ? "text-paper/55" : "text-ink-muted"}`}>
+              <span className={`text-[10px] ${selectedCategoryId === null ? "text-accent-ink/65" : "text-ink-muted"}`}>
                 {items.length.toLocaleString("fa-IR")}
               </span>
             </button>
@@ -1375,7 +1375,7 @@ export function MenuClient({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="جستجوی نام فارسی یا انگلیسی"
-                    className="h-10 w-full rounded-xl border border-line bg-white/70 pr-10 pl-3 text-sm text-ink placeholder:text-ink-muted/45 focus:border-accent/60 focus:outline-none focus:ring-3 focus:ring-accent/10"
+                    className="h-10 w-full rounded-xl border border-line bg-control pr-10 pl-3 text-sm text-ink placeholder:text-ink-muted/60 hover:bg-control-hover focus:border-accent/60 focus:bg-control focus:outline-none focus:ring-3 focus:ring-accent/10"
                   />
                 </div>
                 <button
@@ -1389,15 +1389,15 @@ export function MenuClient({
                   }}
                   className={`inline-flex h-10 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-medium transition-colors ${
                     selectionMode
-                      ? "border-ink bg-ink text-paper"
-                      : "border-line bg-panel text-ink-muted hover:border-ink/40 hover:bg-white hover:text-ink"
+                      ? "border-accent bg-accent text-accent-ink"
+                      : "border-line bg-control text-ink-muted hover:border-ink/40 hover:bg-control-hover hover:text-ink"
                   }`}
                 >
                   <ListChecks className="h-4 w-4" />
                   {selectionMode ? "پایان انتخاب" : "انتخاب چندتایی"}
                 </button>
                 <details className="group relative">
-                  <summary className="flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-line bg-panel px-3 text-xs font-medium text-ink-muted transition-colors hover:border-ink/40 hover:bg-white hover:text-ink">
+                  <summary className="flex h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-line bg-control px-3 text-xs font-medium text-ink-muted transition-colors hover:border-ink/40 hover:bg-control-hover hover:text-ink">
                     <FileSpreadsheet className="h-4 w-4" />
                     ابزار CSV
                     <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
@@ -1497,7 +1497,7 @@ export function MenuClient({
                 filteredItems.map((item, idx) => (
                   <div
                     key={item.id}
-                    className={`bg-panel transition-colors hover:bg-white ${
+                    className={`bg-panel transition-colors hover:bg-control-hover ${
                       idx !== filteredItems.length - 1
                         ? "border-b border-line/70"
                         : ""
@@ -1573,7 +1573,7 @@ export function MenuClient({
       >
         <p>آیا از حذف این دسته اطمینان دارید؟</p>
         {deletingCategory && deletingCategory.itemCount > 0 && (
-          <p className="mt-2 text-red-600">
+          <p className="mt-2 text-danger">
             این دسته {deletingCategory.itemCount} آیتم دارد. ابتدا آیتم‌ها را به دسته دیگری منتقل کنید.
           </p>
         )}
@@ -1611,12 +1611,12 @@ export function MenuClient({
           <div className="space-y-3">
             <div className="flex gap-4 text-sm">
               <span className="text-ink">مجموع: {importResults.summary.total}</span>
-              <span className="text-green-700">ایجاد: {importResults.summary.created}</span>
+              <span className="text-success">ایجاد: {importResults.summary.created}</span>
               {importResults.summary.skipped > 0 && (
-                <span className="text-amber-700">رد شده: {importResults.summary.skipped}</span>
+                <span className="text-accent">رد شده: {importResults.summary.skipped}</span>
               )}
               {importResults.summary.errors > 0 && (
-                <span className="text-red-700">خطا: {importResults.summary.errors}</span>
+                <span className="text-danger">خطا: {importResults.summary.errors}</span>
               )}
             </div>
             {importResults.details.some((d) => d.status !== "created") && (
@@ -1624,7 +1624,7 @@ export function MenuClient({
                 {importResults.details
                   .filter((d) => d.status !== "created")
                   .map((d) => (
-                    <div key={d.row} className="rounded bg-red-50 px-2 py-1 text-red-700">
+                    <div key={d.row} className="rounded bg-danger-soft px-2 py-1 text-danger">
                       سطر {d.row}: {d.nameFa || "(بدون نام)"} — {d.message}
                     </div>
                   ))}

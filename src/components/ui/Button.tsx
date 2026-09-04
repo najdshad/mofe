@@ -10,10 +10,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary: "border border-ink bg-ink text-paper shadow-[0_1px_1px_rgba(17,17,17,0.12)] hover:bg-ink/90",
-  secondary: "border border-line bg-panel text-ink hover:border-ink/40 hover:bg-white",
-  tertiary: "border border-transparent bg-transparent text-ink-muted hover:bg-ink/5 hover:text-ink",
-  destructive: "border border-red-200 bg-red-50 text-red-700 hover:border-red-300 hover:bg-red-100",
+  primary: "border border-accent bg-accent text-accent-ink shadow-[0_1px_1px_rgba(17,17,17,0.12)] hover:brightness-95",
+  secondary: "border border-line bg-control text-ink hover:border-ink/40 hover:bg-control-hover",
+  tertiary: "border border-transparent bg-transparent text-ink-muted hover:bg-control hover:text-ink",
+  destructive: "border border-danger/35 bg-danger-soft text-danger hover:border-danger/55 hover:brightness-95",
   none: "",
 };
 

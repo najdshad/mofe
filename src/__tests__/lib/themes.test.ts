@@ -23,10 +23,12 @@ describe("themes", () => {
     const theme = resolveVenueTheme("saffron");
     const variables = themeStyleVariables(theme);
 
-    expect(theme.paper).toBe("#f7f0df");
-    expect(theme.accent).toBe("#a96818");
-    expect(variables["--canvas"]).toBe("#eee6d5");
-    expect(variables["--panel"]).toBe("#fdfaf2");
+    expect(theme.paper).toBe("#f6efdf");
+    expect(theme.accent).toBe("#8e5a14");
+    expect(variables["--canvas"]).toBe("#ece3d1");
+    expect(variables["--panel"]).toBe("#fcf8ef");
+    expect(variables["--control"]).toBe("#f2e9d8");
+    expect(variables["--accent-ink"]).toBe("#fffaf1");
   });
 
   it("exposes high-contrast and dark presets", () => {
@@ -36,14 +38,20 @@ describe("themes", () => {
     expect(highContrast.contrast).toBe("high");
     expect(highContrast.mode).toBe("light");
     expect(dark.mode).toBe("dark");
-    expect(dark.paper).toBe("#121722");
-    expect(dark.panel).toBe("#1a2130");
+    expect(dark.paper).toBe("#111722");
+    expect(dark.panel).toBe("#18212e");
+    expect(dark.control).toBe("#222e3e");
   });
 
   it("supports valid legacy accent colors without accepting CSS injection", () => {
-    expect(resolveVenueTheme("classic", "#123456").accent).toBe("#123456");
+    const darkAccent = resolveVenueTheme("classic", "#123456");
+    const lightAccent = resolveVenueTheme("midnight", "#fefefe");
+
+    expect(darkAccent.accent).toBe("#123456");
+    expect(darkAccent.accentInk).toBe("#f4efe6");
+    expect(lightAccent.accentInk).toBe("#111722");
     expect(resolveVenueTheme("classic", "red; color: transparent").accent).toBe(
-      "#b94f2c"
+      "#a8462a"
     );
   });
 });

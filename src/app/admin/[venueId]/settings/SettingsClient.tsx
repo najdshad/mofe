@@ -182,7 +182,7 @@ export function SettingsClient({
           href={publicMenuDomain}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex w-fit items-center gap-2 rounded-xl border border-line bg-panel px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-ink/40 hover:bg-white"
+          className="inline-flex w-fit items-center gap-2 rounded-xl border border-line bg-control px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-ink/40 hover:bg-control-hover"
         >
           مشاهده منوی عمومی
           <ExternalLink className="h-4 w-4 text-ink-muted" strokeWidth={1.8} />
@@ -223,7 +223,7 @@ export function SettingsClient({
                 maxLength={220}
                 rows={5}
                 placeholder="مثلاً: خوش آمدید؛ از منوی ما لذت ببرید."
-                className="mt-2 min-h-32 w-full resize-none rounded-[var(--radius-control)] border border-line bg-white/70 px-3.5 py-3 text-sm leading-7 text-ink placeholder:text-ink-muted/45 transition-colors focus:border-accent/60 focus:outline-none focus-visible:ring-3 focus-visible:ring-accent/10"
+                className="mt-2 min-h-32 w-full resize-none rounded-[var(--radius-control)] border border-line bg-control px-3.5 py-3 text-sm leading-7 text-ink placeholder:text-ink-muted/60 transition-colors hover:bg-control-hover focus:border-accent/60 focus:bg-control focus:outline-none focus-visible:ring-3 focus-visible:ring-accent/10"
               />
             </div>
 
@@ -252,7 +252,7 @@ export function SettingsClient({
         <aside className="space-y-5">
           <Panel title="لوگوی مجموعه" subtitle="برای بهترین نتیجه از تصویر مربع استفاده کنید.">
             <div className="flex items-center gap-4">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-white text-ink-muted">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-control text-ink-muted">
                 {logoUrl ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={logoUrl} alt="لوگوی مجموعه" className="h-full w-full object-cover" />
@@ -265,7 +265,7 @@ export function SettingsClient({
                   حداکثر ۵۰۰ پیکسل و کمتر از ۵۰ کیلوبایت.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl border border-line bg-panel px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-ink/40 hover:bg-white">
+                  <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl border border-line bg-control px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-ink/40 hover:bg-control-hover">
                     <ImagePlus className="h-3.5 w-3.5" strokeWidth={1.7} />
                     {uploading ? "در حال آپلود..." : "انتخاب تصویر"}
                     <input
@@ -280,7 +280,7 @@ export function SettingsClient({
                     <button
                       type="button"
                       onClick={handleLogoRemove}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-xl px-2 text-xs text-ink-muted transition-colors hover:bg-red-50 hover:text-red-700"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl px-2 text-xs text-ink-muted transition-colors hover:bg-danger-soft hover:text-danger"
                     >
                       <Trash2 className="h-3.5 w-3.5" strokeWidth={1.7} />
                       حذف
@@ -291,35 +291,35 @@ export function SettingsClient({
             </div>
           </Panel>
 
-          <section className="overflow-hidden rounded-[var(--radius-panel)] border border-ink bg-ink text-paper shadow-[0_14px_40px_rgba(17,17,17,0.12)]">
+          <section className="overflow-hidden rounded-[var(--radius-panel)] border border-line bg-emphasis text-emphasis-ink shadow-[0_14px_40px_rgba(17,17,17,0.12)]">
             <div className="flex items-center justify-between border-b border-paper/10 px-5 py-4">
               <div className="flex items-center gap-2 text-sm font-bold">
                 <MonitorSmartphone className="h-4 w-4" strokeWidth={1.7} />
                 پیش‌نمایش هویت
               </div>
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="h-2 w-2 rounded-full bg-success" />
             </div>
             <div className="p-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-paper/10">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emphasis-ink/10">
                   {logoUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={logoUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <Globe className="h-5 w-5 text-paper/60" strokeWidth={1.6} />
+                    <Globe className="h-5 w-5 text-emphasis-ink/60" strokeWidth={1.6} />
                   )}
                 </div>
                 <div className="min-w-0">
                   <p className="truncate text-lg font-bold">{displayName}</p>
-                  <p className="mt-1 text-xs text-paper/55">منوی دیجیتال مجموعه</p>
+                  <p className="mt-1 text-xs text-emphasis-ink/60">منوی دیجیتال مجموعه</p>
                 </div>
               </div>
               {welcomeMessage && (
-                <p className="mt-5 border-r-2 border-accent pr-3 text-xs leading-6 text-paper/65">
+                <p className="mt-5 border-r-2 border-accent pr-3 text-xs leading-6 text-emphasis-ink/70">
                   {welcomeMessage}
                 </p>
               )}
-              <div className="mt-5 flex items-center gap-2 rounded-xl bg-paper/7 px-3 py-2.5 text-xs text-paper/55" dir="ltr">
+              <div className="mt-5 flex items-center gap-2 rounded-xl bg-emphasis-ink/8 px-3 py-2.5 text-xs text-emphasis-ink/60" dir="ltr">
                 <Link2 className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">mofe.ir/m/{slug}</span>
               </div>

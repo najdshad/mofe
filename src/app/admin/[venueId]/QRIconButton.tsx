@@ -81,7 +81,7 @@ export function QRIconButton({ venueName, publicUrl, showLabel = false }: QRIcon
       <button
         ref={triggerRef}
         onClick={() => setOpen(true)}
-        className={`inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-panel text-sm text-ink transition-colors hover:border-ink/40 hover:bg-white ${
+        className={`inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-control text-sm text-ink transition-colors hover:border-ink/40 hover:bg-control-hover ${
           showLabel ? "w-full px-3 py-2.5" : "h-9 w-9"
         }`}
         title="خروجی QR"
@@ -97,7 +97,7 @@ export function QRIconButton({ venueName, publicUrl, showLabel = false }: QRIcon
             aria-modal="true"
             aria-label="خروجی QR"
             tabIndex={-1}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 p-4 backdrop-blur-[2px]"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-[2px]"
             onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
             onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
           >

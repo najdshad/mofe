@@ -206,7 +206,7 @@ function AmountInput({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-[var(--radius-control)] border border-line bg-white/70 px-3.5 py-2.5 pl-16 text-sm text-ink placeholder:text-ink-muted/45 focus:border-accent/60 focus:outline-none focus-visible:ring-3 focus-visible:ring-accent/10"
+          className="w-full rounded-[var(--radius-control)] border border-line bg-control px-3.5 py-2.5 pl-16 text-sm text-ink placeholder:text-ink-muted/60 hover:bg-control-hover focus:border-accent/60 focus:bg-control focus:outline-none focus-visible:ring-3 focus-visible:ring-accent/10"
         />
         <span className="absolute inset-y-0 left-3 flex items-center text-[11px] text-ink-muted">تومان</span>
       </div>
@@ -309,11 +309,11 @@ function SaleModal({
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="جست‌وجوی آیتم یا دسته..."
-                className="w-full rounded-xl border border-line bg-white/70 py-2.5 pr-9 pl-3 text-sm text-ink placeholder:text-ink-muted/45 focus:border-accent/60 focus:outline-none"
+                className="w-full rounded-xl border border-line bg-control py-2.5 pr-9 pl-3 text-sm text-ink placeholder:text-ink-muted/60 hover:bg-control-hover focus:border-accent/60 focus:bg-control focus:outline-none"
               />
             </label>
 
-            <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-line/80 bg-white/35 p-2">
+            <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-line/80 bg-surface p-2">
               {visibleItems.length ? (
                 visibleItems.map((item) => {
                   const quantity = quantities[item.id] ?? 0;
@@ -330,7 +330,7 @@ function SaleModal({
                             onChange={(event) =>
                               setVariantByItem((current) => ({ ...current, [item.id]: event.target.value }))
                             }
-                            className="mt-1.5 w-full max-w-44 rounded-lg border border-line bg-white px-2 py-1 text-[10px] text-ink focus:border-accent/60 focus:outline-none"
+                            className="mt-1.5 w-full max-w-44 rounded-lg border border-line bg-control px-2 py-1 text-[10px] text-ink focus:border-accent/60 focus:outline-none"
                           >
                             <option value="">پایه</option>
                             {item.variants.map((variant) => (
@@ -341,7 +341,7 @@ function SaleModal({
                           </select>
                         )}
                       </div>
-                      <div className="flex shrink-0 items-center gap-1 rounded-xl border border-line bg-white p-1">
+                      <div className="flex shrink-0 items-center gap-1 rounded-xl border border-line bg-control p-1">
                         <button
                           type="button"
                           onClick={() => setQuantity(item.id, quantity - 1)}
@@ -357,7 +357,7 @@ function SaleModal({
                         <button
                           type="button"
                           onClick={() => setQuantity(item.id, quantity + 1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-ink text-paper hover:bg-ink/85"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-accent-ink hover:brightness-95"
                           aria-label={`اضافه کردن ${item.nameFa}`}
                         >
                           <Plus className="h-3.5 w-3.5" />
@@ -385,10 +385,10 @@ function SaleModal({
             onChange={(event) => setDescription(event.target.value)}
             maxLength={300}
             placeholder="مثلاً سفارش میز ۴"
-            className="w-full rounded-xl border border-line bg-white/70 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/45 focus:border-accent/60 focus:outline-none"
+            className="w-full rounded-xl border border-line bg-control px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/60 hover:bg-control-hover focus:border-accent/60 focus:bg-control focus:outline-none"
           />
         </label>
-        {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
+        {error && <p className="text-xs text-danger" role="alert">{error}</p>}
       </div>
     </Modal>
   );
@@ -465,7 +465,7 @@ function ExpenseModal({
             onChange={(event) => setDescription(event.target.value)}
             maxLength={300}
             placeholder="مثلاً خرید شیر و قهوه"
-            className="w-full rounded-xl border border-line bg-white/70 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/45 focus:border-accent/60 focus:outline-none"
+            className="w-full rounded-xl border border-line bg-control px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/60 hover:bg-control-hover focus:border-accent/60 focus:bg-control focus:outline-none"
           />
         </label>
         <label className="block">
@@ -477,12 +477,12 @@ function ExpenseModal({
             value={tags}
             onChange={(event) => setTags(event.target.value)}
             placeholder="مواد اولیه، اجاره، تعمیرات"
-            className="w-full rounded-xl border border-line bg-white/70 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/45 focus:border-accent/60 focus:outline-none"
+            className="w-full rounded-xl border border-line bg-control px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted/60 hover:bg-control-hover focus:border-accent/60 focus:bg-control focus:outline-none"
           />
           <span className="mt-1.5 block text-[10px] text-ink-muted">برچسب‌ها را با ویرگول جدا کنید.</span>
         </label>
         <JalaliDateTimePicker label="زمان هزینه" value={occurredAt} onChange={setOccurredAt} />
-        {error && <p className="text-xs text-red-600" role="alert">{error}</p>}
+        {error && <p className="text-xs text-danger" role="alert">{error}</p>}
       </div>
     </Modal>
   );
@@ -691,7 +691,7 @@ export function SalesClient({
               onClick={() => setRange(option.key)}
               className={`shrink-0 rounded-xl px-3.5 py-2 text-xs font-medium transition-colors ${
                 range === option.key
-                  ? "bg-ink text-paper"
+                  ? "bg-accent text-accent-ink"
                   : "text-ink-muted hover:bg-ink/5 hover:text-ink"
               }`}
             >
@@ -721,7 +721,7 @@ export function SalesClient({
 
       {status && (
         <div
-          className="mt-4 rounded-xl border border-line bg-white/55 px-4 py-3 text-xs text-ink-muted"
+          className="mt-4 rounded-xl border border-line bg-surface px-4 py-3 text-xs text-ink-muted"
           role="status"
           aria-live="polite"
         >
@@ -733,7 +733,7 @@ export function SalesClient({
         <div className="rounded-2xl border border-line/90 bg-panel p-4">
           <div className="flex items-center justify-between">
             <p className="text-xs text-ink-muted">فروش</p>
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-success">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-success-soft text-success">
               <ArrowUpRight className="h-4 w-4" />
             </span>
           </div>
@@ -750,17 +750,17 @@ export function SalesClient({
           <p className="mt-3 text-xl font-bold text-ink">{formatMoney(summary.expenses)}</p>
           <p className="mt-1 text-[10px] text-ink-muted">تومان · هزینه‌های ثبت‌شده</p>
         </div>
-        <div className="rounded-2xl border border-line/90 bg-ink p-4 text-paper">
+        <div className="rounded-2xl border border-line/90 bg-emphasis p-4 text-emphasis-ink">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-paper/60">جریان نقدی خالص</p>
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-paper/10 text-paper">
+            <p className="text-xs text-emphasis-ink/65">جریان نقدی خالص</p>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emphasis-ink/10 text-emphasis-ink">
               <TrendingUp className="h-4 w-4" />
             </span>
           </div>
-          <p className={`mt-3 text-xl font-bold ${summary.net < 0 ? "text-red-300" : "text-paper"}`}>
+          <p className={`mt-3 text-xl font-bold ${summary.net < 0 ? "text-danger" : "text-emphasis-ink"}`}>
             {summary.net < 0 ? "−" : ""}{formatMoney(Math.abs(summary.net))}
           </p>
-          <p className="mt-1 text-[10px] text-paper/50">تومان · فروش منهای هزینه</p>
+          <p className="mt-1 text-[10px] text-emphasis-ink/55">تومان · فروش منهای هزینه</p>
         </div>
         <div className="rounded-2xl border border-line/90 bg-panel p-4">
           <div className="flex items-center justify-between">
@@ -830,7 +830,7 @@ export function SalesClient({
             <select
               value={entryFilter}
               onChange={(event) => setEntryFilter(event.target.value as EntryFilter)}
-              className="w-full appearance-none rounded-xl border border-line bg-white py-2 pr-3 pl-9 text-xs text-ink focus:border-accent/60 focus:outline-none sm:w-36"
+              className="w-full appearance-none rounded-xl border border-line bg-control py-2 pr-3 pl-9 text-xs text-ink focus:border-accent/60 focus:outline-none sm:w-36"
             >
               <option value="all">همه تراکنش‌ها</option>
               <option value="sale">فقط فروش</option>
@@ -847,7 +847,7 @@ export function SalesClient({
                 <span
                   className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
                     entry.type === "sale"
-                      ? "bg-emerald-50 text-success"
+                      ? "bg-success-soft text-success"
                       : "bg-accent-soft text-accent"
                   }`}
                 >
@@ -899,7 +899,7 @@ export function SalesClient({
                 <button
                   type="button"
                   onClick={() => void deleteEntry(entry)}
-                  className="shrink-0 rounded-lg p-2 text-ink-muted/45 transition-colors hover:bg-red-50 hover:text-red-700 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+                  className="shrink-0 rounded-lg p-2 text-ink-muted/45 transition-colors hover:bg-danger-soft hover:text-danger sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                   aria-label="حذف تراکنش"
                   title="حذف"
                 >

@@ -233,10 +233,12 @@ ${FONT_FACE_DECLARATIONS}
       --muted: ${theme.inkMuted};
       --line: ${theme.line};
       --accent: ${theme.accent};
+      --accent-ink: ${theme.accentInk};
       --panel: ${theme.panel};
+      --control: ${theme.control};
       font-family: "Parastoo", "Vazirmatn", "Tahoma", sans-serif;
       color-scheme: ${theme.mode};
-      background: radial-gradient(circle at top, ${theme.mode === "dark" ? "rgba(255, 255, 255, 0.06)" : "rgba(255, 255, 255, 0.5)"}, transparent 34%), var(--paper);
+      background: radial-gradient(circle at top, color-mix(in srgb, var(--accent) 9%, transparent), transparent 34%), var(--paper);
       color: var(--ink);
       min-height: 100vh;
       line-height: 1.65;
@@ -331,7 +333,7 @@ ${FONT_FACE_DECLARATIONS}
     .category-pill.active,
     .category-pill[aria-current="true"] {
       background: var(--accent);
-      color: var(--paper);
+      color: var(--accent-ink);
       border-radius: 999px;
       padding-right: 12px;
       padding-left: 12px;
@@ -372,7 +374,7 @@ ${FONT_FACE_DECLARATIONS}
     .item-card.sold-out .item-desc,
     .item-card.sold-out .item-price,
     .item-card.sold-out .item-price-unit {
-      opacity: 0.45;
+      color: var(--muted);
     }
     .item-header {
       direction: ltr;
@@ -480,9 +482,9 @@ ${FONT_FACE_DECLARATIONS}
       border-color: var(--line);
     }
     .badge-status {
-      background: var(--ink);
-      color: var(--paper);
-      border-color: var(--ink);
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-color: var(--accent);
       font-weight: 700;
     }
     .item-price-wrap {
@@ -528,7 +530,7 @@ ${FONT_FACE_DECLARATIONS}
       align-self: start;
       overflow: hidden;
       border-radius: 18px;
-      background: rgba(17, 17, 17, 0.05);
+      background: var(--control);
     }
     .item-photo-overlay {
       position: absolute;
@@ -537,7 +539,7 @@ ${FONT_FACE_DECLARATIONS}
       align-items: center;
       justify-content: center;
       background: rgba(17, 17, 17, 0.55);
-      color: var(--paper);
+      color: #ffffff;
       font-size: 11px;
       font-weight: 700;
     }

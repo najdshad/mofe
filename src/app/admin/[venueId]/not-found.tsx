@@ -7,7 +7,7 @@ export default function AdminNotFound() {
       <p className="text-sm text-ink-muted">صفحه‌ای که به دنبال آن هستید وجود ندارد.</p>
       <Link
         href={`/venues`}
-        className="rounded-full bg-ink px-5 py-2.5 text-sm text-paper transition-opacity hover:opacity-90"
+        className="rounded-full bg-accent px-5 py-2.5 text-sm text-accent-ink transition-opacity hover:opacity-90"
       >
         بازگشت به مجموعه‌ها
       </Link>

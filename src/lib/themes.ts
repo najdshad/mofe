@@ -14,9 +14,17 @@ export interface ThemePalette {
   surface: string;
   canvas: string;
   panel: string;
+  control: string;
+  controlHover: string;
   accent: string;
   accentSoft: string;
+  accentInk: string;
   success: string;
+  successSoft: string;
+  danger: string;
+  dangerSoft: string;
+  emphasis: string;
+  emphasisInk: string;
 }
 
 export const THEME_PRESETS = [
@@ -27,17 +35,25 @@ export const THEME_PRESETS = [
     palette: {
       mode: "light",
       contrast: "standard",
-      paper: "#f5f0e6",
-      ink: "#111111",
-      inkStrong: "#000000",
-      inkMuted: "#5f5a52",
-      line: "#d8d1c4",
-      surface: "rgba(255, 255, 255, 0.28)",
-      canvas: "#efede7",
-      panel: "#fbfaf7",
-      accent: "#b94f2c",
-      accentSoft: "#f4ded4",
-      success: "#287451",
+      paper: "#f4efe6",
+      ink: "#211b17",
+      inkStrong: "#120e0b",
+      inkMuted: "#6b625b",
+      line: "#d8cec1",
+      surface: "#e9e1d6",
+      canvas: "#eae4da",
+      panel: "#faf7f1",
+      control: "#f1ebe2",
+      controlHover: "#e8ded2",
+      accent: "#a8462a",
+      accentSoft: "#f2d8ce",
+      accentInk: "#fff9f5",
+      success: "#2f7250",
+      successSoft: "#dcebe2",
+      danger: "#a43d35",
+      dangerSoft: "#f3ddda",
+      emphasis: "#2a211c",
+      emphasisInk: "#fffaf5",
     },
   },
   {
@@ -47,17 +63,25 @@ export const THEME_PRESETS = [
     palette: {
       mode: "light",
       contrast: "standard",
-      paper: "#f2f1e8",
-      ink: "#182019",
-      inkStrong: "#0d130e",
-      inkMuted: "#5d655c",
-      line: "#ced0c3",
-      surface: "rgba(255, 255, 255, 0.3)",
-      canvas: "#e8e8dc",
-      panel: "#faf9f3",
-      accent: "#4f6f52",
-      accentSoft: "#dde8dc",
-      success: "#2f7451",
+      paper: "#f1f0e7",
+      ink: "#1d241d",
+      inkStrong: "#101610",
+      inkMuted: "#626b61",
+      line: "#cdd0c2",
+      surface: "#e2e4d8",
+      canvas: "#e7e8dd",
+      panel: "#f8f8f1",
+      control: "#eef0e6",
+      controlHover: "#e3e7dc",
+      accent: "#496b4e",
+      accentSoft: "#d9e6d8",
+      accentInk: "#ffffff",
+      success: "#347250",
+      successSoft: "#dcebe1",
+      danger: "#9d413b",
+      dangerSoft: "#f1ddda",
+      emphasis: "#202a21",
+      emphasisInk: "#f8fbf6",
     },
   },
   {
@@ -67,17 +91,25 @@ export const THEME_PRESETS = [
     palette: {
       mode: "light",
       contrast: "standard",
-      paper: "#f7f0df",
-      ink: "#201a12",
-      inkStrong: "#120e09",
-      inkMuted: "#6b6255",
-      line: "#ddd2bf",
-      surface: "rgba(255, 255, 255, 0.3)",
-      canvas: "#eee6d5",
-      panel: "#fdfaf2",
-      accent: "#a96818",
-      accentSoft: "#f3dfbd",
+      paper: "#f6efdf",
+      ink: "#271e13",
+      inkStrong: "#171008",
+      inkMuted: "#706555",
+      line: "#ddd0b9",
+      surface: "#eadfc9",
+      canvas: "#ece3d1",
+      panel: "#fcf8ef",
+      control: "#f2e9d8",
+      controlHover: "#e9ddc7",
+      accent: "#8e5a14",
+      accentSoft: "#f1dfbd",
+      accentInk: "#fffaf1",
       success: "#39704f",
+      successSoft: "#dce9df",
+      danger: "#9d4035",
+      dangerSoft: "#f3ddd7",
+      emphasis: "#302419",
+      emphasisInk: "#fffaf1",
     },
   },
   {
@@ -87,17 +119,25 @@ export const THEME_PRESETS = [
     palette: {
       mode: "light",
       contrast: "standard",
-      paper: "#f5eeee",
-      ink: "#24191c",
-      inkStrong: "#160d10",
-      inkMuted: "#6b5c60",
-      line: "#d9c9cc",
-      surface: "rgba(255, 255, 255, 0.3)",
-      canvas: "#ece3e4",
-      panel: "#fcf8f7",
-      accent: "#8b3f50",
-      accentSoft: "#eed7dc",
-      success: "#317052",
+      paper: "#f4eeee",
+      ink: "#2a1b1f",
+      inkStrong: "#180e11",
+      inkMuted: "#716064",
+      line: "#d9c8cc",
+      surface: "#e8dcde",
+      canvas: "#ebe2e3",
+      panel: "#fbf7f6",
+      control: "#f1e8e9",
+      controlHover: "#e7dadd",
+      accent: "#873c51",
+      accentSoft: "#efd7dd",
+      accentInk: "#fff8fa",
+      success: "#347052",
+      successSoft: "#dce9e1",
+      danger: "#a03838",
+      dangerSoft: "#f2dada",
+      emphasis: "#321f25",
+      emphasisInk: "#fff8fa",
     },
   },
   {
@@ -107,17 +147,25 @@ export const THEME_PRESETS = [
     palette: {
       mode: "light",
       contrast: "high",
-      paper: "#fffdf7",
-      ink: "#080808",
+      paper: "#fbfaf6",
+      ink: "#111111",
       inkStrong: "#000000",
-      inkMuted: "#343434",
-      line: "#8a857b",
-      surface: "rgba(255, 255, 255, 0.72)",
-      canvas: "#f1efe9",
+      inkMuted: "#44423e",
+      line: "#817d74",
+      surface: "#e7e4dc",
+      canvas: "#eceae4",
       panel: "#ffffff",
-      accent: "#9d2f0e",
-      accentSoft: "#ffe0d3",
-      success: "#005a32",
+      control: "#f2f0e9",
+      controlHover: "#e5e2da",
+      accent: "#8f260a",
+      accentSoft: "#f6d5ca",
+      accentInk: "#ffffff",
+      success: "#14633e",
+      successSoft: "#d4eadc",
+      danger: "#9b211d",
+      dangerSoft: "#f3d5d2",
+      emphasis: "#171717",
+      emphasisInk: "#ffffff",
     },
   },
   {
@@ -127,17 +175,25 @@ export const THEME_PRESETS = [
     palette: {
       mode: "dark",
       contrast: "high",
-      paper: "#101010",
-      ink: "#f8f5ee",
+      paper: "#111212",
+      ink: "#f4f3ef",
       inkStrong: "#ffffff",
-      inkMuted: "#d6d1c8",
-      line: "#77736b",
-      surface: "rgba(255, 255, 255, 0.1)",
-      canvas: "#080808",
-      panel: "#1b1b1b",
-      accent: "#ff9a73",
-      accentSoft: "#5a2d20",
-      success: "#7ee2ae",
+      inkMuted: "#c9c7c0",
+      line: "#666a68",
+      surface: "#202222",
+      canvas: "#090a0a",
+      panel: "#1a1b1b",
+      control: "#252727",
+      controlHover: "#303333",
+      accent: "#ff9b75",
+      accentSoft: "#4b2b22",
+      accentInk: "#241008",
+      success: "#7cdaa8",
+      successSoft: "#193d2b",
+      danger: "#ff9a91",
+      dangerSoft: "#4b2423",
+      emphasis: "#252827",
+      emphasisInk: "#ffffff",
     },
   },
   {
@@ -147,17 +203,25 @@ export const THEME_PRESETS = [
     palette: {
       mode: "dark",
       contrast: "standard",
-      paper: "#121722",
-      ink: "#edf2f7",
+      paper: "#111722",
+      ink: "#f0f4f8",
       inkStrong: "#ffffff",
-      inkMuted: "#aeb9ca",
-      line: "#3c485b",
-      surface: "rgba(255, 255, 255, 0.08)",
-      canvas: "#0b0f17",
-      panel: "#1a2130",
+      inkMuted: "#a9b4c3",
+      line: "#3d4c60",
+      surface: "#1d2837",
+      canvas: "#0b1018",
+      panel: "#18212e",
+      control: "#222e3e",
+      controlHover: "#2b394b",
       accent: "#78b7ff",
-      accentSoft: "#233c5a",
+      accentSoft: "#213d5c",
+      accentInk: "#07121f",
       success: "#74d8a1",
+      successSoft: "#183b2b",
+      danger: "#ff9b98",
+      dangerSoft: "#482527",
+      emphasis: "#202c3c",
+      emphasisInk: "#f7faff",
     },
   },
   {
@@ -167,17 +231,25 @@ export const THEME_PRESETS = [
     palette: {
       mode: "dark",
       contrast: "standard",
-      paper: "#1d1714",
-      ink: "#f5ede4",
+      paper: "#1b1613",
+      ink: "#f5eee7",
       inkStrong: "#fffaf3",
-      inkMuted: "#c4b5a8",
-      line: "#594940",
-      surface: "rgba(255, 255, 255, 0.08)",
+      inkMuted: "#c3b4a8",
+      line: "#59483d",
+      surface: "#2b231e",
       canvas: "#120e0c",
-      panel: "#28201c",
-      accent: "#f1a36d",
-      accentSoft: "#5c3424",
+      panel: "#251e1a",
+      control: "#312720",
+      controlHover: "#3b2f27",
+      accent: "#eaa06e",
+      accentSoft: "#573424",
+      accentInk: "#211108",
       success: "#8ed2a9",
+      successSoft: "#213b2d",
+      danger: "#f39a91",
+      dangerSoft: "#4a2825",
+      emphasis: "#332820",
+      emphasisInk: "#fff7f0",
     },
   },
 ] as const satisfies readonly {
@@ -223,6 +295,32 @@ function mixHex(foreground: string, background: string, weight: number): string 
   return `#${mixed.join("")}`;
 }
 
+function relativeLuminance(hex: string): number {
+  const channels = [1, 3, 5].map((start) => {
+    const value = Number.parseInt(hex.slice(start, start + 2), 16) / 255;
+    return value <= 0.04045
+      ? value / 12.92
+      : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+}
+
+function contrastRatio(first: string, second: string): number {
+  const firstLuminance = relativeLuminance(first);
+  const secondLuminance = relativeLuminance(second);
+  return (
+    (Math.max(firstLuminance, secondLuminance) + 0.05) /
+    (Math.min(firstLuminance, secondLuminance) + 0.05)
+  );
+}
+
+function contrastingThemeText(background: string, palette: ThemePalette): string {
+  return contrastRatio(background, palette.inkStrong) >=
+    contrastRatio(background, palette.paper)
+    ? palette.inkStrong
+    : palette.paper;
+}
+
 export function resolveVenueTheme(
   themeId: unknown,
   legacyAccentColor?: string | null
@@ -236,6 +334,7 @@ export function resolveVenueTheme(
     ...palette,
     accent,
     accentSoft: mixHex(accent, palette.paper, 0.16),
+    accentInk: contrastingThemeText(accent, palette),
   };
 }
 
@@ -251,8 +350,16 @@ export function themeStyleVariables(palette: ThemePalette): ThemeStyle {
     "--surface": palette.surface,
     "--canvas": palette.canvas,
     "--panel": palette.panel,
+    "--control": palette.control,
+    "--control-hover": palette.controlHover,
     "--accent": palette.accent,
     "--accent-soft": palette.accentSoft,
+    "--accent-ink": palette.accentInk,
     "--success": palette.success,
+    "--success-soft": palette.successSoft,
+    "--danger": palette.danger,
+    "--danger-soft": palette.dangerSoft,
+    "--emphasis": palette.emphasis,
+    "--emphasis-ink": palette.emphasisInk,
   };
 }

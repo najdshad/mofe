@@ -1,69 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #f5f0e6;
-  --ink: #111111;
-  --ink-strong: #000000;
-  --ink-muted: #5f5a52;
-  --line: #d8d1c4;
-  --surface: rgba(255, 255, 255, 0.28);
-  --canvas: #efede7;
-  --panel: #fbfaf7;
-  --accent: #b94f2c;
-  --accent-soft: #f4ded4;
-  --success: #287451;
+  --paper: #f4efe6;
+  --ink: #211b17;
+  --ink-strong: #120e0b;
+  --ink-muted: #6b625b;
+  --line: #d8cec1;
+  --surface: #e9e1d6;
+  --canvas: #eae4da;
+  --panel: #faf7f1;
+  --control: #f1ebe2;
+  --control-hover: #e8ded2;
+  --accent: #a8462a;
+  --accent-soft: #f2d8ce;
+  --accent-ink: #fff9f5;
+  --success: #2f7250;
+  --success-soft: #dcebe2;
+  --danger: #a43d35;
+  --danger-soft: #f3ddda;
+  --emphasis: #2a211c;
+  --emphasis-ink: #fffaf5;
   --radius-panel: 20px;
   --radius-card: 16px;
   --radius-control: 12px;
 }
 
+[data-admin-theme-root] {
+  color: var(--ink);
+  color-scheme: light;
+}
+
 [data-admin-theme-root][data-theme-mode="dark"] {
   color-scheme: dark;
-}
-
-/*
- * A few legacy admin controls use Tailwind's white utilities directly.
- * Re-map those surfaces inside dark venue themes so every screen follows
- * the selected palette without duplicating component variants.
- */
-[data-admin-theme-root][data-theme-mode="dark"] .bg-white {
-  background-color: var(--panel) !important;
-}
-
-[data-admin-theme-root][data-theme-mode="dark"] .bg-white.shadow-sm {
-  background-color: var(--ink-strong) !important;
-}
-
-[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/95 {
-  background-color: color-mix(in srgb, var(--panel) 95%, transparent) !important;
-}
-
-[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/70 {
-  background-color: color-mix(in srgb, var(--panel) 70%, transparent) !important;
-}
-
-[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/55 {
-  background-color: color-mix(in srgb, var(--panel) 55%, transparent) !important;
-}
-
-[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/50 {
-  background-color: color-mix(in srgb, var(--panel) 50%, transparent) !important;
-}
-
-[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/45 {
-  background-color: color-mix(in srgb, var(--panel) 45%, transparent) !important;
-}
-
-[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/35 {
-  background-color: color-mix(in srgb, var(--panel) 35%, transparent) !important;
-}
-
-[data-admin-theme-root][data-theme-mode="dark"] .bg-white\/25 {
-  background-color: color-mix(in srgb, var(--panel) 25%, transparent) !important;
-}
-
-[data-admin-theme-root][data-theme-mode="dark"] .hover\:bg-white:hover {
-  background-color: var(--panel) !important;
 }
 
 @theme inline {
@@ -75,9 +43,17 @@
   --color-surface: var(--surface);
   --color-canvas: var(--canvas);
   --color-panel: var(--panel);
+  --color-control: var(--control);
+  --color-control-hover: var(--control-hover);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-emphasis: var(--emphasis);
+  --color-emphasis-ink: var(--emphasis-ink);
   --font-serif: "EB Garamond", "Parastoo", "Vazirmatn", "Times New Roman", serif;
 }
 

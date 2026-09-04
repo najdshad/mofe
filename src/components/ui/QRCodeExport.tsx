@@ -195,7 +195,7 @@ export function QRCodeExport({
       <div className="mt-4 flex justify-center">
         {error ? (
           <div className="flex flex-col items-center gap-3 py-8">
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-danger">{error}</p>
             <Button variant="secondary" size="sm" onClick={handleRetry}>تلاش مجدد</Button>
           </div>
         ) : qrDataUrl ? (

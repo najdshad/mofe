@@ -48,7 +48,7 @@ export function VenueInfoSection({
         </Button>
         {venueStatus && (
           <p className="inline-flex items-center gap-1.5 text-sm text-ink-muted" role="status" aria-live="polite">
-            <Check className="h-4 w-4 text-emerald-700" strokeWidth={1.8} />
+            <Check className="h-4 w-4 text-success" strokeWidth={1.8} />
             {venueStatus}
           </p>
         )}

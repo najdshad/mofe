@@ -17,7 +17,7 @@ export function LogoutButton() {
         }
         router.push("/login");
       }}
-      className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-red-50 hover:text-red-700"
+      className="rounded-lg p-2 text-ink-muted transition-colors hover:bg-danger-soft hover:text-danger"
       aria-label="خروج از حساب"
       title="خروج"
     >

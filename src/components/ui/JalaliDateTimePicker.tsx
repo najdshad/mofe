@@ -197,7 +197,7 @@ function TimeSegment({
   };
 
   return (
-    <div className="flex min-w-0 flex-1 items-center justify-between rounded-xl border border-line bg-white/65 px-2 py-1.5">
+    <div className="flex min-w-0 flex-1 items-center justify-between rounded-xl border border-line bg-control px-2 py-1.5">
       <span className="text-[10px] text-ink-muted">{label}</span>
       <div className="flex items-center gap-1.5" dir="ltr">
         <button
@@ -334,7 +334,7 @@ export function JalaliDateTimePicker({
           showTime ? `، ${timeFormatter.format(selectedDate)}` : ""
         }`}
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center gap-3 rounded-xl border border-line bg-white/70 px-3.5 py-2.5 text-right text-sm text-ink transition-colors hover:border-ink/30 focus:border-accent/60 focus:outline-none focus-visible:ring-3 focus-visible:ring-accent/10"
+        className="flex w-full items-center gap-3 rounded-xl border border-line bg-control px-3.5 py-2.5 text-right text-sm text-ink transition-colors hover:border-ink/30 hover:bg-control-hover focus:border-accent/60 focus:bg-control focus:outline-none focus-visible:ring-3 focus-visible:ring-accent/10"
       >
         <CalendarDays className="h-4 w-4 shrink-0 text-accent" />
         <span className="min-w-0 flex-1 truncate">{jalaliDateFormatter.format(selectedDate)}</span>
@@ -399,7 +399,7 @@ export function JalaliDateTimePicker({
                   onClick={() => updateDate(date)}
                   className={`flex h-8 items-center justify-center rounded-lg text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/25 ${
                     selected
-                      ? "bg-ink font-bold text-paper"
+                      ? "bg-accent font-bold text-accent-ink"
                       : inMonth && allowed
                         ? "text-ink hover:bg-accent-soft"
                         : "cursor-default text-ink-muted/25"
