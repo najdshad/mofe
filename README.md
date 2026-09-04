@@ -12,9 +12,13 @@ Persian-first digital menu for Iranian cafes. Owners build and publish a beautif
 
 ## Screenshots
 
-![Screenshot 1](assets/Screenshot%202026-08-14%20171221.png)
+![Screenshot 1](assets/Screenshot%202026-09-03%20175609.png)
 
-![Screenshot 2](assets/Screenshot%202026-08-14%20171310.png)
+![Screenshot 2](assets/Screenshot%202026-09-03%20175659.png)
+
+![Screenshot 3](assets/Screenshot%202026-09-03%20175826.png)
+
+![Screenshot 4](assets/Screenshot%202026-09-03%20175913.png)
 
 ## Quick start
 
