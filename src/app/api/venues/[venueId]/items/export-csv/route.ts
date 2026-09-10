@@ -27,7 +27,7 @@ export async function GET(
         prices: { orderBy: { displayOrder: "asc" } },
         allergens: true,
       },
-      orderBy: [{ categoryId: "asc" }, { displayOrder: "asc" }],
+      orderBy: [{ category: { displayOrder: "asc" } }, { displayOrder: "asc" }],
     });
 
     const csv = toCsv(
