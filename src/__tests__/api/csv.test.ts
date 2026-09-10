@@ -62,8 +62,9 @@ describe("GET /items/csv-template", () => {
     expect(bytes[2]).toBe(0xbf);
 
     const csv = new TextDecoder().decode(bytes);
-    expect(csv).toContain("nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut");
+    expect(csv).toContain("nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut,allergenCodes,variants,prices");
     expect(csv).toContain("پیتزا مخلوط");
+    expect(csv).toContain("dairy|gluten");
   });
 
   it("returns 401 when unauthenticated", async () => {
@@ -83,7 +84,7 @@ describe("GET /items/export-csv", () => {
     expect(bytes[2]).toBe(0xbf);
 
     const csv = new TextDecoder().decode(bytes);
-    expect(csv).toContain("nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut");
+    expect(csv).toContain("nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut,allergenCodes,variants,prices");
     expect(csv).toContain("چای نعناع");
     expect(csv).toContain("75000");
     expect(csv).toContain("نوشیدنی‌های گرم");
@@ -165,7 +166,7 @@ describe("GET /items/export-csv", () => {
 
 describe("POST /items/import-csv", () => {
   const csv = (rows: string) =>
-    `nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut\n${rows}`;
+    `nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut,allergenCodes,variants,prices\n${rows}`;
 
   it("returns 400 when no CSV is sent", async () => {
     const res = await importCsv(jsonReq(data.venue.id, "POST", { csv: "" }), params(data.venue.id));
@@ -280,5 +281,74 @@ describe("POST /items/import-csv", () => {
       params(data.venue.id)
     );
     expect(res.status).toBe(401);
+  });
+
+  it("imports variants, prices, and allergens", async () => {
+    const body = csv(
+      "قهوه ویژه,Special,نوشیدنی گرم,50000,,,false,dairy|gluten,بزرگ|Large|15000;کوچک|Small|-5000,تک‌نفره|50000;دونفره|90000"
+    );
+    const res = await importCsv(jsonReq(data.venue.id, "POST", { csv: body }), params(data.venue.id));
+    expect(res.status).toBe(200);
+    const resBody = await res.json();
+    expect(resBody.summary.created).toBe(1);
+
+    const item = await prisma.menuItem.findFirst({ where: { venueId: data.venue.id, nameFa: "قهوه ویژه" } });
+    expect(item).not.toBeNull();
+
+    const variants = await prisma.menuItemVariant.findMany({ where: { menuItemId: item!.id }, orderBy: { displayOrder: "asc" } });
+    expect(variants).toHaveLength(2);
+    expect(variants[0].nameFa).toBe("بزرگ");
+    expect(variants[0].priceModifier).toBe(15000);
+
+    const prices = await prisma.menuItemPrice.findMany({ where: { menuItemId: item!.id }, orderBy: { displayOrder: "asc" } });
+    expect(prices).toHaveLength(2);
+    expect(prices[0].description).toBe("تک‌نفره");
+    expect(prices[0].priceToman).toBe(50000);
+
+    const allergens = await prisma.menuItemAllergen.findMany({ where: { menuItemId: item!.id } });
+    expect(allergens.map((a) => a.allergenCode).sort()).toEqual(["dairy", "gluten"]);
+  });
+
+  it("exports variants, prices, and allergens", async () => {
+    const body = csv(
+      "قهوه صادراتی,,نوشیدنی گرم,60000,,,false,nuts,متوسط|Medium|5000,خانواده|120000"
+    );
+    await importCsv(jsonReq(data.venue.id, "POST", { csv: body }), params(data.venue.id));
+
+    const res = await exportCsv(jsonReq(data.venue.id), params(data.venue.id));
+    const text = await res.text();
+    expect(text).toContain("قهوه صادراتی");
+    expect(text).toContain("nuts");
+    expect(text).toContain("متوسط|Medium|5000");
+    expect(text).toContain("خانواده|120000");
+  });
+
+  it("imports v1 files without new columns", async () => {
+    const body =
+      "nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut\n" +
+      "چای قدیمی,Old Tea,نوشیدنی گرم,40000,,,false";
+    const res = await importCsv(jsonReq(data.venue.id, "POST", { csv: body }), params(data.venue.id));
+    expect(res.status).toBe(200);
+    const resBody = await res.json();
+    expect(resBody.summary.created).toBe(1);
+
+    const item = await prisma.menuItem.findFirst({ where: { venueId: data.venue.id, nameFa: "چای قدیمی" } });
+    expect(item).not.toBeNull();
+    expect(await prisma.menuItemVariant.count({ where: { menuItemId: item!.id } })).toBe(0);
+  });
+
+  it("skips rows with an invalid allergen code", async () => {
+    const body = csv("چای بد,Bad,نوشیدنی گرم,1000,,,false,nonexistent,,");
+    const res = await importCsv(jsonReq(data.venue.id, "POST", { csv: body }), params(data.venue.id));
+    const resBody = await res.json();
+    expect(resBody.summary.skipped).toBe(1);
+    expect(resBody.summary.created).toBe(0);
+  });
+
+  it("skips rows with an invalid nested price", async () => {
+    const body = csv("چای بد,Bad,نوشیدنی گرم,1000,,,false,,,بدون‌قیمت|-5");
+    const res = await importCsv(jsonReq(data.venue.id, "POST", { csv: body }), params(data.venue.id));
+    const resBody = await res.json();
+    expect(resBody.summary.skipped).toBe(1);
   });
 });

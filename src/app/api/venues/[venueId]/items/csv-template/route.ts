@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
+import { BOM, MENU_CSV_HEADERS } from "@/lib/csv";
 
-const BOM = "\uFEFF";
-const HEADERS = "nameFa,nameEn,categoryNameFa,priceToman,description,calories,isSoldOut";
-const EXAMPLE = "پیتزا مخلوط,Special Mix Pizza,پیتزا,180000,خمیر تازه با پنیر موزارلا,850,false";
+const EXAMPLE =
+  "پیتزا مخلوط,Special Mix Pizza,پیتزا,180000,خمیر تازه با پنیر موزارلا,850,false,dairy|gluten,بزرگ|Large|15000;کوچک|Small|-5000,تک‌نفره|180000;دونفره|320000";
 
 export async function GET(
   _request: Request,
@@ -15,7 +15,7 @@ export async function GET(
     const { venueId } = await params;
     await requireVenueAccess(user.id, venueId);
 
-    const csv = BOM + HEADERS + "\n" + EXAMPLE + "\n";
+    const csv = BOM + [...MENU_CSV_HEADERS].join(",") + "\n" + EXAMPLE + "\n";
 
     return new NextResponse(csv, {
       headers: {

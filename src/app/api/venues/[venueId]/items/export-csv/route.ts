@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { requireAuth, errorResponse } from "@/lib/api-helpers";
 import { requireVenueAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { toCsv } from "@/lib/csv";
+import {
+  MENU_CSV_HEADERS,
+  serializeAllergenCodes,
+  serializePrices,
+  serializeVariants,
+  toCsv,
+} from "@/lib/csv";
 
 export async function GET(
   _request: Request,
@@ -15,12 +21,17 @@ export async function GET(
 
     const items = await prisma.menuItem.findMany({
       where: { venueId, deletedAt: null },
-      include: { category: true },
+      include: {
+        category: true,
+        variants: { orderBy: { displayOrder: "asc" } },
+        prices: { orderBy: { displayOrder: "asc" } },
+        allergens: true,
+      },
       orderBy: [{ categoryId: "asc" }, { displayOrder: "asc" }],
     });
 
     const csv = toCsv(
-      ["nameFa", "nameEn", "categoryNameFa", "priceToman", "description", "calories", "isSoldOut"],
+      [...MENU_CSV_HEADERS],
       items.map((item) => [
         item.nameFa,
         item.nameEn ?? "",
@@ -29,6 +40,17 @@ export async function GET(
         item.description ?? "",
         item.calories != null ? String(item.calories) : "",
         item.isSoldOut ? "true" : "false",
+        serializeAllergenCodes(item.allergens.map((a) => a.allergenCode)),
+        serializeVariants(
+          item.variants.map((v) => ({
+            nameFa: v.nameFa,
+            nameEn: v.nameEn,
+            priceModifier: v.priceModifier,
+          }))
+        ),
+        serializePrices(
+          item.prices.map((p) => ({ description: p.description, priceToman: p.priceToman }))
+        ),
       ]),
     );
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -888,13 +888,6 @@ export function MenuClient({
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
   const [newItemCategoryId, setNewItemCategoryId] = useState<string | undefined>();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importing, setImporting] = useState(false);
-  const [importResults, setImportResults] = useState<{
-    summary: { total: number; created: number; skipped: number; errors: number };
-    details: { row: number; status: string; nameFa: string; message?: string }[];
-  } | null>(null);
-
   const [dragError, setDragError] = useState("");
 
   const filteredItems = items
@@ -1211,31 +1204,6 @@ export function MenuClient({
     a.click();
   };
 
-  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImporting(true);
-    try {
-      const text = await file.text();
-      const data = await fetchApi(`/api/venues/${venueId}/items/import-csv`, {
-        method: "POST",
-        body: JSON.stringify({ csv: text }),
-      });
-      setImportResults(data);
-      if (data.summary?.created > 0) {
-        window.location.reload();
-      }
-    } catch (e) {
-      setImportResults({
-        summary: { total: 0, created: 0, skipped: 0, errors: 1 },
-        details: [{ row: 0, status: "error", nameFa: "", message: e instanceof Error ? e.message : "خطا در خواندن فایل" }],
-      });
-    } finally {
-      setImporting(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
   const handleNewItem = (categoryId?: string) => {
     setEditingItem(null);
     setNewItemCategoryId(categoryId);
@@ -1411,18 +1379,10 @@ export function MenuClient({
                       <Download className="h-4 w-4" />
                       خروجی از منو
                     </button>
-                    <label className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-right text-xs text-ink-muted hover:bg-ink/5 hover:text-ink">
+                    <a href={`/admin/${venueId}/menu/import`} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-right text-xs text-ink-muted hover:bg-ink/5 hover:text-ink">
                       <Upload className="h-4 w-4" />
-                      {importing ? "در حال ورود..." : "ورود فایل CSV"}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".csv"
-                        className="hidden"
-                        onChange={handleImportCSV}
-                        disabled={importing}
-                      />
-                    </label>
+                      ورود فایل CSV
+                    </a>
                   </div>
                 </details>
               </div>
@@ -1601,38 +1561,6 @@ export function MenuClient({
       >
         <p>آیتم {deletingItem?.nameFa} حذف شود؟ این عمل قابل بازگشت نیست.</p>
       </DeleteConfirmModal>
-
-      <Modal
-        open={!!importResults}
-        onClose={() => setImportResults(null)}
-        title="نتیجه ورودی CSV"
-      >
-        {importResults && (
-          <div className="space-y-3">
-            <div className="flex gap-4 text-sm">
-              <span className="text-ink">مجموع: {importResults.summary.total}</span>
-              <span className="text-success">ایجاد: {importResults.summary.created}</span>
-              {importResults.summary.skipped > 0 && (
-                <span className="text-accent">رد شده: {importResults.summary.skipped}</span>
-              )}
-              {importResults.summary.errors > 0 && (
-                <span className="text-danger">خطا: {importResults.summary.errors}</span>
-              )}
-            </div>
-            {importResults.details.some((d) => d.status !== "created") && (
-              <div className="max-h-48 overflow-y-auto space-y-1 text-xs">
-                {importResults.details
-                  .filter((d) => d.status !== "created")
-                  .map((d) => (
-                    <div key={d.row} className="rounded bg-danger-soft px-2 py-1 text-danger">
-                      سطر {d.row}: {d.nameFa || "(بدون نام)"} — {d.message}
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
     </>
   );
 }
