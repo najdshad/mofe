@@ -23,6 +23,26 @@ export async function ensureDemoData(prisma: PrismaClient) {
     },
   });
 
+  // ponytail: demo owner gets effectively-unlimited premium (yearly/active to 2099)
+  await prisma.subscription.upsert({
+    where: { userId: user.id },
+    update: {
+      plan: "yearly",
+      status: "active",
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: new Date("2099-12-31T00:00:00Z"),
+      trialEndsAt: null,
+      cancelAtPeriodEnd: false,
+      canceledAt: null,
+    },
+    create: {
+      userId: user.id,
+      plan: "yearly",
+      status: "active",
+      currentPeriodStart: new Date(),
+      currentPeriodEnd: new Date("2099-12-31T00:00:00Z"),
+    },
+  });
   const venue = await prisma.venue.upsert({
     where: { slug: DEMO_VENUE_SLUG },
     update: {},
