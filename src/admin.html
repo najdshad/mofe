@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6efdf">
+  <meta name="color-scheme" content="light">
+  <meta name="robots" content="noindex, nofollow">
+  <title>مدیریت منو — mofé</title>
+  <link rel="stylesheet" href="/admin.css">
+  <script src="/admin.js" defer></script>
+</head>
+<body>
+  <div id="boot" class="boot-screen">
+    <div class="boot-card">
+      <p class="brand" lang="en" dir="ltr">mofé · admin</p>
+      <p id="boot-message" class="boot-message" role="status">در حال بارگذاری…</p>
+      <button id="boot-retry" class="btn btn-primary" type="button" hidden>تلاش دوباره</button>
+    </div>
+  </div>
+
+  <section id="login-screen" class="login-screen" aria-labelledby="login-title" hidden>
+    <div class="login-card">
+      <p class="brand" lang="en" dir="ltr">mofé · admin</p>
+      <h1 id="login-title">ورود به مدیریت منو</h1>
+      <p class="login-intro">برای ویرایش منو، رمز مدیریت را وارد کنید.</p>
+      <form novalidate id="login-form" method="post">
+        <label class="field" for="login-password">رمز عبور</label>
+        <input class="input" id="login-password" name="password" type="password" autocomplete="current-password" required>
+        <p id="login-error" class="form-error" role="alert" hidden></p>
+        <button id="login-submit" class="btn btn-primary btn-block" type="submit">ورود</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="editor" class="editor" hidden>
+    <header class="topbar">
+      <div class="topbar-brand">
+        <p class="brand" lang="en" dir="ltr">mofé · admin</p>
+        <h1 id="cafe-name" class="topbar-title">مدیریت منو</h1>
+      </div>
+      <nav class="topbar-actions" aria-label="ابزارهای مدیریت">
+        <button id="settings-button" class="btn" type="button">تنظیمات کافه</button>
+        <a id="preview-link" class="btn" href="/" target="_blank" rel="noopener">پیش‌نمایش</a>
+        <a class="btn" href="/export/menu.html" title="دانلود خروجی HTML" aria-label="دانلود خروجی HTML">HTML</a>
+        <a class="btn" href="/export/menu.csv" title="دانلود خروجی CSV" aria-label="دانلود خروجی CSV">CSV</a>
+        <button id="logout-button" class="btn btn-quiet" type="button">خروج</button>
+      </nav>
+    </header>
+
+    <main class="admin-main">
+      <div class="admin-heading">
+        <div>
+          <h2>دسته‌ها و اقلام</h2>
+          <p class="muted-text">ترتیب همین‌جا تعیین می‌شود؛ تغییرات فوری ذخیره می‌شوند.</p>
+        </div>
+        <button id="add-category" class="btn btn-primary" type="button">افزودن دسته</button>
+      </div>
+
+      <p id="app-status" class="app-status" role="status" aria-live="polite" hidden></p>
+      <p id="editor-error" class="alert" role="alert" hidden></p>
+
+      <div id="categories" class="category-list"></div>
+      <div id="categories-empty" class="empty-state" hidden>
+        <p>هنوز دسته‌ای ساخته نشده است.</p>
+        <p class="muted-text">با دکمه «افزودن دسته» اولین دسته منو را بسازید.</p>
+      </div>
+    </main>
+  </div>
+
+  <noscript>
+    <p class="noscript-note">برای استفاده از ویرایشگر منو، جاوااسکریپت را در مرورگر فعال کنید.</p>
+  </noscript>
+
+  <template id="category-template">
+    <section class="admin-category" data-category-id="">
+      <header class="category-head-admin">
+        <div class="category-title-wrap">
+          <h2 class="category-title" data-field="name"></h2>
+          <span class="category-count" data-field="count"></span>
+        </div>
+        <div class="category-actions">
+          <button class="icon-btn" type="button" data-action="category-up" aria-label="انتقال دسته به بالا" title="انتقال به بالا">↑</button>
+          <button class="icon-btn" type="button" data-action="category-down" aria-label="انتقال دسته به پایین" title="انتقال به پایین">↓</button>
+          <button class="btn btn-small" type="button" data-action="category-rename">تغییر نام</button>
+          <button class="btn btn-small btn-danger" type="button" data-action="category-delete">حذف</button>
+          <button class="btn btn-small" type="button" data-action="category-add-item">افزودن آیتم</button>
+        </div>
+      </header>
+      <p class="category-note" data-field="delete-note" hidden>برای حذف دسته، ابتدا همه اقلام آن را حذف یا به دسته دیگری منتقل کنید.</p>
+      <div class="admin-items" data-field="items" role="list"></div>
+      <p class="empty-items" data-field="items-empty" hidden>آیتمی در این دسته نیست.</p>
+    </section>
+  </template>
+
+  <template id="item-template">
+    <article class="admin-item" data-item-id="" role="listitem">
+      <span class="drag-handle" data-drag-handle draggable="true" aria-hidden="true" title="برای جابه‌جایی بکشید">⋮⋮</span>
+      <div class="item-admin-main">
+        <h3 class="item-admin-name" data-field="name"></h3>
+        <p class="item-admin-name-en" data-field="name-en" dir="ltr" hidden></p>
+        <p class="item-admin-variants" data-field="variants" hidden></p>
+      </div>
+      <div class="item-admin-meta">
+        <span class="badge badge-status" data-field="sold-out" hidden>ناموجود</span>
+        <span class="item-admin-price"><span data-field="price"></span> <span class="item-admin-unit">تومان</span></span>
+      </div>
+      <div class="item-actions">
+        <button class="icon-btn" type="button" data-action="item-up" aria-label="انتقال آیتم به بالا" title="انتقال به بالا">↑</button>
+        <button class="icon-btn" type="button" data-action="item-down" aria-label="انتقال آیتم به پایین" title="انتقال به پایین">↓</button>
+        <button class="btn btn-small" type="button" data-action="item-edit">ویرایش</button>
+        <button class="btn btn-small btn-danger" type="button" data-action="item-delete">حذف</button>
+      </div>
+    </article>
+  </template>
+
+  <template id="variant-template">
+    <div class="variant-row" data-variant-row>
+      <label class="field field-compact">
+        <span>نام فارسی</span>
+        <input class="input" data-variant-field="nameFa" maxlength="100" autocomplete="off">
+      </label>
+      <label class="field field-compact">
+        <span>نام انگلیسی</span>
+        <input class="input" data-variant-field="nameEn" maxlength="100" dir="ltr" autocomplete="off">
+      </label>
+      <label class="field field-compact">
+        <span>اختلاف قیمت (تومان)</span>
+        <input class="input" data-variant-field="priceDelta" type="number" step="1" min="-1000000000" max="1000000000" inputmode="numeric" dir="ltr" value="0">
+      </label>
+      <button class="icon-btn btn-remove-variant" type="button" data-action="variant-remove" aria-label="حذف واریانت">×</button>
+    </div>
+  </template>
+
+  <dialog id="category-dialog" class="dialog" aria-labelledby="category-dialog-title">
+    <form novalidate id="category-form" class="dialog-form">
+      <header class="dialog-head">
+        <h2 id="category-dialog-title">افزودن دسته</h2>
+        <button class="icon-btn" type="button" data-close-dialog aria-label="بستن">×</button>
+      </header>
+      <div class="dialog-body">
+        <label class="field" for="category-name">نام دسته</label>
+        <input class="input" id="category-name" maxlength="80" autocomplete="off" required>
+        <p id="category-error" class="form-error" role="alert" hidden></p>
+      </div>
+      <footer class="dialog-actions">
+        <button class="btn" type="button" data-close-dialog>انصراف</button>
+        <button id="category-save" class="btn btn-primary" type="submit">افزودن دسته</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="item-dialog" class="dialog dialog-wide" aria-labelledby="item-dialog-title">
+    <form novalidate id="item-form" class="dialog-form">
+      <header class="dialog-head">
+        <h2 id="item-dialog-title">افزودن آیتم</h2>
+        <button class="icon-btn" type="button" data-close-dialog aria-label="بستن">×</button>
+      </header>
+      <div class="dialog-body">
+        <p id="item-error" class="form-error" role="alert" hidden></p>
+        <div class="form-grid">
+          <div class="field field-full">
+            <label for="item-category">دسته</label>
+            <select id="item-category" class="input" required></select>
+          </div>
+          <div class="field">
+            <label for="item-name-fa">نام فارسی <span class="required-mark">*</span></label>
+            <input id="item-name-fa" class="input" maxlength="200" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="item-name-en">نام انگلیسی</label>
+            <input id="item-name-en" class="input" maxlength="200" dir="ltr" autocomplete="off">
+          </div>
+          <div class="field field-full">
+            <label for="item-description">توضیحات</label>
+            <textarea id="item-description" class="input" maxlength="1000" rows="3"></textarea>
+          </div>
+          <div class="field">
+            <label for="item-price">قیمت (تومان)</label>
+            <input id="item-price" class="input" type="number" min="0" max="1000000000" step="1" inputmode="numeric" dir="ltr" value="0" required>
+          </div>
+          <div class="field field-check">
+            <label class="check-field" for="item-sold-out">
+              <input id="item-sold-out" type="checkbox">
+              <span>ناموجود (سولد اوت)</span>
+            </label>
+          </div>
+          <fieldset class="variants field-full">
+            <legend>واریانت‌ها</legend>
+            <p class="muted-text">مثلاً دبل یا شیر سرد؛ اختلاف قیمت به قیمت پایه اضافه می‌شود.</p>
+            <div id="variant-rows" class="variant-rows"></div>
+            <button id="add-variant" class="btn btn-small" type="button">افزودن واریانت</button>
+          </fieldset>
+        </div>
+      </div>
+      <footer class="dialog-actions">
+        <button class="btn" type="button" data-close-dialog>انصراف</button>
+        <button id="item-save" class="btn btn-primary" type="submit">افزودن آیتم</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog" class="dialog dialog-wide" aria-labelledby="settings-dialog-title">
+    <form novalidate id="settings-form" class="dialog-form">
+      <header class="dialog-head">
+        <h2 id="settings-dialog-title">تنظیمات کافه</h2>
+        <button class="icon-btn" type="button" data-close-dialog aria-label="بستن">×</button>
+      </header>
+      <div class="dialog-body">
+        <p id="settings-error" class="form-error" role="alert" hidden></p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="settings-name-fa">نام فارسی کافه <span class="required-mark">*</span></label>
+            <input id="settings-name-fa" class="input" maxlength="120" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="settings-name-en">نام انگلیسی کافه</label>
+            <input id="settings-name-en" class="input" maxlength="120" dir="ltr" autocomplete="off">
+          </div>
+          <div class="field field-full">
+            <label for="settings-welcome">پیام خوش‌آمدگویی</label>
+            <textarea id="settings-welcome" class="input" maxlength="500" rows="3"></textarea>
+          </div>
+          <div class="field field-full">
+            <label for="settings-meta">توضیح صفحه (Meta Description)</label>
+            <textarea id="settings-meta" class="input" maxlength="300" rows="2"></textarea>
+          </div>
+        </div>
+
+        <fieldset class="logo-field">
+          <legend>لوگوی کافه</legend>
+          <div class="logo-row">
+            <div class="logo-preview-wrap">
+              <img id="logo-preview" class="logo-preview" alt="پیش‌نمایش لوگو" hidden>
+              <div id="logo-empty" class="logo-empty">بدون لوگو</div>
+            </div>
+            <div class="logo-controls">
+              <label class="field" for="logo-input">انتخاب تصویر (PNG، JPEG یا WebP)</label>
+              <input id="logo-input" class="input file-input" type="file" accept="image/png,image/jpeg,image/webp">
+              <p id="logo-meta" class="muted-text logo-meta" role="status" aria-live="polite"></p>
+              <button id="logo-remove" class="btn btn-small btn-danger" type="button" hidden>حذف لوگو</button>
+              <p class="muted-text">تصویر به شکل مربع از مرکز برش می‌خورد و برای سبک‌ماندن صفحه فشرده می‌شود.</p>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+      <footer class="dialog-actions">
+        <button class="btn" type="button" data-close-dialog>انصراف</button>
+        <button id="settings-save" class="btn btn-primary" type="submit">ذخیره تنظیمات</button>
+      </footer>
+    </form>
+  </dialog>
+</body>
+</html>
