@@ -86,6 +86,21 @@ npm run deploy
 
 Open `https://<worker-url>/login` and log in with `ADMIN_IDENTIFIER`. Use a long random value; it is the only credential for the admin account. Rotating the secret invalidates existing admin sessions on the next admin login.
 
+## CI and deployment
+
+`.github/workflows/ci.yml` runs `npm run typecheck` and `npm test` on every pull request and push. On `main`, it deploys only after tests pass, then checks `https://mofe.ir/`, `https://mofe.ir/login`, and `https://www.mofe.ir/`.
+
+Required GitHub repository secrets:
+
+| Secret | Value |
+|---|---|
+| `CLOUDFLARE_ACCOUNT_ID` | `857fd360dc6ea489b05c0b15b3f0ca57` |
+| `CLOUDFLARE_API_TOKEN` | API token scoped to this account and the `mofe.ir` zone, with Workers Scripts: Edit, Workers Routes: Edit, Zone: Read, and D1: Edit |
+
+Create the token in the Cloudflare dashboard under **My Profile → API Tokens → Create Token → Edit Cloudflare Workers**, then add it under **GitHub → Settings → Secrets and variables → Actions**. Until the token is added, the deploy job skips with a warning; tests still run.
+
+D1 migrations are not run by CI. Apply them manually with `npm run db:remote` after taking a backup. The workflow can also be started manually from **Actions → CI → Run workflow** on `main`. If the `production` environment has required reviewers, deployments wait for approval.
+
 ## Editing
 
 The editor supports:
