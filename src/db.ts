@@ -1,23 +1,28 @@
+import { generateIdentifier, hashIdentifier } from "./auth";
 import type {
   Category,
   Item,
   ItemInput,
+  ManagedUser,
   MenuData,
-  Settings,
   SettingsInput,
+  User,
+  UserInput,
+  UserRole,
   Variant,
   VariantInput,
+  Venue,
+  VenueInput,
+  VenueSummary,
 } from "./types";
 
 export class ApiError extends Error {
   readonly status: number;
-  readonly itemCount?: number;
 
-  constructor(status: number, message: string, itemCount?: number) {
+  constructor(status: number, message: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
-    this.itemCount = itemCount;
   }
 }
 
@@ -77,6 +82,48 @@ function requiredBoolean(value: unknown, label: string): boolean {
 
 function requiredId(value: unknown, label: string): number {
   return requiredInt(value, label, 1, Number.MAX_SAFE_INTEGER);
+}
+
+export const VENUE_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
+
+export function normalizeVenueSlug(value: unknown): string {
+  if (typeof value !== "string") {
+    fail("نام آدرس فقط می‌تواند شامل حروف کوچک انگلیسی، عدد و خط تیره باشد.");
+  }
+  const slug = value.trim().toLowerCase();
+  if (!slug || !VENUE_SLUG_PATTERN.test(slug)) {
+    fail("نام آدرس فقط می‌تواند شامل حروف کوچک انگلیسی، عدد و خط تیره باشد.");
+  }
+  return slug;
+}
+
+export function validateVenueInput(value: unknown): VenueInput {
+  const data = asObject(value);
+  return {
+    slug: normalizeVenueSlug(requiredString(data.slug, "نام آدرس", 64)),
+    nameFa: requiredString(data.nameFa, "نام کافه", 120),
+    nameEn: optionalString(data.nameEn, "نام انگلیسی", 120),
+    welcomeMessage: optionalString(data.welcomeMessage, "پیام خوش‌آمد", 500),
+    metaDescription: optionalString(
+      data.metaDescription,
+      "توضیحات صفحه",
+      300,
+    ),
+    logoDataUrl: validateLogo(data.logoDataUrl),
+  };
+}
+
+export function validateVenueAssignment(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+  return requiredInt(value, "منو", 1, Number.MAX_SAFE_INTEGER);
+}
+
+export function validateUserInput(value: unknown): UserInput {
+  const data = asObject(value);
+  return {
+    name: requiredString(data.name, "نام کاربر", 80),
+    venueId: validateVenueAssignment(data.venueId),
+  };
 }
 
 export function validateCategoryInput(value: unknown): string {
@@ -215,7 +262,9 @@ export function validateItemInput(value: unknown): ItemInput {
   };
 }
 
-type SettingsRow = {
+type VenueRow = {
+  id: number;
+  slug: string;
   name_fa: string;
   name_en: string | null;
   welcome_message: string | null;
@@ -243,37 +292,155 @@ type VariantRow = {
   sort_order: number;
 };
 
-function mapSettings(row: SettingsRow | null): Settings {
+function mapVenue(row: VenueRow): Venue {
   return {
-    nameFa: row?.name_fa ?? "",
-    nameEn: row?.name_en ?? null,
-    welcomeMessage: row?.welcome_message ?? null,
-    metaDescription: row?.meta_description ?? null,
-    logoDataUrl: row?.logo_data_url ?? null,
+    id: row.id,
+    slug: row.slug,
+    nameFa: row.name_fa,
+    nameEn: row.name_en,
+    welcomeMessage: row.welcome_message,
+    metaDescription: row.meta_description,
+    logoDataUrl: row.logo_data_url,
   };
 }
 
-export async function getMenu(db: D1Database): Promise<MenuData> {
-  const [settings, categoryRows, itemRows, variantRows] = await Promise.all([
+export async function listVenues(
+  db: D1Database,
+  onlyId?: number,
+): Promise<VenueSummary[]> {
+  const statement = onlyId === undefined
+    ? db.prepare("SELECT id, slug, name_fa, name_en FROM venues ORDER BY id")
+    : db
+      .prepare("SELECT id, slug, name_fa, name_en FROM venues WHERE id = ? ORDER BY id")
+      .bind(onlyId);
+  const rows = await statement.all<{
+    id: number;
+    slug: string;
+    name_fa: string;
+    name_en: string | null;
+  }>();
+  return rows.results.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    nameFa: row.name_fa,
+    nameEn: row.name_en,
+  }));
+}
+
+export async function getVenueBySlug(
+  db: D1Database,
+  slug: string,
+): Promise<Venue | null> {
+  const row = await db
+    .prepare(
+      "SELECT id, slug, name_fa, name_en, welcome_message, meta_description, logo_data_url FROM venues WHERE slug = ? COLLATE NOCASE",
+    )
+    .bind(slug)
+    .first<VenueRow>();
+  return row ? mapVenue(row) : null;
+}
+
+export async function isVenueSlugAvailable(
+  db: D1Database,
+  slug: string,
+  excludeId = 0,
+): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT id FROM venues WHERE slug = ? AND id <> ?")
+    .bind(slug, excludeId)
+    .first<{ id: number }>();
+  return row === null;
+}
+
+export async function createVenue(
+  db: D1Database,
+  input: VenueInput,
+): Promise<{ id: number; slug: string }> {
+  try {
+    const result = await db
+      .prepare(
+        "INSERT INTO venues (slug, name_fa, name_en, welcome_message, meta_description, logo_data_url) VALUES (?, ?, ?, ?, ?, ?)",
+      )
+      .bind(
+        input.slug,
+        input.nameFa,
+        input.nameEn,
+        input.welcomeMessage,
+        input.metaDescription,
+        input.logoDataUrl,
+      )
+      .run();
+    return { id: result.meta.last_row_id, slug: input.slug };
+  } catch (error) {
+    if (isUniqueError(error)) {
+      throw new ApiError(409, "این نام آدرس قبلاً استفاده شده است.");
+    }
+    throw error;
+  }
+}
+
+export async function updateVenue(
+  db: D1Database,
+  id: number,
+  input: VenueInput,
+): Promise<void> {
+  try {
+    const result = await db
+      .prepare(
+        "UPDATE venues SET slug = ?, name_fa = ?, name_en = ?, welcome_message = ?, meta_description = ?, logo_data_url = ? WHERE id = ?",
+      )
+      .bind(
+        input.slug,
+        input.nameFa,
+        input.nameEn,
+        input.welcomeMessage,
+        input.metaDescription,
+        input.logoDataUrl,
+        id,
+      )
+      .run();
+    if (result.meta.changes === 0) {
+      throw new ApiError(404, "منو یافت نشد.");
+    }
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (isUniqueError(error)) {
+      throw new ApiError(409, "این نام آدرس قبلاً استفاده شده است.");
+    }
+    throw error;
+  }
+}
+
+export async function getMenu(
+  db: D1Database,
+  venueId: number,
+): Promise<MenuData> {
+  const venueRow = await db
+    .prepare(
+      "SELECT id, slug, name_fa, name_en, welcome_message, meta_description, logo_data_url FROM venues WHERE id = ?",
+    )
+    .bind(venueId)
+    .first<VenueRow>();
+  if (!venueRow) throw new ApiError(404, "منو یافت نشد.");
+
+  const [categoryRows, itemRows, variantRows] = await Promise.all([
     db
       .prepare(
-        "SELECT name_fa, name_en, welcome_message, meta_description, logo_data_url FROM settings WHERE id = 1",
+        "SELECT id, name_fa, sort_order FROM categories WHERE venue_id = ? ORDER BY sort_order, id",
       )
-      .first<SettingsRow>(),
-    db
-      .prepare(
-        "SELECT id, name_fa, sort_order FROM categories ORDER BY sort_order, id",
-      )
+      .bind(venueId)
       .all<CategoryRow>(),
     db
       .prepare(
-        "SELECT id, category_id, name_fa, name_en, description, price_toman, is_sold_out, sort_order FROM items ORDER BY category_id, sort_order, id",
+        "SELECT i.id, i.category_id, i.name_fa, i.name_en, i.description, i.price_toman, i.is_sold_out, i.sort_order FROM items i JOIN categories c ON c.id = i.category_id WHERE c.venue_id = ? ORDER BY i.category_id, i.sort_order, i.id",
       )
+      .bind(venueId)
       .all<ItemRow>(),
     db
       .prepare(
-        "SELECT id, item_id, name_fa, name_en, price_delta, sort_order FROM variants ORDER BY item_id, sort_order, id",
+        "SELECT v.id, v.item_id, v.name_fa, v.name_en, v.price_delta, v.sort_order FROM variants v JOIN items i ON i.id = v.item_id JOIN categories c ON c.id = i.category_id WHERE c.venue_id = ? ORDER BY v.item_id, v.sort_order, v.id",
       )
+      .bind(venueId)
       .all<VariantRow>(),
   ]);
 
@@ -312,7 +479,7 @@ export async function getMenu(db: D1Database): Promise<MenuData> {
     itemsById.get(row.item_id)?.variants.push(variant);
   }
 
-  return { settings: mapSettings(settings), categories };
+  return { venue: mapVenue(venueRow), categories };
 }
 
 function isUniqueError(error: unknown): boolean {
@@ -323,17 +490,21 @@ function isUniqueError(error: unknown): boolean {
 
 export async function createCategory(
   db: D1Database,
+  venueId: number,
   nameFa: string,
 ): Promise<number> {
   try {
     const row = await db
       .prepare(
-        "SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM categories",
+        "SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM categories WHERE venue_id = ?",
       )
+      .bind(venueId)
       .first<{ next: number }>();
     const result = await db
-      .prepare("INSERT INTO categories (name_fa, sort_order) VALUES (?, ?)")
-      .bind(nameFa, row?.next ?? 0)
+      .prepare(
+        "INSERT INTO categories (venue_id, name_fa, sort_order) VALUES (?, ?, ?)",
+      )
+      .bind(venueId, nameFa, row?.next ?? 0)
       .run();
     return result.meta.last_row_id;
   } catch (error) {
@@ -346,13 +517,16 @@ export async function createCategory(
 
 export async function renameCategory(
   db: D1Database,
+  venueId: number,
   id: number,
   nameFa: string,
 ): Promise<void> {
   try {
     const result = await db
-      .prepare("UPDATE categories SET name_fa = ? WHERE id = ?")
-      .bind(nameFa, id)
+      .prepare(
+        "UPDATE categories SET name_fa = ? WHERE id = ? AND venue_id = ?",
+      )
+      .bind(nameFa, id, venueId)
       .run();
     if (result.meta.changes === 0) {
       throw new ApiError(404, "دسته یافت نشد.");
@@ -368,34 +542,34 @@ export async function renameCategory(
 
 export async function deleteCategory(
   db: D1Database,
+  venueId: number,
   id: number,
 ): Promise<void> {
-  const row = await db
-    .prepare("SELECT COUNT(*) AS count FROM items WHERE category_id = ?")
-    .bind(id)
-    .first<{ count: number }>();
-  const itemCount = row?.count ?? 0;
-  if (itemCount > 0) {
-    throw new ApiError(
-      409,
-      "این دسته خالی نیست؛ ابتدا آیتم‌های آن را جابه‌جا یا حذف کنید.",
-      itemCount,
-    );
-  }
+  await assertCategory(db, venueId, id);
 
-  const result = await db
-    .prepare("DELETE FROM categories WHERE id = ?")
-    .bind(id)
-    .run();
-  if (result.meta.changes === 0) throw new ApiError(404, "دسته یافت نشد.");
+  await db.batch([
+    db
+      .prepare(
+        "DELETE FROM variants WHERE item_id IN (SELECT i.id FROM items i JOIN categories c ON c.id = i.category_id WHERE i.category_id = ? AND c.venue_id = ?)",
+      )
+      .bind(id, venueId),
+    db.prepare("DELETE FROM items WHERE category_id = ?").bind(id),
+    db
+      .prepare("DELETE FROM categories WHERE id = ? AND venue_id = ?")
+      .bind(id, venueId),
+  ]);
 }
 
 export async function reorderCategories(
   db: D1Database,
+  venueId: number,
   ids: number[],
 ): Promise<void> {
   const rows = await db
-    .prepare("SELECT id FROM categories ORDER BY sort_order, id")
+    .prepare(
+      "SELECT id FROM categories WHERE venue_id = ? ORDER BY sort_order, id",
+    )
+    .bind(venueId)
     .all<{ id: number }>();
   assertExactSet(
     rows.results.map((row) => row.id),
@@ -406,16 +580,22 @@ export async function reorderCategories(
   await db.batch(
     ids.map((id, index) =>
       db
-        .prepare("UPDATE categories SET sort_order = ? WHERE id = ?")
-        .bind(index, id),
+        .prepare(
+          "UPDATE categories SET sort_order = ? WHERE id = ? AND venue_id = ?",
+        )
+        .bind(index, id, venueId),
     ),
   );
 }
 
-async function assertCategory(db: D1Database, id: number): Promise<void> {
+async function assertCategory(
+  db: D1Database,
+  venueId: number,
+  id: number,
+): Promise<void> {
   const row = await db
-    .prepare("SELECT id FROM categories WHERE id = ?")
-    .bind(id)
+    .prepare("SELECT c.id FROM categories c WHERE c.id = ? AND c.venue_id = ?")
+    .bind(id, venueId)
     .first<{ id: number }>();
   if (!row) throw new ApiError(404, "دسته یافت نشد.");
 }
@@ -455,9 +635,10 @@ function variantInserts(
 
 export async function createItem(
   db: D1Database,
+  venueId: number,
   input: ItemInput,
 ): Promise<number> {
-  await assertCategory(db, input.categoryId);
+  await assertCategory(db, venueId, input.categoryId);
   const sortOrder = await nextItemOrder(db, input.categoryId);
   const statements: D1PreparedStatement[] = [
     db
@@ -489,16 +670,19 @@ export async function createItem(
 
 export async function updateItem(
   db: D1Database,
+  venueId: number,
   id: number,
   input: ItemInput,
 ): Promise<void> {
   const existing = await db
-    .prepare("SELECT category_id, sort_order FROM items WHERE id = ?")
-    .bind(id)
+    .prepare(
+      "SELECT i.category_id, i.sort_order FROM items i JOIN categories c ON c.id = i.category_id WHERE i.id = ? AND c.venue_id = ?",
+    )
+    .bind(id, venueId)
     .first<{ category_id: number; sort_order: number }>();
   if (!existing) throw new ApiError(404, "آیتم یافت نشد.");
 
-  await assertCategory(db, input.categoryId);
+  await assertCategory(db, venueId, input.categoryId);
   const sortOrder =
     existing.category_id === input.categoryId
       ? existing.sort_order
@@ -526,11 +710,14 @@ export async function updateItem(
 
 export async function deleteItem(
   db: D1Database,
+  venueId: number,
   id: number,
 ): Promise<void> {
   const existing = await db
-    .prepare("SELECT id FROM items WHERE id = ?")
-    .bind(id)
+    .prepare(
+      "SELECT i.id FROM items i JOIN categories c ON c.id = i.category_id WHERE i.id = ? AND c.venue_id = ?",
+    )
+    .bind(id, venueId)
     .first<{ id: number }>();
   if (!existing) throw new ApiError(404, "آیتم یافت نشد.");
 
@@ -542,10 +729,11 @@ export async function deleteItem(
 
 export async function reorderItems(
   db: D1Database,
+  venueId: number,
   categoryId: number,
   ids: number[],
 ): Promise<void> {
-  await assertCategory(db, categoryId);
+  await assertCategory(db, venueId, categoryId);
   const rows = await db
     .prepare(
       "SELECT id FROM items WHERE category_id = ? ORDER BY sort_order, id",
@@ -567,31 +755,6 @@ export async function reorderItems(
         .bind(index, id, categoryId),
     ),
   );
-}
-
-export async function saveSettings(
-  db: D1Database,
-  settings: SettingsInput,
-): Promise<void> {
-  await db
-    .prepare(
-      `INSERT INTO settings (id, name_fa, name_en, welcome_message, meta_description, logo_data_url)
-       VALUES (1, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
-         name_fa = excluded.name_fa,
-         name_en = excluded.name_en,
-         welcome_message = excluded.welcome_message,
-         meta_description = excluded.meta_description,
-         logo_data_url = excluded.logo_data_url`,
-    )
-    .bind(
-      settings.nameFa,
-      settings.nameEn,
-      settings.welcomeMessage,
-      settings.metaDescription,
-      settings.logoDataUrl,
-    )
-    .run();
 }
 
 export type LoginAttempt = { count: number; resetAt: number };
@@ -630,4 +793,211 @@ export async function clearLoginAttempts(
   ip: string,
 ): Promise<void> {
   await db.prepare("DELETE FROM login_attempts WHERE ip = ?").bind(ip).run();
+}
+
+type UserRow = {
+  id: number;
+  name: string;
+  role: UserRole;
+  venue_id: number | null;
+  session_version: number;
+};
+
+type AdminRow = UserRow & { identifier_hash: string };
+
+const USER_COLUMNS = "id, name, role, venue_id, session_version";
+
+function mapUser(row: UserRow): User {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    venueId: row.venue_id,
+    sessionVersion: row.session_version,
+  };
+}
+
+export async function getUserById(
+  db: D1Database,
+  id: number,
+): Promise<User | null> {
+  const row = await db
+    .prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`)
+    .bind(id)
+    .first<UserRow>();
+  return row ? mapUser(row) : null;
+}
+
+export async function getUserByIdentifierHash(
+  db: D1Database,
+  hash: string,
+): Promise<User | null> {
+  const row = await db
+    .prepare(`SELECT ${USER_COLUMNS} FROM users WHERE identifier_hash = ?`)
+    .bind(hash)
+    .first<UserRow>();
+  return row ? mapUser(row) : null;
+}
+
+export async function upsertAdminUser(
+  db: D1Database,
+  hash: string,
+): Promise<User> {
+  const existing = await db
+    .prepare(
+      `SELECT ${USER_COLUMNS}, identifier_hash FROM users WHERE role = 'admin'`,
+    )
+    .first<AdminRow>();
+
+  if (!existing) {
+    const result = await db
+      .prepare(
+        "INSERT INTO users (identifier_hash, name, role, venue_id) VALUES (?, 'مدیر', 'admin', NULL)",
+      )
+      .bind(hash)
+      .run();
+    return {
+      id: result.meta.last_row_id,
+      name: "مدیر",
+      role: "admin",
+      venueId: null,
+      sessionVersion: 0,
+    };
+  }
+
+  if (existing.identifier_hash === hash) return mapUser(existing);
+
+  await db
+    .prepare(
+      "UPDATE users SET identifier_hash = ?, session_version = session_version + 1 WHERE id = ?",
+    )
+    .bind(hash, existing.id)
+    .run();
+  return { ...mapUser(existing), sessionVersion: existing.session_version + 1 };
+}
+
+async function assertVenueExists(
+  db: D1Database,
+  venueId: number,
+): Promise<void> {
+  const row = await db
+    .prepare("SELECT id FROM venues WHERE id = ?")
+    .bind(venueId)
+    .first<{ id: number }>();
+  if (!row) throw new ApiError(400, "منو یافت نشد.");
+}
+
+export async function listUsers(db: D1Database): Promise<ManagedUser[]> {
+  const rows = await db
+    .prepare(
+      `SELECT u.id, u.name, u.venue_id, v.name_fa AS venue_name
+       FROM users u
+       LEFT JOIN venues v ON v.id = u.venue_id
+       WHERE u.role = 'user'
+       ORDER BY u.id`,
+    )
+    .all<{
+      id: number;
+      name: string;
+      venue_id: number | null;
+      venue_name: string | null;
+    }>();
+  return rows.results.map((row) => ({
+    id: row.id,
+    name: row.name,
+    venueId: row.venue_id,
+    venueName: row.venue_name,
+  }));
+}
+
+export async function createUser(
+  db: D1Database,
+  input: UserInput,
+): Promise<{ id: number; identifier: string }> {
+  if (input.venueId !== null) await assertVenueExists(db, input.venueId);
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const identifier = generateIdentifier();
+    try {
+      const result = await db
+        .prepare(
+          "INSERT INTO users (identifier_hash, name, role, venue_id) VALUES (?, ?, 'user', ?)",
+        )
+        .bind(await hashIdentifier(identifier), input.name, input.venueId)
+        .run();
+      return { id: result.meta.last_row_id, identifier };
+    } catch (error) {
+      if (!isUniqueError(error)) throw error;
+    }
+  }
+  throw new Error("Could not generate a unique user identifier");
+}
+
+export async function rotateUserIdentifier(
+  db: D1Database,
+  id: number,
+): Promise<string> {
+  const row = await db
+    .prepare("SELECT role FROM users WHERE id = ?")
+    .bind(id)
+    .first<{ role: UserRole }>();
+  if (!row) throw new ApiError(404, "کاربر یافت نشد.");
+  if (row.role === "admin") {
+    throw new ApiError(403, "شناسه حساب مدیر قابل تغییر نیست.");
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const identifier = generateIdentifier();
+    try {
+      const result = await db
+        .prepare(
+          "UPDATE users SET identifier_hash = ?, session_version = session_version + 1 WHERE id = ?",
+        )
+        .bind(await hashIdentifier(identifier), id)
+        .run();
+      if (result.meta.changes === 0) {
+        throw new ApiError(404, "کاربر یافت نشد.");
+      }
+      return identifier;
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      if (!isUniqueError(error)) throw error;
+    }
+  }
+  throw new Error("Could not generate a unique user identifier");
+}
+
+export async function updateUserVenue(
+  db: D1Database,
+  id: number,
+  venueId: number | null,
+): Promise<void> {
+  const row = await db
+    .prepare("SELECT role FROM users WHERE id = ?")
+    .bind(id)
+    .first<{ role: UserRole }>();
+  if (!row) throw new ApiError(404, "کاربر یافت نشد.");
+  if (row.role === "admin") {
+    throw new ApiError(403, "دسترسی حساب مدیر قابل تغییر نیست.");
+  }
+  if (venueId !== null) await assertVenueExists(db, venueId);
+  await db
+    .prepare("UPDATE users SET venue_id = ? WHERE id = ?")
+    .bind(venueId, id)
+    .run();
+}
+
+export async function deleteUser(
+  db: D1Database,
+  id: number,
+): Promise<void> {
+  const row = await db
+    .prepare("SELECT role FROM users WHERE id = ?")
+    .bind(id)
+    .first<{ role: UserRole }>();
+  if (!row) throw new ApiError(404, "کاربر یافت نشد.");
+  if (row.role === "admin") {
+    throw new ApiError(403, "حساب مدیر قابل حذف نیست.");
+  }
+  await db.prepare("DELETE FROM users WHERE id = ?").bind(id).run();
 }

@@ -1,6 +1,6 @@
 const encoder = new TextEncoder();
 
-export const SESSION_COOKIE = "mofe_admin";
+export const SESSION_COOKIE = "mofe_session";
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 export const LOGIN_MAX_FAILURES = 5;
@@ -47,7 +47,16 @@ export async function hashSha256(value: string): Promise<Uint8Array> {
   );
 }
 
-export async function passwordMatches(
+export async function hashIdentifier(value: string): Promise<string> {
+  return toHex(await hashSha256(value));
+}
+
+export function generateIdentifier(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return `mofe_${toHex(bytes)}`;
+}
+
+export async function secretMatches(
   provided: string,
   expected: string,
 ): Promise<boolean> {
@@ -59,15 +68,28 @@ export async function passwordMatches(
   return constantTimeEqual(left, right);
 }
 
+export interface Session {
+  userId: number;
+  sessionVersion: number;
+}
+
 export async function signSession(
   expiresAt: number,
+  userId: number,
+  sessionVersion: number,
   secret: string,
 ): Promise<string> {
   if (!secret) throw new Error("SESSION_SECRET is missing");
+  if (!Number.isSafeInteger(userId) || userId <= 0) {
+    throw new Error("Invalid session user");
+  }
+  if (!Number.isSafeInteger(sessionVersion) || sessionVersion < 0) {
+    throw new Error("Invalid session version");
+  }
   const signature = await crypto.subtle.sign(
     "HMAC",
     await hmacKey(secret),
-    encoder.encode(String(expiresAt)),
+    encoder.encode(`${expiresAt}.${userId}.${sessionVersion}`),
   );
   return toHex(new Uint8Array(signature));
 }
@@ -76,22 +98,42 @@ export async function verifySession(
   value: string | null | undefined,
   secret: string | undefined,
   now = Date.now(),
-): Promise<boolean> {
-  if (!secret || !value) return false;
-  const dot = value.indexOf(".");
-  if (dot <= 0 || dot !== value.lastIndexOf(".")) return false;
+): Promise<Session | null> {
+  if (!secret || !value) return null;
+  const parts = value.split(".");
+  if (parts.length !== 4) return null;
 
-  const expiresRaw = value.slice(0, dot);
-  const signature = value.slice(dot + 1);
-  if (!/^\d+$/.test(expiresRaw) || !/^[0-9a-f]{64}$/i.test(signature)) {
-    return false;
+  const [expiresRaw, userIdRaw, versionRaw, signature] = parts;
+  if (
+    !/^\d+$/.test(expiresRaw) ||
+    !/^[1-9]\d*$/.test(userIdRaw) ||
+    !/^\d+$/.test(versionRaw) ||
+    !/^[0-9a-f]{64}$/i.test(signature)
+  ) {
+    return null;
   }
 
   const expiresAt = Number(expiresRaw);
-  if (!Number.isSafeInteger(expiresAt) || expiresAt <= now) return false;
+  const userId = Number(userIdRaw);
+  const sessionVersion = Number(versionRaw);
+  if (
+    !Number.isSafeInteger(expiresAt) ||
+    expiresAt <= now ||
+    !Number.isSafeInteger(userId) ||
+    !Number.isSafeInteger(sessionVersion)
+  ) {
+    return null;
+  }
 
-  const expected = await signSession(expiresAt, secret);
-  return constantTimeEqual(signature.toLowerCase(), expected);
+  const expected = await signSession(
+    expiresAt,
+    userId,
+    sessionVersion,
+    secret,
+  );
+  return constantTimeEqual(signature.toLowerCase(), expected)
+    ? { userId, sessionVersion }
+    : null;
 }
 
 export function parseCookies(header: string | null): Record<string, string> {
@@ -113,10 +155,12 @@ function baseCookie(secure: boolean): string {
 
 export function sessionCookie(
   expiresAt: number,
+  userId: number,
+  sessionVersion: number,
   signature: string,
   secure: boolean,
 ): string {
-  return `${SESSION_COOKIE}=${expiresAt}.${signature}; Max-Age=${
+  return `${SESSION_COOKIE}=${expiresAt}.${userId}.${sessionVersion}.${signature}; Max-Age=${
     SESSION_TTL_MS / 1000
   }; ${baseCookie(secure)}`;
 }

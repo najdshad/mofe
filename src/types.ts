@@ -6,6 +6,40 @@ export interface Settings {
   logoDataUrl: string | null;
 }
 
+export interface Venue extends Settings {
+  id: number;
+  slug: string;
+}
+
+export interface VenueSummary {
+  id: number;
+  slug: string;
+  nameFa: string;
+  nameEn: string | null;
+}
+
+export type UserRole = "admin" | "user";
+
+export interface User {
+  id: number;
+  name: string;
+  role: UserRole;
+  venueId: number | null;
+  sessionVersion: number;
+}
+
+export interface ManagedUser {
+  id: number;
+  name: string;
+  venueId: number | null;
+  venueName: string | null;
+}
+
+export interface UserInput {
+  name: string;
+  venueId: number | null;
+}
+
 export interface Variant {
   id: number;
   nameFa: string;
@@ -33,7 +67,7 @@ export interface Category {
 }
 
 export interface MenuData {
-  settings: Settings;
+  venue: Venue;
   categories: Category[];
 }
 
@@ -55,8 +89,12 @@ export interface ItemInput {
 
 export type SettingsInput = Settings;
 
+export interface VenueInput extends SettingsInput {
+  slug: string;
+}
+
 export interface Env {
   DB: D1Database;
-  ADMIN_PASSWORD?: string;
+  ADMIN_IDENTIFIER?: string;
   SESSION_SECRET?: string;
 }

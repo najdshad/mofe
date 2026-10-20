@@ -1,2 +1,2 @@
-ADMIN_PASSWORD=change-me
+ADMIN_IDENTIFIER=replace-with-a-long-random-admin-identifier
 SESSION_SECRET=change-me-to-at-least-32-random-characters

@@ -23,10 +23,10 @@
     <div class="login-card">
       <p class="brand" lang="en" dir="ltr">mofé · admin</p>
       <h1 id="login-title">ورود به مدیریت منو</h1>
-      <p class="login-intro">برای ویرایش منو، رمز مدیریت را وارد کنید.</p>
+      <p class="login-intro">شناسه ورودی که از مدیر دریافت کرده‌اید را وارد کنید.</p>
       <form novalidate id="login-form" method="post">
-        <label class="field" for="login-password">رمز عبور</label>
-        <input class="input" id="login-password" name="password" type="password" autocomplete="current-password" required>
+        <label class="field" for="login-identifier">شناسه ورود</label>
+        <input class="input login-identifier" id="login-identifier" name="identifier" type="text" dir="ltr" maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" required>
         <p id="login-error" class="form-error" role="alert" hidden></p>
         <button id="login-submit" class="btn btn-primary btn-block" type="submit">ورود</button>
       </form>
@@ -40,10 +40,13 @@
         <h1 id="cafe-name" class="topbar-title">مدیریت منو</h1>
       </div>
       <nav class="topbar-actions" aria-label="ابزارهای مدیریت">
+        <select id="venue-select" class="input venue-select" aria-label="انتخاب منو"></select>
+        <button id="users-button" class="btn" type="button" hidden>کاربران</button>
+        <button id="new-venue" class="btn" type="button" hidden>منوی جدید</button>
         <button id="settings-button" class="btn" type="button">تنظیمات کافه</button>
         <a id="preview-link" class="btn" href="/" target="_blank" rel="noopener">پیش‌نمایش</a>
-        <a class="btn" href="/export/menu.html" title="دانلود خروجی HTML" aria-label="دانلود خروجی HTML">HTML</a>
-        <a class="btn" href="/export/menu.csv" title="دانلود خروجی CSV" aria-label="دانلود خروجی CSV">CSV</a>
+        <a id="export-html" class="btn" href="/export/menu.html" title="دانلود خروجی HTML" aria-label="دانلود خروجی HTML">HTML</a>
+        <a id="export-csv" class="btn" href="/export/menu.csv" title="دانلود خروجی CSV" aria-label="دانلود خروجی CSV">CSV</a>
         <button id="logout-button" class="btn btn-quiet" type="button">خروج</button>
       </nav>
     </header>
@@ -59,6 +62,11 @@
 
       <p id="app-status" class="app-status" role="status" aria-live="polite" hidden></p>
       <p id="editor-error" class="alert" role="alert" hidden></p>
+
+      <div id="no-venue" class="empty-state" hidden>
+        <p id="no-venue-title">هنوز منویی به حساب شما اختصاص داده نشده است.</p>
+        <p id="no-venue-hint" class="muted-text">برای دریافت دسترسی با مدیر تماس بگیرید.</p>
+      </div>
 
       <div id="categories" class="category-list"></div>
       <div id="categories-empty" class="empty-state" hidden>
@@ -87,7 +95,7 @@
           <button class="btn btn-small" type="button" data-action="category-add-item">افزودن آیتم</button>
         </div>
       </header>
-      <p class="category-note" data-field="delete-note" hidden>برای حذف دسته، ابتدا همه اقلام آن را حذف یا به دسته دیگری منتقل کنید.</p>
+      <p class="category-note" data-field="delete-note" hidden>با حذف این دسته، همه آیتم‌های آن هم حذف می‌شوند.</p>
       <div class="admin-items" data-field="items" role="list"></div>
       <p class="empty-items" data-field="items-empty" hidden>آیتمی در این دسته نیست.</p>
     </section>
@@ -129,6 +137,17 @@
         <input class="input" data-variant-field="priceDelta" type="number" step="1" min="-1000000000" max="1000000000" inputmode="numeric" dir="ltr" value="0">
       </label>
       <button class="icon-btn btn-remove-variant" type="button" data-action="variant-remove" aria-label="حذف واریانت">×</button>
+    </div>
+  </template>
+
+  <template id="user-template">
+    <div class="user-row" data-user-id="">
+      <strong class="user-row-name" data-field="name"></strong>
+      <select class="input user-venue-select" data-field="venue" aria-label="منوی کاربر"></select>
+      <div class="user-row-actions">
+        <button class="btn btn-small" type="button" data-action="rotate">شناسه جدید</button>
+        <button class="btn btn-small btn-danger" type="button" data-action="delete">حذف</button>
+      </div>
     </div>
   </template>
 
@@ -200,6 +219,35 @@
     </form>
   </dialog>
 
+  <dialog id="venue-dialog" class="dialog" aria-labelledby="venue-dialog-title">
+    <form novalidate id="venue-form" class="dialog-form">
+      <header class="dialog-head">
+        <h2 id="venue-dialog-title">منوی جدید</h2>
+        <button class="icon-btn" type="button" data-close-dialog aria-label="بستن">×</button>
+      </header>
+      <div class="dialog-body">
+        <p id="venue-error" class="form-error" role="alert" hidden></p>
+        <div class="form-grid">
+          <div class="field field-full">
+            <label for="venue-name-fa">نام کافه <span class="required-mark">*</span></label>
+            <input id="venue-name-fa" class="input" maxlength="120" autocomplete="off" required>
+          </div>
+          <div class="field field-full">
+            <label for="venue-slug">نام آدرس منو <span class="required-mark">*</span></label>
+            <input id="venue-slug" class="input" dir="ltr" maxlength="64" autocomplete="off" placeholder="cafe-name" required>
+            <p id="venue-slug-hint" class="slug-hint" dir="ltr">/m/…</p>
+            <p id="venue-slug-status" class="slug-status" role="status" aria-live="polite" hidden></p>
+          </div>
+        </div>
+        <p class="muted-text">منو در این آدرس منتشر می‌شود. فقط حروف کوچک انگلیسی، عدد و خط تیره مجاز است.</p>
+      </div>
+      <footer class="dialog-actions">
+        <button class="btn" type="button" data-close-dialog>انصراف</button>
+        <button id="venue-save" class="btn btn-primary" type="submit">ساخت منو</button>
+      </footer>
+    </form>
+  </dialog>
+
   <dialog id="settings-dialog" class="dialog dialog-wide" aria-labelledby="settings-dialog-title">
     <form novalidate id="settings-form" class="dialog-form">
       <header class="dialog-head">
@@ -216,6 +264,13 @@
           <div class="field">
             <label for="settings-name-en">نام انگلیسی کافه</label>
             <input id="settings-name-en" class="input" maxlength="120" dir="ltr" autocomplete="off">
+          </div>
+          <div class="field field-full">
+            <label for="settings-slug">نام آدرس منو</label>
+            <input id="settings-slug" class="input" dir="ltr" maxlength="64" autocomplete="off">
+            <p id="settings-slug-hint" class="slug-hint" dir="ltr">/m/…</p>
+            <p id="settings-slug-status" class="slug-status" role="status" aria-live="polite" hidden></p>
+            <p class="muted-text">منو در این آدرس منتشر می‌شود.</p>
           </div>
           <div class="field field-full">
             <label for="settings-welcome">پیام خوش‌آمدگویی</label>
@@ -249,6 +304,52 @@
         <button id="settings-save" class="btn btn-primary" type="submit">ذخیره تنظیمات</button>
       </footer>
     </form>
+  </dialog>
+
+  <dialog id="users-dialog" class="dialog dialog-wide" aria-labelledby="users-dialog-title">
+    <div class="dialog-form">
+      <header class="dialog-head">
+        <h2 id="users-dialog-title">مدیریت کاربران</h2>
+        <button class="icon-btn" type="button" data-close-dialog aria-label="بستن">×</button>
+      </header>
+      <div class="dialog-body">
+        <div id="user-token" class="token-panel" hidden>
+          <p class="token-label">شناسه ورود (فقط همین یک بار نمایش داده می‌شود):</p>
+          <div class="token-row">
+            <input id="user-token-value" class="input token-value" readonly dir="ltr" autocomplete="off" aria-label="شناسه ورود کاربر">
+            <button id="user-token-copy" class="btn" type="button">کپی</button>
+          </div>
+          <p class="muted-text">این شناسه را به کاربر بدهید. اگر گم شد، «شناسه جدید» بسازید.</p>
+        </div>
+
+        <form novalidate id="user-create-form" class="user-create">
+          <div class="form-grid">
+            <div class="field">
+              <label for="user-name">نام کاربر <span class="required-mark">*</span></label>
+              <input id="user-name" class="input" maxlength="80" autocomplete="off" required>
+            </div>
+            <div class="field">
+              <label for="user-venue">منو</label>
+              <select id="user-venue" class="input"></select>
+            </div>
+          </div>
+          <p id="user-create-error" class="form-error" role="alert" hidden></p>
+          <button id="user-create" class="btn btn-primary btn-small" type="submit">ساخت کاربر</button>
+        </form>
+
+        <div class="user-list-head">
+          <h3>کاربران</h3>
+          <p class="muted-text">با تغییر منو، دسترسی هر کاربر مشخص می‌شود.</p>
+        </div>
+        <p id="users-error" class="form-error" role="alert" hidden></p>
+        <div id="users-list" class="user-list"></div>
+        <p id="users-empty" class="empty-items" hidden>هنوز کاربری ساخته نشده است.</p>
+        <p class="muted-text">حساب مدیر همیشه دسترسی کامل دارد و در این فهرست نمایش داده نمی‌شود.</p>
+      </div>
+      <footer class="dialog-actions">
+        <button class="btn" type="button" data-close-dialog>بستن</button>
+      </footer>
+    </div>
   </dialog>
 </body>
 </html>

@@ -1,6 +1,10 @@
 "use strict";
 
-const state = { settings: null, categories: [] };
+const state = { user: null, venue: null, venues: [], categories: [], users: [] };
+
+function isAdmin() {
+  return Boolean(state.user && state.user.role === "admin");
+}
 
 const ui = {
   editingCategoryId: null,
@@ -11,12 +15,33 @@ const ui = {
   drag: null,
   loadSeq: 0,
   orderChain: Promise.resolve(),
+  slugJob: 0,
 };
 
 const el = {};
 const FA_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
+const SLUG_ERROR = "نام آدرس باید فقط شامل حروف کوچک انگلیسی، عدد و خط تیره باشد و با حرف یا عدد شروع و تمام شود.";
+const VENUE_KEY = "mofe_venue";
 // shortcut: measured on the data-URI string to stay under the server's 200,000-character limit; use decoded bytes if that limit changes.
 const LOGO_LIMIT = 150 * 1024;
+
+function rememberVenue(id) {
+  try {
+    if (id === null || id === undefined) localStorage.removeItem(VENUE_KEY);
+    else localStorage.setItem(VENUE_KEY, String(id));
+  } catch (error) {
+    /* Storage can be unavailable (private mode); the picker still works. */
+  }
+}
+
+function rememberedVenueId() {
+  try {
+    return localStorage.getItem(VENUE_KEY);
+  } catch (error) {
+    return null;
+  }
+}
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -41,6 +66,31 @@ function bindEvents() {
   el.logoutButton.addEventListener("click", () => {
     handleLogout().catch(() => showLogin(""));
   });
+  el.venueSelect.addEventListener("change", () => {
+    const venue = state.venues.find((entry) => String(entry.id) === el.venueSelect.value);
+    if (!venue) return;
+    state.venue = venue;
+    state.categories = [];
+    render();
+    rememberVenue(venue.id);
+    load().catch((error) => showEditorError(errorMessage(error)));
+  });
+  el.newVenue.addEventListener("click", () => openVenueDialog(el.newVenue));
+  el.usersButton.addEventListener("click", () => openUsers(el.usersButton));
+  el.userCreateForm.addEventListener("submit", (event) => {
+    submitUser(event).catch((error) => {
+      if (error.status !== 401) setFormError(el.userCreateError, errorMessage(error));
+    });
+  });
+  el.usersList.addEventListener("click", onUserClick);
+  el.usersList.addEventListener("change", onUserVenueChange);
+  el.userTokenCopy.addEventListener("click", copyUserToken);
+  el.venueForm.addEventListener("submit", (event) => {
+    submitVenue(event).catch((error) => {
+      if (error.status !== 401) setFormError(el.venueError, errorMessage(error));
+    });
+  });
+  bindSlugInput(el.venueSlug, el.venueSlugHint, el.venueSlugStatus, () => null);
   el.settingsButton.addEventListener("click", () => openSettings(el.settingsButton));
   el.addCategory.addEventListener("click", () => openCategoryDialog(null, el.addCategory));
   el.categories.addEventListener("click", onCategoryClick);
@@ -68,6 +118,12 @@ function bindEvents() {
       if (error.status !== 401) setFormError(el.settingsError, errorMessage(error));
     });
   });
+  bindSlugInput(
+    el.settingsSlug,
+    el.settingsSlugHint,
+    el.settingsSlugStatus,
+    () => (state.venue ? state.venue.id : null)
+  );
   el.logoInput.addEventListener("change", () => {
     handleLogoFile().catch((error) => setFormError(el.settingsError, errorMessage(error)));
   });
@@ -78,7 +134,7 @@ function bindEvents() {
     const dialog = button.closest("dialog");
     if (dialog) dialog.close();
   });
-  [el.categoryDialog, el.itemDialog, el.settingsDialog].forEach((dialog) => {
+  [el.categoryDialog, el.itemDialog, el.settingsDialog, el.venueDialog, el.usersDialog].forEach((dialog) => {
     dialog.addEventListener("close", () => restoreDialogFocus(dialog));
   });
   el.settingsDialog.addEventListener("close", () => {
@@ -86,6 +142,14 @@ function bindEvents() {
     ui.logoBusy = false;
     el.logoInput.disabled = false;
     el.logoRemove.disabled = false;
+  });
+  el.venueDialog.addEventListener("close", () => {
+    ui.slugJob += 1;
+  });
+  el.usersDialog.addEventListener("close", () => {
+    hideUserToken();
+    clearFormError(el.usersError);
+    clearFormError(el.userCreateError);
   });
 }
 
@@ -132,17 +196,20 @@ function showEditorError(message) {
 function showLogin(message) {
   ui.loadSeq += 1;
   document.querySelectorAll("dialog[open]").forEach((dialog) => dialog.close());
-  state.settings = null;
+  state.user = null;
+  state.venue = null;
+  state.venues = [];
   state.categories = [];
+  state.users = [];
   el.boot.hidden = true;
   el.editor.hidden = true;
   el.loginScreen.hidden = false;
-  el.loginPassword.value = "";
+  el.loginIdentifier.value = "";
   el.loginSubmit.disabled = false;
   if (message) setFormError(el.loginError, message);
   else clearFormError(el.loginError);
   document.title = "ورود — مدیریت منو";
-  el.loginPassword.focus();
+  el.loginIdentifier.focus();
 }
 
 function showEditor() {
@@ -202,14 +269,35 @@ async function api(path, options = {}) {
 
 async function load() {
   const sequence = ++ui.loadSeq;
-  const initial = !state.settings;
+  const initial = !state.venue;
   if (initial) showBoot("در حال بارگذاری…");
   else setStatus("در حال به‌روزرسانی…");
   try {
-    const data = await api("/api/menu");
+    const data = await api("/api/venues");
     if (sequence !== ui.loadSeq) return;
-    state.settings = (data && data.settings) || {};
-    const categories = (data && Array.isArray(data.categories)) ? data.categories : [];
+    state.user = (data && data.user) || state.user;
+    state.venues = (data && Array.isArray(data.venues)) ? data.venues : [];
+    const currentId = state.venue ? state.venue.id : null;
+    const remembered = rememberedVenueId();
+    const chosen = state.venues.find((venue) => venue.id === currentId)
+      || state.venues.find((venue) => String(venue.id) === remembered)
+      || state.venues[0]
+      || null;
+    if (!chosen) {
+      state.venue = null;
+      rememberVenue(null);
+      state.categories = [];
+      render();
+      showEditor();
+      if (isAdmin()) openVenueDialog(el.newVenue);
+      return;
+    }
+    state.venue = chosen;
+    rememberVenue(chosen.id);
+    const menu = await api("/api/venues/" + chosen.id + "/menu");
+    if (sequence !== ui.loadSeq) return;
+    state.venue = (menu && menu.venue) || chosen;
+    const categories = (menu && Array.isArray(menu.categories)) ? menu.categories : [];
     state.categories = categories.map((category) => ({
       ...category,
       items: Array.isArray(category.items) ? category.items : [],
@@ -229,10 +317,10 @@ async function handleLogin(event) {
   event.preventDefault();
   if (el.loginSubmit.disabled) return;
   clearFormError(el.loginError);
-  const password = el.loginPassword.value;
-  if (!password) {
-    setFormError(el.loginError, "رمز عبور را وارد کنید.");
-    el.loginPassword.focus();
+  const identifier = el.loginIdentifier.value.trim();
+  if (!identifier) {
+    setFormError(el.loginError, "شناسه ورود را وارد کنید.");
+    el.loginIdentifier.focus();
     return;
   }
   el.loginSubmit.disabled = true;
@@ -241,7 +329,7 @@ async function handleLogin(event) {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ identifier }),
     });
     let data = null;
     try {
@@ -251,13 +339,13 @@ async function handleLogin(event) {
     }
     if (!response.ok) {
       setFormError(el.loginError, (data && data.error) || "ورود ناموفق بود.");
-      el.loginPassword.focus();
-      el.loginPassword.select();
+      el.loginIdentifier.focus();
+      el.loginIdentifier.select();
       return;
     }
-    el.loginPassword.value = "";
+    el.loginIdentifier.value = "";
     await load();
-    if (!el.editor.hidden) el.addCategory.focus();
+    if (!el.editor.hidden && !document.querySelector("dialog[open]") && !el.addCategory.disabled) el.addCategory.focus();
   } catch (error) {
     setFormError(el.loginError, "ارتباط با سرور برقرار نشد. دوباره تلاش کنید.");
   } finally {
@@ -278,22 +366,63 @@ async function handleLogout() {
     el.logoutButton.disabled = false;
   }
   if (!loggedOut) return;
-  state.settings = null;
+  state.user = null;
+  state.venue = null;
+  state.venues = [];
   state.categories = [];
+  state.users = [];
   showLogin("");
 }
 
 function render() {
-  const settings = state.settings || {};
-  el.cafeName.textContent = settings.nameFa || "منوی کافه";
-  document.title = (settings.nameFa || "مدیریت منو") + " — مدیریت منو";
-  el.previewLink.href = "/?t=" + Date.now();
+  const venue = state.venue || {};
+  const admin = isAdmin();
+  const hasVenue = Boolean(venue.id);
+  el.cafeName.textContent = venue.nameFa || (admin ? "مدیریت منو" : "منوی کافه");
+  document.title = (venue.nameFa || (admin ? "مدیریت منو" : "منوی کافه")) + " — مدیریت منو";
+  renderVenueSelect();
+  el.venueSelect.hidden = !admin;
+  el.newVenue.hidden = !admin;
+  el.usersButton.hidden = !admin;
+  if (venue.slug) {
+    el.previewLink.href = "/m/" + encodeURIComponent(venue.slug) + "?t=" + Date.now();
+    el.exportHtml.href = "/m/" + encodeURIComponent(venue.slug) + "/export/menu.html";
+    el.exportCsv.href = "/m/" + encodeURIComponent(venue.slug) + "/export/menu.csv";
+  }
+  el.settingsButton.disabled = !hasVenue;
+  el.settingsButton.hidden = !hasVenue;
+  el.addCategory.disabled = !hasVenue;
+  el.addCategory.hidden = !hasVenue;
+  el.previewLink.hidden = !hasVenue;
+  el.exportHtml.hidden = !hasVenue;
+  el.exportCsv.hidden = !hasVenue;
+  el.noVenue.hidden = hasVenue;
+  if (!hasVenue) {
+    el.noVenueTitle.textContent = admin
+      ? "هنوز منویی ساخته نشده است."
+      : "هنوز منویی به حساب شما اختصاص داده نشده است.";
+    el.noVenueHint.textContent = admin
+      ? "با دکمه «منوی جدید» اولین منو را بسازید."
+      : "برای دریافت دسترسی با مدیر تماس بگیرید.";
+  }
   el.categories.replaceChildren();
   state.categories.forEach((category, index) => {
     el.categories.append(buildCategory(category, index));
   });
-  el.categoriesEmpty.hidden = state.categories.length > 0;
+  el.categoriesEmpty.hidden = state.categories.length > 0 || !hasVenue;
   el.editorError.hidden = true;
+}
+
+function renderVenueSelect() {
+  el.venueSelect.replaceChildren();
+  state.venues.forEach((venue) => {
+    const option = document.createElement("option");
+    option.value = String(venue.id);
+    option.textContent = venue.nameFa;
+    el.venueSelect.append(option);
+  });
+  if (state.venue) el.venueSelect.value = String(state.venue.id);
+  el.venueSelect.disabled = state.venues.length === 0;
 }
 
 function buildCategory(category, index) {
@@ -309,16 +438,15 @@ function buildCategory(category, index) {
   const note = node.querySelector('[data-field="delete-note"]');
   up.disabled = index === 0;
   down.disabled = index === state.categories.length - 1;
-  deleteButton.disabled = items.length > 0;
   if (items.length > 0) {
     note.id = "category-delete-note-" + category.id;
     note.hidden = false;
     deleteButton.setAttribute("aria-describedby", note.id);
-    deleteButton.title = "این دسته آیتم دارد و حذف نمی‌شود.";
+    deleteButton.title = "حذف دسته و همه آیتم‌های آن";
   } else {
     note.hidden = true;
     deleteButton.removeAttribute("aria-describedby");
-    deleteButton.title = "حذف دسته خالی";
+    deleteButton.title = "حذف دسته";
   }
 
   const itemsNode = node.querySelector('[data-field="items"]');
@@ -469,10 +597,12 @@ function enqueueOrder(task) {
 }
 
 function queueCategoryOrder() {
+  const venue = state.venue;
+  if (!venue) return;
+  const ids = state.categories.map((category) => category.id);
   enqueueOrder(async () => {
-    const ids = state.categories.map((category) => category.id);
     try {
-      await api("/api/categories/order", { method: "PUT", body: { ids } });
+      await api("/api/venues/" + venue.id + "/categories/order", { method: "PUT", body: { ids } });
     } catch (error) {
       if (error.status === 401) return;
       await load();
@@ -483,12 +613,13 @@ function queueCategoryOrder() {
 }
 
 function queueItemOrder(categoryId) {
+  const venue = state.venue;
+  const category = findCategory(categoryId);
+  if (!venue || !category) return;
+  const ids = category.items.map((item) => item.id);
   enqueueOrder(async () => {
-    const category = findCategory(categoryId);
-    if (!category) return;
-    const ids = category.items.map((item) => item.id);
     try {
-      await api("/api/items/order", { method: "PUT", body: { categoryId, ids } });
+      await api("/api/venues/" + venue.id + "/items/order", { method: "PUT", body: { categoryId, ids } });
     } catch (error) {
       if (error.status === 401) return;
       await load();
@@ -588,11 +719,15 @@ function applyItemDrop(drag, targetId, after) {
 
 async function deleteCategory(category) {
   const current = findCategory(category.id);
-  if (!current || current.items.length > 0) return;
+  if (!current || !state.venue) return;
   const index = state.categories.findIndex((entry) => entry.id === current.id);
-  if (!window.confirm("دسته «" + current.nameFa + "» حذف شود؟")) return;
+  const itemCount = current.items.length;
+  const message = itemCount > 0
+    ? "با حذف دسته «" + current.nameFa + "»، همه " + toFaDigits(itemCount) + " آیتم آن هم حذف می‌شوند.\nمطمئن هستید؟"
+    : "دسته «" + current.nameFa + "» حذف شود؟";
+  if (!window.confirm(message)) return;
   try {
-    await api("/api/categories/" + current.id, { method: "DELETE", body: {} });
+    await api("/api/venues/" + state.venue.id + "/categories/" + current.id, { method: "DELETE", body: {} });
     await load();
     const next = state.categories[Math.min(index, state.categories.length - 1)];
     const scope = next
@@ -601,21 +736,17 @@ async function deleteCategory(category) {
     (scope && scope.querySelector('[data-action="category-rename"]') || el.addCategory).focus();
   } catch (error) {
     if (error.status === 401) return;
-    if (error.status === 409) {
-      await load();
-      if (!el.loginScreen.hidden) return;
-      showEditorError("این دسته خالی نیست؛ ابتدا اقلام آن را حذف یا منتقل کنید.");
-    } else {
-      showEditorError(errorMessage(error));
-    }
+    if (error.status === 404) await load();
+    showEditorError(errorMessage(error));
   }
 }
 
 async function deleteItem(category, item) {
   const index = category.items.findIndex((entry) => entry.id === item.id);
+  if (!state.venue) return;
   if (!window.confirm("آیتم «" + item.nameFa + "» حذف شود؟")) return;
   try {
-    await api("/api/items/" + item.id, { method: "DELETE", body: {} });
+    await api("/api/venues/" + state.venue.id + "/items/" + item.id, { method: "DELETE", body: {} });
     await load();
     const fresh = findCategory(category.id);
     const next = fresh && fresh.items[Math.min(index, fresh.items.length - 1)];
@@ -667,7 +798,9 @@ function restoreDialogFocus(dialog) {
   const target = findEquivalentTrigger(dialog._triggerRef)
     || (dialog._trigger && dialog._trigger.isConnected ? dialog._trigger : null);
   if (target && !target.disabled) target.focus();
-  else el.addCategory.focus();
+  else if (!el.addCategory.disabled) el.addCategory.focus();
+  else if (!el.newVenue.hidden) el.newVenue.focus();
+  else el.logoutButton.focus();
 }
 
 function openCategoryDialog(category, trigger) {
@@ -692,10 +825,13 @@ async function submitCategory(event) {
     return;
   }
   const editingId = ui.editingCategoryId;
+  const venue = state.venue;
+  if (!venue) return;
   clearFormError(el.categoryError);
   busyButton(el.categorySave, true, "در حال ذخیره…");
   try {
-    await api(editingId ? "/api/categories/" + editingId : "/api/categories", {
+    const base = "/api/venues/" + venue.id + "/categories";
+    await api(editingId ? base + "/" + editingId : base, {
       method: editingId ? "PUT" : "POST",
       body: { nameFa },
     });
@@ -818,9 +954,12 @@ async function submitItem(event) {
   }
   const variants = collectVariants();
   const editingId = ui.editingItemId;
+  const venue = state.venue;
+  if (!venue) return;
   busyButton(el.itemSave, true, "در حال ذخیره…");
   try {
-    await api(editingId ? "/api/items/" + editingId : "/api/items", {
+    const base = "/api/venues/" + venue.id + "/items";
+    await api(editingId ? base + "/" + editingId : base, {
       method: editingId ? "PUT" : "POST",
       body: { categoryId, nameFa, nameEn, description, priceToman, isSoldOut: el.itemSoldOut.checked, variants },
     });
@@ -831,16 +970,124 @@ async function submitItem(event) {
   }
 }
 
+function bindSlugInput(input, hint, status, excludeId) {
+  input.addEventListener("input", () => {
+    ui.slugJob += 1;
+    setSlugStatus(status, "");
+    updateSlugHint(input, hint);
+  });
+  input.addEventListener("blur", () => {
+    checkSlug(input, status, excludeId());
+  });
+}
+
+function updateSlugHint(input, hint) {
+  hint.textContent = "/m/" + (input.value.trim() || "…");
+}
+
+function setSlugStatus(node, message, kind) {
+  node.textContent = message || "";
+  node.classList.toggle("is-ok", kind === "ok");
+  node.classList.toggle("is-taken", kind === "taken");
+  node.hidden = !message;
+}
+
+async function checkSlug(input, status, excludeId) {
+  const slug = input.value.trim();
+  if (!slug || !SLUG_PATTERN.test(slug)) {
+    setSlugStatus(status, "");
+    return false;
+  }
+  const job = ++ui.slugJob;
+  setSlugStatus(status, "در حال بررسی…");
+  try {
+    const query = new URLSearchParams({ slug });
+    if (excludeId !== null && excludeId !== undefined) query.set("exclude", String(excludeId));
+    const data = await api("/api/venues/check?" + query.toString());
+    if (job !== ui.slugJob || input.value.trim() !== slug) return null;
+    const available = Boolean(data && data.available);
+    setSlugStatus(
+      status,
+      available ? "این نام آزاد است." : "این نام قبلاً استفاده شده است.",
+      available ? "ok" : "taken"
+    );
+    return available;
+  } catch (error) {
+    if (job !== ui.slugJob) return null;
+    if (error.status !== 401) setSlugStatus(status, "بررسی نام آدرس ممکن نشد. دوباره تلاش کنید.");
+    return null;
+  }
+}
+
+function openVenueDialog(trigger) {
+  if (!isAdmin()) return;
+  ui.slugJob += 1;
+  clearFormError(el.venueError);
+  el.venueNameFa.value = "";
+  el.venueSlug.value = "";
+  el.venueSave.disabled = false;
+  setSlugStatus(el.venueSlugStatus, "");
+  updateSlugHint(el.venueSlug, el.venueSlugHint);
+  openDialog(el.venueDialog, trigger);
+  el.venueNameFa.focus();
+}
+
+async function submitVenue(event) {
+  event.preventDefault();
+  if (el.venueSave.dataset.idleLabel) return;
+  clearFormError(el.venueError);
+  const nameFa = el.venueNameFa.value.trim();
+  const slug = el.venueSlug.value.trim();
+  if (!nameFa) {
+    setFormError(el.venueError, "نام کافه را وارد کنید.");
+    el.venueNameFa.focus();
+    return;
+  }
+  if (!SLUG_PATTERN.test(slug)) {
+    setFormError(el.venueError, SLUG_ERROR);
+    el.venueSlug.focus();
+    return;
+  }
+  busyButton(el.venueSave, true, "در حال ساخت…");
+  try {
+    const available = await checkSlug(el.venueSlug, el.venueSlugStatus, null);
+    if (available !== true) {
+      setFormError(
+        el.venueError,
+        available === false
+          ? "این نام آدرس قبلاً استفاده شده است."
+          : "بررسی نام آدرس ممکن نشد. دوباره تلاش کنید."
+      );
+      el.venueSlug.focus();
+      return;
+    }
+    const created = await api("/api/venues", { method: "POST", body: { slug, nameFa } });
+    const id = created && created.id;
+    rememberVenue(id);
+    state.venue = { id, slug: (created && created.slug) || slug, nameFa };
+    state.categories = [];
+    await load();
+    el.venueDialog.close();
+  } finally {
+    busyButton(el.venueSave, false);
+  }
+}
+
 function openSettings(trigger) {
+  if (!state.venue) return;
   ui.logoJob += 1;
   ui.logoBusy = false;
-  const settings = state.settings || {};
+  ui.slugJob += 1;
+  const venue = state.venue;
   clearFormError(el.settingsError);
-  el.settingsNameFa.value = settings.nameFa || "";
-  el.settingsNameEn.value = settings.nameEn || "";
-  el.settingsWelcome.value = settings.welcomeMessage || "";
-  el.settingsMeta.value = settings.metaDescription || "";
-  ui.logoDataUrl = settings.logoDataUrl || null;
+  el.settingsNameFa.value = venue.nameFa || "";
+  el.settingsNameEn.value = venue.nameEn || "";
+  el.settingsSlug.value = venue.slug || "";
+  el.settingsWelcome.value = venue.welcomeMessage || "";
+  el.settingsMeta.value = venue.metaDescription || "";
+  setSlugStatus(el.settingsSlugStatus, "");
+  updateSlugHint(el.settingsSlug, el.settingsSlugHint);
+  ui.logoDataUrl = venue.logoDataUrl || null;
   el.logoInput.value = "";
   el.logoInput.disabled = false;
   el.logoRemove.disabled = false;
@@ -854,22 +1101,41 @@ function openSettings(trigger) {
 async function submitSettings(event) {
   event.preventDefault();
   if (el.settingsSave.dataset.idleLabel) return;
+  if (!state.venue) return;
   if (ui.logoBusy) {
     setFormError(el.settingsError, "پردازش لوگو هنوز تمام نشده است؛ کمی صبر کنید.");
     return;
   }
   const nameFa = el.settingsNameFa.value.trim();
+  const slug = el.settingsSlug.value.trim();
   if (!nameFa) {
     setFormError(el.settingsError, "نام فارسی کافه را وارد کنید.");
     el.settingsNameFa.focus();
     return;
   }
+  if (!SLUG_PATTERN.test(slug)) {
+    setFormError(el.settingsError, SLUG_ERROR);
+    el.settingsSlug.focus();
+    return;
+  }
   clearFormError(el.settingsError);
   busyButton(el.settingsSave, true, "در حال ذخیره…");
   try {
-    await api("/api/settings", {
+    const available = await checkSlug(el.settingsSlug, el.settingsSlugStatus, state.venue.id);
+    if (available !== true) {
+      setFormError(
+        el.settingsError,
+        available === false
+          ? "این نام آدرس قبلاً استفاده شده است."
+          : "بررسی نام آدرس ممکن نشد. دوباره تلاش کنید."
+      );
+      el.settingsSlug.focus();
+      return;
+    }
+    await api("/api/venues/" + state.venue.id, {
       method: "PUT",
       body: {
+        slug,
         nameFa,
         nameEn: el.settingsNameEn.value.trim(),
         welcomeMessage: el.settingsWelcome.value.trim(),
@@ -881,6 +1147,171 @@ async function submitSettings(event) {
     el.settingsDialog.close();
   } finally {
     busyButton(el.settingsSave, false);
+  }
+}
+
+function openUsers(trigger) {
+  if (!isAdmin()) return;
+  clearFormError(el.usersError);
+  clearFormError(el.userCreateError);
+  hideUserToken();
+  el.userName.value = "";
+  fillUserVenueOptions(el.userVenue, null);
+  el.usersEmpty.hidden = true;
+  openDialog(el.usersDialog, trigger);
+  el.userName.focus();
+  loadUsers().catch((error) => {
+    if (error.status !== 401) setFormError(el.usersError, errorMessage(error));
+  });
+}
+
+async function loadUsers() {
+  const data = await api("/api/users");
+  state.users = (data && Array.isArray(data.users)) ? data.users : [];
+  renderUsers();
+}
+
+function fillUserVenueOptions(select, selectedId) {
+  select.replaceChildren();
+  const none = document.createElement("option");
+  none.value = "";
+  none.textContent = "بدون منو";
+  select.append(none);
+  state.venues.forEach((venue) => {
+    const option = document.createElement("option");
+    option.value = String(venue.id);
+    option.textContent = venue.nameFa;
+    select.append(option);
+  });
+  select.value = selectedId === null || selectedId === undefined ? "" : String(selectedId);
+}
+
+function renderUsers() {
+  el.usersList.replaceChildren();
+  state.users.forEach((user) => {
+    const node = el.userTemplate.content.firstElementChild.cloneNode(true);
+    node.dataset.userId = String(user.id);
+    node.querySelector('[data-field="name"]').textContent = user.name;
+    fillUserVenueOptions(node.querySelector('[data-field="venue"]'), user.venueId);
+    el.usersList.append(node);
+  });
+  el.usersEmpty.hidden = state.users.length > 0;
+}
+
+async function submitUser(event) {
+  event.preventDefault();
+  if (el.userCreate.dataset.idleLabel) return;
+  clearFormError(el.userCreateError);
+  const name = el.userName.value.trim();
+  if (!name) {
+    setFormError(el.userCreateError, "نام کاربر را وارد کنید.");
+    el.userName.focus();
+    return;
+  }
+  const venueId = el.userVenue.value ? Number(el.userVenue.value) : null;
+  busyButton(el.userCreate, true, "در حال ساخت…");
+  try {
+    const created = await api("/api/users", {
+      method: "POST",
+      body: { name, venueId },
+    });
+    el.userName.value = "";
+    fillUserVenueOptions(el.userVenue, null);
+    await loadUsers();
+    if (created && created.identifier) showUserToken(created.identifier);
+  } catch (error) {
+    if (error.status !== 401) setFormError(el.userCreateError, errorMessage(error));
+  } finally {
+    busyButton(el.userCreate, false);
+  }
+}
+
+function onUserClick(event) {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+  const row = button.closest("[data-user-id]");
+  const user = row && state.users.find((entry) => entry.id === Number(row.dataset.userId));
+  if (!user) return;
+  if (button.dataset.action === "rotate") rotateUser(user, button);
+  else if (button.dataset.action === "delete") deleteManagedUser(user, button);
+}
+
+async function rotateUser(user, button) {
+  if (!window.confirm("شناسه فعلی «" + user.name + "» دیگر کار نمی‌کند. شناسه جدید ساخته شود؟")) return;
+  clearFormError(el.usersError);
+  button.disabled = true;
+  try {
+    const data = await api("/api/users/" + user.id + "/rotate", { method: "POST", body: {} });
+    if (data && data.identifier) showUserToken(data.identifier);
+  } catch (error) {
+    if (error.status !== 401) setFormError(el.usersError, errorMessage(error));
+  } finally {
+    if (button.isConnected) button.disabled = false;
+  }
+}
+
+async function deleteManagedUser(user, button) {
+  if (!window.confirm("کاربر «" + user.name + "» حذف شود؟ دسترسی او فوراً قطع می‌شود.")) return;
+  clearFormError(el.usersError);
+  button.disabled = true;
+  try {
+    await api("/api/users/" + user.id, { method: "DELETE", body: {} });
+    await loadUsers();
+    el.userName.focus();
+  } catch (error) {
+    if (error.status !== 401) setFormError(el.usersError, errorMessage(error));
+  } finally {
+    if (button.isConnected) button.disabled = false;
+  }
+}
+
+async function onUserVenueChange(event) {
+  const select = event.target.closest('select[data-field="venue"]');
+  if (!select) return;
+  const row = select.closest("[data-user-id]");
+  const user = row && state.users.find((entry) => entry.id === Number(row.dataset.userId));
+  if (!user) return;
+  const venueId = select.value ? Number(select.value) : null;
+  clearFormError(el.usersError);
+  select.disabled = true;
+  try {
+    await api("/api/users/" + user.id, { method: "PUT", body: { venueId } });
+    user.venueId = venueId;
+  } catch (error) {
+    if (error.status !== 401) {
+      setFormError(el.usersError, errorMessage(error));
+      await loadUsers().catch(() => {});
+    }
+  } finally {
+    if (select.isConnected) select.disabled = false;
+  }
+}
+
+function showUserToken(identifier) {
+  el.userTokenValue.value = identifier;
+  el.userToken.hidden = false;
+  el.userTokenCopy.textContent = "کپی";
+  el.userToken.scrollIntoView({ block: "nearest" });
+  el.userTokenValue.focus();
+  el.userTokenValue.select();
+}
+
+function hideUserToken() {
+  el.userToken.hidden = true;
+  el.userTokenValue.value = "";
+  el.userTokenCopy.textContent = "کپی";
+}
+
+async function copyUserToken() {
+  const value = el.userTokenValue.value;
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    el.userTokenCopy.textContent = "کپی شد";
+  } catch (error) {
+    el.userTokenValue.focus();
+    el.userTokenValue.select();
+    el.userTokenCopy.textContent = "کپی دستی";
   }
 }
 

@@ -2,10 +2,13 @@ import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 
 const base = (process.env.BASE_URL || "http://localhost:8787").replace(/\/$/, "");
-const password = await getPassword();
+const adminIdentifier = await getAdminIdentifier();
 let cookie = "";
+let adminCookie = "";
 const createdItems = [];
 let createdCategory = null;
+let createdUser = null;
+let venue = null;
 
 function parseDevVars(text) {
   return Object.fromEntries(
@@ -20,13 +23,14 @@ function parseDevVars(text) {
   );
 }
 
-async function getPassword() {
-  if (process.env.ADMIN_PASSWORD) return process.env.ADMIN_PASSWORD;
+async function getAdminIdentifier() {
+  if (process.env.ADMIN_IDENTIFIER) return process.env.ADMIN_IDENTIFIER;
   try {
     const vars = parseDevVars(await readFile(new URL("../.dev.vars", import.meta.url), "utf8"));
-    return vars.ADMIN_PASSWORD;
+    if (vars.ADMIN_IDENTIFIER) return vars.ADMIN_IDENTIFIER;
+    throw new Error("missing ADMIN_IDENTIFIER");
   } catch {
-    throw new Error("Set ADMIN_PASSWORD or create .dev.vars before running the smoke test.");
+    throw new Error("Set ADMIN_IDENTIFIER or add it to .dev.vars before running the smoke test.");
   }
 }
 
@@ -58,30 +62,158 @@ async function json(path, options) {
   return payload;
 }
 
+async function login(identifier) {
+  cookie = "";
+  return request("/api/login", { method: "POST", body: { identifier } });
+}
+
 async function cleanup() {
+  if (adminCookie) cookie = adminCookie;
+  if (createdUser) {
+    await request(`/api/users/${createdUser}`, { method: "DELETE" }).catch(() => {});
+    createdUser = null;
+  }
+  if (!venue) return;
   for (const id of createdItems.splice(0)) {
-    await request(`/api/items/${id}`, { method: "DELETE" }).catch(() => {});
+    await request(`/api/venues/${venue.id}/items/${id}`, { method: "DELETE" }).catch(() => {});
   }
   if (createdCategory) {
-    await request(`/api/categories/${createdCategory}`, { method: "DELETE" }).catch(() => {});
+    await request(`/api/venues/${venue.id}/categories/${createdCategory}`, { method: "DELETE" }).catch(() => {});
     createdCategory = null;
   }
 }
 
 try {
   const home = await request("/");
-  assert.equal(home.status, 200, "public menu should load");
-  assert.match(await home.text(), /mofé/);
+  assert.equal(home.status, 200, "admin shell should load");
+  assert.match(await home.text(), /\/admin\.js/);
 
   const admin = await request("/admin");
-  assert.equal(admin.status, 200, "admin shell should load");
-  assert.match(await admin.text(), /admin\.js/);
+  assert.equal(admin.status, 302, "admin should redirect");
+  const location = admin.headers.get("location") || "";
+  assert.equal(new URL(location, base).pathname, "/", "admin should redirect to the admin shell");
 
-  const html = await request("/export/menu.html");
+  const unauthorised = await request("/api/venues");
+  assert.equal(unauthorised.status, 401, "API should require auth before login");
+
+  const loginResponse = await login(adminIdentifier);
+  assert.equal(loginResponse.status, 200, "admin login should succeed");
+  assert.ok(cookie, "login should set a session cookie");
+  adminCookie = cookie;
+
+  const venues = await json("/api/venues");
+  assert.equal(venues.user.role, "admin", "admin session should have the admin role");
+  assert.ok(Array.isArray(venues.venues) && venues.venues.length > 0, "at least one venue should exist");
+  venue = venues.venues[0];
+  assert.ok(venue.id && venue.slug, "venue should have an id and slug");
+
+  const suffix = Date.now().toString(36);
+  const taken = await json(`/api/venues/check?slug=${encodeURIComponent(venue.slug)}`);
+  assert.equal(taken.available, false, "existing slug should be unavailable");
+  const freeSlug = `smoke-${suffix}`;
+  const free = await json(`/api/venues/check?slug=${encodeURIComponent(freeSlug)}`);
+  assert.equal(free.available, true, "random slug should be available");
+
+  const adminDuplicate = await request("/api/venues", {
+    method: "POST",
+    body: { slug: venue.slug, nameFa: "x" },
+  });
+  assert.equal(adminDuplicate.status, 409, "admin should reach venue validation");
+
+  const beforeUsers = await json("/api/users");
+  assert.ok(Array.isArray(beforeUsers.users), "admin should list users");
+
+  const createdUserData = await json("/api/users", {
+    method: "POST",
+    body: { name: `کاربر تست ${suffix}`, venueId: venue.id },
+  });
+  createdUser = createdUserData.id;
+  assert.match(createdUserData.identifier, /^mofe_[0-9a-f]{32}$/);
+  const firstIdentifier = createdUserData.identifier;
+
+  const listedUsers = await json("/api/users");
+  const listedUser = listedUsers.users.find((user) => user.id === createdUser);
+  assert.ok(listedUser, "created user should be listed");
+  assert.equal(listedUser.venueId, venue.id);
+  assert.equal(listedUser.venueName, venue.nameFa);
+
+  const userLogin = await login(firstIdentifier);
+  assert.equal(userLogin.status, 200, "user should log in by identifier");
+  const userCookie = cookie;
+
+  cookie = adminCookie;
+  const rotated = await json(`/api/users/${createdUser}/rotate`, {
+    method: "POST",
+    body: {},
+  });
+  assert.match(rotated.identifier, /^mofe_[0-9a-f]{32}$/);
+  assert.notEqual(rotated.identifier, firstIdentifier);
+  cookie = userCookie;
+  const revoked = await request("/api/venues");
+  assert.equal(revoked.status, 401, "rotation should revoke the old session");
+
+  const oldLogin = await login(firstIdentifier);
+  assert.equal(oldLogin.status, 401, "rotated identifier should stop working");
+  const newLogin = await login(rotated.identifier);
+  assert.equal(newLogin.status, 200, "new identifier should work");
+  const newUserCookie = cookie;
+
+  const userVenues = await json("/api/venues");
+  assert.equal(userVenues.user.role, "user");
+  assert.equal(userVenues.venues.length, 1, "user should see one venue");
+  assert.equal(userVenues.venues[0].id, venue.id);
+  const userMenu = await request(`/api/venues/${venue.id}/menu`);
+  assert.equal(userMenu.status, 200, "user should read the assigned menu");
+  const otherMenu = await request("/api/venues/999999/menu");
+  assert.equal(otherMenu.status, 403, "user should not read another venue");
+  const userCreateVenue = await request("/api/venues", {
+    method: "POST",
+    body: { slug: venue.slug, nameFa: "x" },
+  });
+  assert.equal(userCreateVenue.status, 403, "user should not create a venue");
+  const userListUsers = await request("/api/users");
+  assert.equal(userListUsers.status, 403, "user should not list users");
+  const userCreateUser = await request("/api/users", { method: "POST", body: {} });
+  assert.equal(userCreateUser.status, 403, "user should not create users");
+
+  cookie = adminCookie;
+  await json(`/api/users/${createdUser}`, {
+    method: "PUT",
+    body: { venueId: null },
+  });
+  cookie = newUserCookie;
+  const noVenues = await json("/api/venues");
+  assert.equal(noVenues.venues.length, 0, "unassigned user should have no venues");
+  const noMenu = await request(`/api/venues/${venue.id}/menu`);
+  assert.equal(noMenu.status, 403, "unassigned user should lose venue access");
+
+  cookie = adminCookie;
+  await json(`/api/users/${createdUser}`, {
+    method: "PUT",
+    body: { venueId: venue.id },
+  });
+  const removed = await request(`/api/users/${createdUser}`, { method: "DELETE" });
+  assert.equal(removed.status, 200, "admin should delete a user");
+  createdUser = null;
+  cookie = newUserCookie;
+  const deletedSession = await request("/api/venues");
+  assert.equal(deletedSession.status, 401, "deleted user session should be invalid");
+  const deletedLogin = await login(rotated.identifier);
+  assert.equal(deletedLogin.status, 401, "deleted user should not log in");
+  cookie = adminCookie;
+
+  const before = await json(`/api/venues/${venue.id}/menu`);
+  assert.ok(before.venue?.nameFa, "venue should be present");
+  assert.ok(Array.isArray(before.categories), "categories should be an array");
+
+  const menu = await request(`/m/${venue.slug}`);
+  assert.equal(menu.status, 200, "public menu should load");
+
+  const html = await request(`/m/${venue.slug}/export/menu.html`);
   assert.equal(html.status, 200, "HTML export should load");
   assert.match(html.headers.get("content-disposition") || "", /attachment/);
 
-  const csv = await request("/export/menu.csv");
+  const csv = await request(`/m/${venue.slug}/export/menu.csv`);
   assert.equal(csv.status, 200, "CSV export should load");
   const csvBytes = new Uint8Array(await csv.arrayBuffer());
   assert.deepEqual(
@@ -92,22 +224,16 @@ try {
   const csvText = new TextDecoder().decode(csvBytes);
   assert.match(csvText, /category,name_fa/);
 
-  const login = await request("/api/login", { method: "POST", body: { password } });
-  assert.equal(login.status, 200, "login should succeed");
-  assert.ok(cookie, "login should set a session cookie");
+  const missing = await request(`/m/definitely-missing-${suffix}`);
+  assert.equal(missing.status, 404, "unknown venue should 404");
 
-  const before = await json("/api/menu");
-  assert.ok(before.settings?.nameFa, "settings should be present");
-  assert.ok(Array.isArray(before.categories), "categories should be an array");
-
-  const suffix = Date.now().toString(36);
-  const category = await json("/api/categories", {
+  const category = await json(`/api/venues/${venue.id}/categories`, {
     method: "POST",
     body: { nameFa: `تست ${suffix}` },
   });
   createdCategory = category.id;
 
-  const first = await json("/api/items", {
+  const first = await json(`/api/venues/${venue.id}/items`, {
     method: "POST",
     body: {
       categoryId: createdCategory,
@@ -124,7 +250,7 @@ try {
   });
   createdItems.push(first.id);
 
-  const createdMenu = await json("/api/menu");
+  const createdMenu = await json(`/api/venues/${venue.id}/menu`);
   const createdFirst = createdMenu.categories
     .find((entry) => entry.id === createdCategory)
     .items.find((item) => item.id === first.id);
@@ -134,7 +260,7 @@ try {
     "multiple variants should be attached to the new item",
   );
 
-  const second = await json("/api/items", {
+  const second = await json(`/api/venues/${venue.id}/items`, {
     method: "POST",
     body: {
       categoryId: createdCategory,
@@ -148,12 +274,12 @@ try {
   });
   createdItems.push(second.id);
 
-  await json("/api/items/order", {
+  await json(`/api/venues/${venue.id}/items/order`, {
     method: "PUT",
     body: { categoryId: createdCategory, ids: [second.id, first.id] },
   });
 
-  await json(`/api/items/${first.id}`, {
+  await json(`/api/venues/${venue.id}/items/${first.id}`, {
     method: "PUT",
     body: {
       categoryId: createdCategory,
@@ -166,7 +292,7 @@ try {
     },
   });
 
-  const after = await json("/api/menu");
+  const after = await json(`/api/venues/${venue.id}/menu`);
   const testCategory = after.categories.find((entry) => entry.id === createdCategory);
   assert.ok(testCategory, "created category should be returned");
   assert.deepEqual(testCategory.items.map((item) => item.id), [second.id, first.id]);
@@ -176,23 +302,29 @@ try {
   assert.equal(edited.variants.length, 1, "variant replacement should remove old rows");
   assert.equal(edited.variants[0].nameFa, "تریپل");
 
-  for (const id of [first.id, second.id]) {
-    const response = await request(`/api/items/${id}`, { method: "DELETE" });
-    assert.equal(response.status, 200, "item delete should succeed");
-  }
+  const firstDelete = await request(`/api/venues/${venue.id}/items/${first.id}`, { method: "DELETE" });
+  assert.equal(firstDelete.status, 200, "item delete should succeed");
+  createdItems.splice(createdItems.indexOf(first.id), 1);
+
+  const deletedCategoryId = createdCategory;
+  const deleted = await request(`/api/venues/${venue.id}/categories/${deletedCategoryId}`, { method: "DELETE" });
+  assert.equal(deleted.status, 200, "category delete with items should succeed");
+  createdCategory = null;
   createdItems.length = 0;
 
-  const deleted = await request(`/api/categories/${createdCategory}`, { method: "DELETE" });
-  assert.equal(deleted.status, 200, "empty category delete should succeed");
-  createdCategory = null;
+  const afterCategoryDelete = await json(`/api/venues/${venue.id}/menu`);
+  assert.ok(
+    !afterCategoryDelete.categories.some((entry) => entry.id === deletedCategoryId),
+    "deleted category should be gone with its items",
+  );
 
   const logout = await request("/api/logout", { method: "POST", body: {} });
   assert.equal(logout.status, 200, "logout should succeed");
   cookie = "";
-  const unauthorised = await request("/api/menu");
-  assert.equal(unauthorised.status, 401, "API should require auth after logout");
+  const afterLogout = await request("/api/venues");
+  assert.equal(afterLogout.status, 401, "API should require auth after logout");
 
-  console.log("Smoke test passed: public, exports, auth, category/item CRUD, reorder, delete.");
+  console.log("Smoke test passed: admin/user auth, user management, venue scoping, public menu, exports, venue-scoped category/item CRUD, reorder, delete.");
 } finally {
   await cleanup();
 }
