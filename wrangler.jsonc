@@ -10,7 +10,7 @@
     {
       "binding": "DB",
       "database_name": "mofe-menu",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "2b869840-39bd-4b18-bf17-27887beef904",
       "migrations_dir": "./migrations"
     }
   ],
