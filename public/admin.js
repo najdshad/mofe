@@ -66,6 +66,7 @@ function bindEvents() {
   el.logoutButton.addEventListener("click", () => {
     handleLogout().catch(() => showLogin(""));
   });
+  el.qrDownload.addEventListener("click", downloadQr);
   el.venueSelect.addEventListener("change", () => {
     const venue = state.venues.find((entry) => String(entry.id) === el.venueSelect.value);
     if (!venue) return;
@@ -374,6 +375,97 @@ async function handleLogout() {
   showLogin("");
 }
 
+async function downloadQr() {
+  const venue = state.venue;
+  if (!venue || !venue.slug) return;
+  busyButton(el.qrDownload, true, "در حال ساخت…");
+  try {
+    if (document.fonts) {
+      await document.fonts.load('700 46px "Parastoo"').catch(() => {});
+    }
+    const url = new URL("/m/" + encodeURIComponent(venue.slug), window.location.origin).href;
+    const canvas = drawQrCard(venue.nameFa || venue.nameEn || venue.slug, url);
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((value) => value ? resolve(value) : reject(new Error("ساخت تصویر ممکن نشد.")), "image/png");
+    });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = venue.slug + "-qr.png";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 1000);
+  } catch (error) {
+    showEditorError("ساخت QR ممکن نشد: " + errorMessage(error));
+  } finally {
+    busyButton(el.qrDownload, false);
+  }
+}
+
+function drawQrCard(title, url) {
+  const width = 900;
+  const height = 1200;
+  const paper = "#f4f0e5";
+  const ink = "#111311";
+  const muted = "#5f5648";
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = paper;
+  roundedRect(ctx, 0, 0, width, height, 52);
+  ctx.fill();
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.direction = "rtl";
+  let titleSize = 46;
+  do {
+    ctx.font = '700 ' + titleSize + 'px "Parastoo", Tahoma, sans-serif';
+    titleSize -= 2;
+  } while (titleSize > 24 && ctx.measureText(title).width > 740);
+  ctx.fillStyle = ink;
+  ctx.fillText(title, width / 2, 112);
+
+  ctx.direction = "ltr";
+  ctx.fillStyle = "#d9d2c8";
+  ctx.fillRect(186, 226, width - 372, 2);
+
+  const qr = qrcode(0, "M");
+  qr.addData(url);
+  qr.make();
+  const count = qr.getModuleCount();
+  const unit = Math.floor(680 / count);
+  const size = unit * count;
+  const left = Math.round((width - size) / 2);
+  const top = 330 + Math.round((680 - size) / 2);
+  ctx.fillStyle = ink;
+  for (let row = 0; row < count; row += 1) {
+    for (let col = 0; col < count; col += 1) {
+      if (qr.isDark(row, col)) {
+        ctx.fillRect(left + col * unit, top + row * unit, unit, unit);
+      }
+    }
+  }
+
+  ctx.fillStyle = muted;
+  ctx.font = '26px Georgia, "Times New Roman", serif';
+  ctx.fillText("Powered by mofé", width / 2, 1110);
+  return canvas;
+}
+
+function roundedRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
+}
+
 function render() {
   const venue = state.venue || {};
   const admin = isAdmin();
@@ -396,6 +488,7 @@ function render() {
   el.previewLink.hidden = !hasVenue;
   el.exportHtml.hidden = !hasVenue;
   el.exportCsv.hidden = !hasVenue;
+  el.qrDownload.hidden = !hasVenue;
   el.noVenue.hidden = hasVenue;
   if (!hasVenue) {
     el.noVenueTitle.textContent = admin
