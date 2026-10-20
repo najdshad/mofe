@@ -85,13 +85,18 @@ async function cleanup() {
 
 try {
   const home = await request("/");
-  assert.equal(home.status, 200, "admin shell should load");
-  assert.match(await home.text(), /\/admin\.js/);
+  assert.equal(home.status, 200, "landing page should load");
+  assert.match(await home.text(), /href="\/login"/);
+  assert.doesNotMatch(home.headers.get("x-robots-tag") || "", /noindex/, "landing page should be indexable");
+
+  const loginPage = await request("/login");
+  assert.equal(loginPage.status, 200, "login shell should load");
+  assert.match(await loginPage.text(), /\/admin\.js/);
 
   const admin = await request("/admin");
   assert.equal(admin.status, 302, "admin should redirect");
   const location = admin.headers.get("location") || "";
-  assert.equal(new URL(location, base).pathname, "/", "admin should redirect to the admin shell");
+  assert.equal(new URL(location, base).pathname, "/login", "admin should redirect to the login shell");
 
   const unauthorised = await request("/api/venues");
   assert.equal(unauthorised.status, 401, "API should require auth before login");

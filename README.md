@@ -1,6 +1,6 @@
 # mofé menu
 
-A small, serverless menu editor for multiple cafe venues. The login page and editor live at `/`; every venue is published at `/m/<venue>`. Developers create venues and user accounts; each user signs in with a generated identifier and edits only the venue assigned to them. The admin can manage all venues and users. Edits are saved immediately. Data lives in Cloudflare D1. The HTML export is one self-contained file per venue.
+A small, serverless menu editor for multiple cafe venues. A public landing page lives at `/`; the login page and editor live at `/login`; every venue is published at `/m/<venue>`. Developers create venues and user accounts; each user signs in with a generated identifier and edits only the venue assigned to them. The admin can manage all venues and users. Edits are saved immediately. Data lives in Cloudflare D1. The HTML export is one self-contained file per venue.
 
 ## Stack
 
@@ -43,12 +43,13 @@ npm run dev
 
 Open:
 
-- Login / editor: `http://localhost:8787/`
+- Landing page: `http://localhost:8787/`
+- Login / editor: `http://localhost:8787/login`
 - Published menu of the seeded venue: `http://localhost:8787/m/noghteh`
 
 Log in with the `ADMIN_IDENTIFIER` from `.dev.vars`. The admin can create venues and user accounts. Each created user receives a generated identifier shown once; that identifier is the user's login and grants access to the assigned venue only.
 
-`/admin` redirects to `/`. The local D1 database lives under `.wrangler/`. Migrations are applied with `npm run db:local`; rerun it after adding a migration. Migration `0003` moves the original single-cafe menu into the `noghteh` venue. Migration `0004` adds users and the admin account.
+`/admin` redirects to `/login`. The local D1 database lives under `.wrangler/`. Migrations are applied with `npm run db:local`; rerun it after adding a migration. Migration `0003` moves the original single-cafe menu into the `noghteh` venue. Migration `0004` adds users and the admin account.
 
 ## Commands
 
@@ -83,7 +84,7 @@ npm run db:remote
 npm run deploy
 ```
 
-Open `https://<worker-url>/` and log in with `ADMIN_IDENTIFIER`. Use a long random value; it is the only credential for the admin account. Rotating the secret invalidates existing admin sessions on the next admin login.
+Open `https://<worker-url>/login` and log in with `ADMIN_IDENTIFIER`. Use a long random value; it is the only credential for the admin account. Rotating the secret invalidates existing admin sessions on the next admin login.
 
 ## Editing
 
@@ -137,7 +138,7 @@ Categories are unique per venue, so different venues may use the same category n
 - Five failed logins per IP per 15 minutes.
 - Mutations require JSON and a same-origin `Origin` header.
 - All queries use prepared statements; rendered user content is escaped.
-- The admin and API are `noindex`; CSP is set by the Worker. User identifiers are secrets; send them over HTTPS and treat them like passwords.
+- The admin, login shell, and API are `noindex`; CSP is set by the Worker. User identifiers are secrets; send them over HTTPS and treat them like passwords.
 
 ## Project layout
 

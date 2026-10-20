@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6efdf">
+  <meta name="color-scheme" content="light">
+  <title>mofé — منوی کافه، همیشه تازه</title>
+  <meta name="description" content="منوی کافه‌تان را همین‌جا ویرایش کنید؛ تغییرها همان لحظه در یک لینک ساده برای مشتری‌ها منتشر می‌شوند. بدون چاپ دوباره، بدون دردسر.">
+  <link rel="preload" href="/fonts/Parastoo-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/Parastoo-Bold.woff2" as="font" type="font/woff2" crossorigin>
+  <style>
+    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Parastoo";
+      src: url("/fonts/Parastoo-Bold.woff2") format("woff2");
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --paper: #f6efdf;
+      --paper-raised: #fffaf1;
+      --ink: #271e13;
+      --muted: #5f5648;
+      --line: #ddd0b9;
+      --accent: #8e5a14;
+      --accent-soft: #ead6b4;
+      --accent-ink: #fffaf1;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 82% 18%, rgba(142, 90, 20, 0.13), transparent 34rem),
+        radial-gradient(circle at 8% 88%, rgba(142, 90, 20, 0.07), transparent 28rem),
+        var(--paper);
+      color: var(--ink);
+      font-family: "Parastoo", "Tahoma", sans-serif;
+      line-height: 1.65;
+      color-scheme: light;
+    }
+
+    h1,
+    p {
+      margin: 0;
+    }
+
+    .landing {
+      display: flex;
+      flex-direction: column;
+      width: min(100%, 1180px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: clamp(22px, 5vw, 52px) clamp(20px, 5vw, 56px) 24px;
+    }
+
+    .wordmark {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 22px;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+    }
+
+    .wordmark span {
+      font-family: "Parastoo", "Tahoma", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+      align-items: center;
+      gap: clamp(32px, 6vw, 88px);
+      flex: 1;
+      padding: clamp(40px, 9vh, 110px) 0;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: var(--accent);
+      opacity: 0.6;
+    }
+
+    h1 {
+      margin: 22px 0 0;
+      font-size: clamp(2.65rem, 6.8vw, 5rem);
+      font-weight: 700;
+      line-height: 1.14;
+      letter-spacing: -0.01em;
+    }
+
+    h1 .fresh {
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .lede {
+      max-width: 33rem;
+      margin-top: 26px;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.6vw, 1.13rem);
+      line-height: 1.95;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 18px;
+      margin-top: 38px;
+    }
+
+    .login-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px 30px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 14px 30px rgba(142, 90, 20, 0.24);
+      transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .login-button:hover {
+      background: #7a4b0e;
+      transform: translateY(-2px);
+      box-shadow: 0 18px 34px rgba(142, 90, 20, 0.3);
+    }
+
+    .login-button:focus-visible {
+      outline: 2px solid var(--ink);
+      outline-offset: 4px;
+    }
+
+    .login-button .arrow {
+      font-size: 1.15em;
+      line-height: 1;
+    }
+
+    .cta-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    /* Decorative published-menu card */
+    .art {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      padding: 18px 0;
+    }
+
+    .art::before {
+      content: "";
+      position: absolute;
+      top: 4%;
+      right: 10%;
+      width: clamp(230px, 30vw, 340px);
+      height: clamp(230px, 30vw, 340px);
+      border-radius: 50%;
+      background: var(--accent-soft);
+      opacity: 0.55;
+      filter: blur(2px);
+    }
+
+    .menu-card {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 356px);
+      padding: 30px 28px 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--paper-raised);
+      box-shadow: 0 30px 70px rgba(39, 30, 19, 0.18);
+      transform: rotate(-2.2deg);
+    }
+
+    .art::after {
+      content: "";
+      position: absolute;
+      top: 32px;
+      bottom: 28px;
+      left: 50%;
+      width: min(calc(100% - 28px), 356px);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #f1e7d4;
+      transform: translateX(-50%) rotate(2.2deg);
+    }
+
+    .menu-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .menu-head strong {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 21px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+    }
+
+    .menu-head span {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin: 20px 0 6px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .menu-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: 6px 12px;
+    }
+
+    .menu-item .name {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .menu-item .price {
+      font-size: 14px;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .menu-item .note {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .menu-item.is-sold {
+      opacity: 0.55;
+    }
+
+    .badge {
+      margin-inline-start: 6px;
+      padding: 1px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 400;
+      white-space: nowrap;
+    }
+
+    .menu-foot {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .menu-foot::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #6f7d3f;
+    }
+
+    .landing-foot {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(221, 208, 185, 0.7);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 860px) {
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 54px;
+        padding-top: clamp(36px, 8vh, 64px);
+      }
+
+      .art {
+        justify-content: flex-start;
+        padding-right: 14px;
+      }
+
+      .menu-card {
+        margin: 0 auto;
+        transform: rotate(-1.5deg);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .cta-row {
+        align-items: stretch;
+      }
+
+      .login-button {
+        justify-content: center;
+        width: 100%;
+        padding: 14px 22px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .login-button {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="landing">
+    <header class="wordmark" aria-label="mofé">mofé<span>منوی کافه</span></header>
+
+    <div class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">منوی دیجیتال کافه</p>
+        <h1>منوی کافه‌تان،<br><span class="fresh">همیشه تازه.</span></h1>
+        <p class="lede">
+          قیمت‌ها، موجودی و آیتم‌ها را خودتان به‌روز کنید. تغییرها همان لحظه ذخیره می‌شوند و منوی کافه با یک لینک ساده برای مشتری‌ها باز می‌شود؛ بدون چاپ دوباره، بدون طراح، بدون دردسر.
+        </p>
+        <div class="cta-row">
+          <a class="login-button" href="/login">
+            ورود به مدیریت منو
+            <span class="arrow" aria-hidden="true">←</span>
+          </a>
+          <span class="cta-note">ویرایش فوری · انتشار با یک لینک</span>
+        </div>
+      </div>
+
+      <div class="art" aria-hidden="true">
+        <div class="menu-card">
+          <div class="menu-head">
+            <strong>نقطه</strong>
+            <span>منوی امروز</span>
+          </div>
+          <ul class="menu-list">
+            <li class="menu-item">
+              <span class="name">اسپرسو دبل</span>
+              <span class="price">۸۵٬۰۰۰</span>
+              <span class="note">دانهٔ امروز: اتیوپی، واش</span>
+            </li>
+            <li class="menu-item">
+              <span class="name">فلت وایت</span>
+              <span class="price">۱۱۰٬۰۰۰</span>
+            </li>
+            <li class="menu-item">
+              <span class="name">کیک هویج <span class="badge">ناموجود</span></span>
+              <span class="price">۹۵٬۰۰۰</span>
+            </li>
+            <li class="menu-item">
+              <span class="name">لیموناد خانگی</span>
+              <span class="price">۹۰٬۰۰۰</span>
+              <span class="note">با نعنا و لیموی تازه</span>
+            </li>
+          </ul>
+          <p class="menu-foot">به‌روزرسانی: همین حالا</p>
+        </div>
+      </div>
+    </div>
+
+    <footer class="landing-foot">
+      <span>mofé · منوی کافه، بدون کاغذ</span>
+      <span>ساخته‌شده برای کافه‌های کوچک</span>
+    </footer>
+  </main>
+</body>
+</html>

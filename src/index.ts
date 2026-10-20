@@ -1,4 +1,5 @@
 import adminHtml from "./admin.html";
+import landingHtml from "./landing.html";
 import menuTemplate from "./menu.template.html";
 import {
   LOGIN_MAX_FAILURES,
@@ -56,6 +57,8 @@ const MENU_CSP =
   "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 const ADMIN_CSP =
   "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+const LANDING_CSP =
+  "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 const API_CSP = "default-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 
 function htmlHeaders(
@@ -510,12 +513,17 @@ async function handle(request: Request, env: Env): Promise<Response> {
   const { pathname } = url;
 
   if (request.method === "GET" && pathname === "/") {
+    return new Response(landingHtml, {
+      headers: htmlHeaders(LANDING_CSP, "public, max-age=300", false),
+    });
+  }
+  if (request.method === "GET" && pathname === "/login") {
     return new Response(adminHtml, {
       headers: htmlHeaders(ADMIN_CSP, "no-store", true),
     });
   }
   if (request.method === "GET" && pathname === "/admin") {
-    return Response.redirect(new URL("/", request.url).toString(), 302);
+    return Response.redirect(new URL("/login", request.url).toString(), 302);
   }
 
   const menuMatch = /^\/m\/([^/]+)(\/.*)?$/.exec(pathname);
