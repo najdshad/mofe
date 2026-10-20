@@ -3,6 +3,17 @@
   "name": "mofe-menu",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "mofe.ir/*",
+      "zone_name": "mofe.ir"
+    },
+    {
+      "pattern": "www.mofe.ir/*",
+      "zone_name": "mofe.ir"
+    }
+  ],
   "assets": {
     "directory": "./public"
   },
