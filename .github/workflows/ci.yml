@@ -72,10 +72,18 @@ jobs:
       - name: Smoke test production
         if: steps.credentials.outputs.ready == 'true'
         run: |
-          # Cloudflare answers curl's default User-Agent with a 403 bot challenge.
-          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+          # Cloudflare challenges GitHub runner IPs on the mofe.ir zone (403 + cf-mitigated: challenge),
+          # so the deployed Worker is verified strictly through its workers.dev URL.
+          for path in / /login; do
+            curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors "https://mofe-menu.alirezanajdshad28.workers.dev$path" > /dev/null
+          done
+          # The public zone must still answer; a Cloudflare challenge counts as reachable.
           for url in https://mofe.ir/ https://mofe.ir/login https://www.mofe.ir/; do
-            curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors -A "$ua" "$url" > /dev/null
+            code=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --retry 5 --retry-delay 3 "$url")
+            case "$code" in
+              200|403) echo "$url -> $code" ;;
+              *) echo "::error::$url -> $code"; exit 1 ;;
+            esac
           done
 
       - name: Note skipped deployment
