@@ -72,8 +72,10 @@ jobs:
       - name: Smoke test production
         if: steps.credentials.outputs.ready == 'true'
         run: |
+          # Cloudflare answers curl's default User-Agent with a 403 bot challenge.
+          ua='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
           for url in https://mofe.ir/ https://mofe.ir/login https://www.mofe.ir/; do
-            curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors "$url" > /dev/null
+            curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors -A "$ua" "$url" > /dev/null
           done
 
       - name: Note skipped deployment
