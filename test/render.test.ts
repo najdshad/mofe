@@ -170,12 +170,14 @@ describe("renderMenu", () => {
     expect(html).toContain('<a class="category-pill" href="#cat-2">پر</a>');
   });
 
-  it("renders a single empty hero when every category is empty", () => {
+  it("renders a helpful empty menu when every category is empty", () => {
     const html = renderMenu(template, makeSettings(), [
       makeCategory({ id: 9, items: [] }),
     ]);
     expect(html).not.toContain("category-nav");
     expect(html).not.toContain("<section");
+    expect(html).toContain('class="menu-empty" role="status"');
+    expect(html).toContain("منو به‌زودی آماده می‌شود.");
     expect(html).toContain('<h1 class="venue-name">کافه نقطه</h1>');
   });
 

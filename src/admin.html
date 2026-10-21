@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f6efdf">
+  <meta name="theme-color" content="#f5f6f3">
   <meta name="color-scheme" content="light">
   <meta name="robots" content="noindex, nofollow">
   <title>مدیریت منو — mofé</title>
   <link rel="stylesheet" href="/admin.css">
-  <script src="/qrcode.js" defer></script>
   <script src="/admin.js" defer></script>
 </head>
 <body>
   <div id="boot" class="boot-screen">
     <div class="boot-card">
-      <p class="brand" lang="en" dir="ltr">mofé · admin</p>
+      <p class="wordmark" lang="en" dir="ltr">mofé<span>MENU STUDIO</span></p>
       <p id="boot-message" class="boot-message" role="status">در حال بارگذاری…</p>
       <button id="boot-retry" class="btn btn-primary" type="button" hidden>تلاش دوباره</button>
     </div>
@@ -22,45 +21,74 @@
 
   <section id="login-screen" class="login-screen" aria-labelledby="login-title" hidden>
     <div class="login-card">
-      <p class="brand" lang="en" dir="ltr">mofé · admin</p>
+      <p class="wordmark" lang="en" dir="ltr">mofé<span>MENU STUDIO</span></p>
+      <p class="eyebrow">فضایی برای منوی شما</p>
       <h1 id="login-title">ورود به مدیریت منو</h1>
       <p class="login-intro">شناسه ورودی که از مدیر دریافت کرده‌اید را وارد کنید.</p>
       <form novalidate id="login-form" method="post">
         <label class="field" for="login-identifier">شناسه ورود</label>
-        <input class="input login-identifier" id="login-identifier" name="identifier" type="text" dir="ltr" maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" required>
+        <input class="input login-identifier" id="login-identifier" name="identifier" type="text" dir="ltr" maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="mofe_…" required>
         <p id="login-error" class="form-error" role="alert" hidden></p>
-        <button id="login-submit" class="btn btn-primary btn-block" type="submit">ورود</button>
+        <button id="login-submit" class="btn btn-primary btn-block" type="submit">ورود به فضای کار</button>
       </form>
+      <a class="login-back" href="/">بازگشت به mofé <span aria-hidden="true">↗</span></a>
     </div>
   </section>
 
   <div id="editor" class="editor" hidden>
+    <a class="skip-link" href="#menu-workspace">رفتن به ویرایش منو</a>
+    <aside class="sidebar" aria-label="فضای کار">
+      <a class="wordmark" href="/" lang="en" dir="ltr">mofé<span>MENU STUDIO</span></a>
+      <div class="venue-picker">
+        <p class="sidebar-label">فضای کار شما</p>
+        <select id="venue-select" class="input venue-select" aria-label="انتخاب منو"></select>
+        <button id="new-venue" class="btn btn-new-venue" type="button" hidden><span aria-hidden="true">＋</span> منوی جدید</button>
+      </div>
+      <nav class="sidebar-nav" aria-label="بخش‌های مدیریت">
+        <a class="sidebar-link is-current" href="#menu-workspace" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>ویرایش منو</a>
+        <button id="settings-button" class="sidebar-link" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>تنظیمات کافه</button>
+        <button id="users-button" class="sidebar-link" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M17 15a5 5 0 0 1 4 5"/></svg>کاربران</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="workspace-note"><span class="status-dot" aria-hidden="true"></span><div><strong>همیشه به‌روز</strong><p>تغییرات شما به‌صورت خودکار ذخیره می‌شوند.</p></div></div>
+        <button id="logout-button" class="sidebar-link btn-quiet" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M9 12h12m-4-4 4 4-4 4"/></svg>خروج از حساب</button>
+      </div>
+    </aside>
+
+    <div class="workspace">
     <header class="topbar">
       <div class="topbar-brand">
-        <p class="brand" lang="en" dir="ltr">mofé · admin</p>
+        <p class="breadcrumb">فضای کار <span aria-hidden="true">/</span> منوی کافه</p>
         <h1 id="cafe-name" class="topbar-title">مدیریت منو</h1>
       </div>
       <nav class="topbar-actions" aria-label="ابزارهای مدیریت">
-        <select id="venue-select" class="input venue-select" aria-label="انتخاب منو"></select>
-        <button id="users-button" class="btn" type="button" hidden>کاربران</button>
-        <button id="new-venue" class="btn" type="button" hidden>منوی جدید</button>
-        <button id="settings-button" class="btn" type="button">تنظیمات کافه</button>
-        <a id="preview-link" class="btn" href="/" target="_blank" rel="noopener">پیش‌نمایش</a>
-        <a id="export-html" class="btn" href="/export/menu.html" title="دانلود خروجی HTML" aria-label="دانلود خروجی HTML">HTML</a>
-        <a id="export-csv" class="btn" href="/export/menu.csv" title="دانلود خروجی CSV" aria-label="دانلود خروجی CSV">CSV</a>
-        <button id="qr-download" class="btn" type="button" title="دانلود QR منو" aria-label="دانلود QR منو">QR</button>
-        <button id="logout-button" class="btn btn-quiet" type="button">خروج</button>
+        <details id="export-tools" class="action-menu">
+          <summary class="btn">دریافت منو <span aria-hidden="true">⌄</span></summary>
+          <div class="action-menu-panel">
+            <a id="export-html" class="menu-action" href="/export/menu.html" download>منوی آفلاین <span dir="ltr">HTML</span></a>
+            <a id="export-csv" class="menu-action" href="/export/menu.csv" download>فایل اقلام <span dir="ltr">CSV</span></a>
+            <button id="qr-download" class="menu-action" type="button">کارت QR منو <span aria-hidden="true">↓</span></button>
+          </div>
+        </details>
+        <a id="preview-link" class="btn btn-primary" href="/" target="_blank" rel="noopener">مشاهده منو <span aria-hidden="true">↗</span></a>
       </nav>
     </header>
 
-    <main class="admin-main">
+    <main id="menu-workspace" class="admin-main" tabindex="-1">
       <div class="admin-heading">
         <div>
+          <p class="eyebrow">منوی شما، به سلیقه شما</p>
           <h2>دسته‌ها و اقلام</h2>
-          <p class="muted-text">ترتیب همین‌جا تعیین می‌شود؛ تغییرات فوری ذخیره می‌شوند.</p>
+          <p class="muted-text">اقلام را ویرایش کنید و ترتیب نمایش منو را بچینید.</p>
         </div>
-        <button id="add-category" class="btn btn-primary" type="button">افزودن دسته</button>
+        <button id="add-category" class="btn btn-primary" type="button"><span aria-hidden="true">＋</span> افزودن دسته</button>
       </div>
+
+      <dl id="menu-overview" class="menu-overview" aria-label="خلاصه منو">
+        <div><dt>دسته‌بندی</dt><dd id="category-total">۰</dd></div>
+        <div><dt>آیتم در منو</dt><dd id="item-total">۰</dd></div>
+        <div><dt><span class="status-dot status-dot-muted" aria-hidden="true"></span> ناموجود</dt><dd id="sold-out-total">۰</dd></div>
+      </dl>
 
       <p id="app-status" class="app-status" role="status" aria-live="polite" hidden></p>
       <p id="editor-error" class="alert" role="alert" hidden></p>
@@ -76,6 +104,8 @@
         <p class="muted-text">با دکمه «افزودن دسته» اولین دسته منو را بسازید.</p>
       </div>
     </main>
+    <footer class="admin-footer"><span>با سلیقه بسازید.</span><span lang="en" dir="ltr">Made with mofé</span></footer>
+    </div>
   </div>
 
   <noscript>
@@ -92,12 +122,17 @@
         <div class="category-actions">
           <button class="icon-btn" type="button" data-action="category-up" aria-label="انتقال دسته به بالا" title="انتقال به بالا">↑</button>
           <button class="icon-btn" type="button" data-action="category-down" aria-label="انتقال دسته به پایین" title="انتقال به پایین">↓</button>
-          <button class="btn btn-small" type="button" data-action="category-rename">تغییر نام</button>
-          <button class="btn btn-small btn-danger" type="button" data-action="category-delete">حذف</button>
-          <button class="btn btn-small" type="button" data-action="category-add-item">افزودن آیتم</button>
+          <button class="btn btn-small btn-soft" type="button" data-action="category-add-item">＋ افزودن آیتم</button>
+          <details class="action-menu category-menu">
+            <summary class="icon-btn" aria-label="ابزارهای دسته" title="ابزارهای دسته">⋯</summary>
+            <div class="action-menu-panel">
+              <button class="menu-action" type="button" data-action="category-rename">تغییر نام دسته</button>
+              <button class="menu-action btn-danger" type="button" data-action="category-delete">حذف دسته</button>
+              <p class="category-note" data-field="delete-note" hidden>با حذف این دسته، همه آیتم‌های آن هم حذف می‌شوند.</p>
+            </div>
+          </details>
         </div>
       </header>
-      <p class="category-note" data-field="delete-note" hidden>با حذف این دسته، همه آیتم‌های آن هم حذف می‌شوند.</p>
       <div class="admin-items" data-field="items" role="list"></div>
       <p class="empty-items" data-field="items-empty" hidden>آیتمی در این دسته نیست.</p>
     </section>

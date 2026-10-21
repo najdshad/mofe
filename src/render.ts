@@ -149,7 +149,9 @@ export function renderMenu(
           `</nav>`,
         ].join("\n");
 
-  const sections = visible.map(renderCategory).join("\n");
+  const sections = visible.length > 0
+    ? visible.map(renderCategory).join("\n")
+    : '<div class="menu-empty" role="status"><strong>منو به‌زودی آماده می‌شود.</strong><p>به‌زودی با انتخاب‌های تازه منتظر شما هستیم.</p></div>';
 
   const logo = present(settings.logoDataUrl)
     ? `<img class="logo-mark" width="72" height="72" decoding="async" src="${escapeHtml(

@@ -130,10 +130,20 @@ function bindEvents() {
   });
   el.logoRemove.addEventListener("click", removeLogo);
   document.addEventListener("click", (event) => {
+    document.querySelectorAll(".action-menu[open]").forEach((menu) => {
+      if (!menu.contains(event.target) || event.target.closest(".menu-action")) menu.open = false;
+    });
     const button = event.target.closest("[data-close-dialog]");
     if (!button) return;
     const dialog = button.closest("dialog");
     if (dialog) dialog.close();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll(".action-menu[open]").forEach((menu) => {
+      menu.open = false;
+      if (menu.contains(document.activeElement)) menu.querySelector("summary").focus();
+    });
   });
   [el.categoryDialog, el.itemDialog, el.settingsDialog, el.venueDialog, el.usersDialog].forEach((dialog) => {
     dialog.addEventListener("close", () => restoreDialogFocus(dialog));
@@ -379,9 +389,25 @@ async function downloadQr() {
   const venue = state.venue;
   if (!venue || !venue.slug) return;
   busyButton(el.qrDownload, true, "در حال ساخت…");
+  el.editorError.hidden = true;
   try {
+    if (typeof window.qrcode !== "function") {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "/qrcode.js";
+        script.onload = resolve;
+        script.onerror = () => {
+          script.remove();
+          reject(new Error("بارگذاری ابزار QR ممکن نشد. دوباره تلاش کنید."));
+        };
+        document.head.append(script);
+      });
+    }
     if (document.fonts) {
-      await document.fonts.load('700 46px "Parastoo"').catch(() => {});
+      await Promise.all([
+        document.fonts.load('700 52px "Parastoo"'),
+        document.fonts.load('400 24px "Parastoo"'),
+      ]).catch(() => {});
     }
     const url = new URL("/m/" + encodeURIComponent(venue.slug), window.location.origin).href;
     const canvas = drawQrCard(venue.nameFa || venue.nameEn || venue.slug, url);
@@ -406,41 +432,68 @@ async function downloadQr() {
 function drawQrCard(title, url) {
   const width = 900;
   const height = 1200;
-  const paper = "#f4f0e5";
-  const ink = "#111311";
-  const muted = "#5f5648";
+  const paper = "#f9f8f3";
+  const ink = "#293d32";
+  const muted = "#697167";
+  const line = "#dedfd4";
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("ساخت تصویر در این مرورگر ممکن نیست.");
 
+  // An opaque background keeps the exported card predictable when printed.
   ctx.fillStyle = paper;
-  roundedRect(ctx, 0, 0, width, height, 52);
-  ctx.fill();
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = line;
+  ctx.lineWidth = 2;
+  roundedRect(ctx, 32, 32, width - 64, height - 64, 14);
+  ctx.stroke();
+
+  ctx.textBaseline = "middle";
+  ctx.direction = "ltr";
+  ctx.textAlign = "left";
+  ctx.fillStyle = ink;
+  ctx.font = '48px Georgia, "Times New Roman", serif';
+  ctx.fillText("mofé", 76, 94);
+
+  ctx.direction = "rtl";
+  ctx.textAlign = "right";
+  ctx.fillStyle = muted;
+  ctx.font = '24px "Parastoo", Tahoma, sans-serif';
+  ctx.fillText("منوی کافه", width - 76, 94);
+  ctx.fillStyle = line;
+  ctx.fillRect(76, 152, width - 152, 2);
 
   ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.direction = "rtl";
-  let titleSize = 46;
-  do {
-    ctx.font = '700 ' + titleSize + 'px "Parastoo", Tahoma, sans-serif';
+  let titleSize = 52;
+  ctx.font = '700 ' + titleSize + 'px "Parastoo", Tahoma, sans-serif';
+  while (titleSize > 36 && ctx.measureText(title).width > 1440) {
     titleSize -= 2;
-  } while (titleSize > 24 && ctx.measureText(title).width > 740);
+    ctx.font = '700 ' + titleSize + 'px "Parastoo", Tahoma, sans-serif';
+  }
+  const titleLines = wrapQrText(ctx, title, 720, 2);
   ctx.fillStyle = ink;
-  ctx.fillText(title, width / 2, 112);
-
-  ctx.direction = "ltr";
-  ctx.fillStyle = "#d9d2c8";
-  ctx.fillRect(186, 226, width - 372, 2);
+  titleLines.forEach((text, index) => {
+    ctx.fillText(text, width / 2, (titleLines.length > 1 ? 210 : 238) + index * 56);
+  });
 
   const qr = qrcode(0, "M");
   qr.addData(url);
   qr.make();
   const count = qr.getModuleCount();
-  const unit = Math.floor(680 / count);
+  const panelSize = 656;
+  const panelTop = 320;
+  const quietModules = 4;
+  // Whole pixels and an explicit quiet zone keep the code crisp and scannable.
+  const unit = Math.floor(600 / (count + quietModules * 2));
   const size = unit * count;
-  const left = Math.round((width - size) / 2);
-  const top = 330 + Math.round((680 - size) / 2);
+  const left = Math.floor((width - size) / 2);
+  const top = panelTop + Math.floor((panelSize - size) / 2);
+  roundedRect(ctx, (width - panelSize) / 2, panelTop, panelSize, panelSize, 12);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.stroke();
   ctx.fillStyle = ink;
   for (let row = 0; row < count; row += 1) {
     for (let col = 0; col < count; col += 1) {
@@ -450,10 +503,43 @@ function drawQrCard(title, url) {
     }
   }
 
+  ctx.direction = "rtl";
+  ctx.font = '700 32px "Parastoo", Tahoma, sans-serif';
+  ctx.fillStyle = ink;
+  ctx.fillText("برای دیدن منو اسکن کنید", width / 2, 1030);
+  ctx.font = '22px "Parastoo", Tahoma, sans-serif';
   ctx.fillStyle = muted;
-  ctx.font = '26px Georgia, "Times New Roman", serif';
-  ctx.fillText("Powered by mofé", width / 2, 1110);
+  ctx.fillText("دوربین گوشی را رو به کد بگیرید.", width / 2, 1072);
+
+  ctx.direction = "ltr";
+  ctx.fillStyle = line;
+  ctx.fillRect(76, 1128, width - 152, 2);
+  ctx.fillStyle = muted;
+  ctx.font = '18px Georgia, "Times New Roman", serif';
+  ctx.fillText("Made with mofé", width / 2, 1148);
   return canvas;
+}
+
+function wrapQrText(ctx, value, maxWidth, maxLines) {
+  const lines = [];
+  let current = "";
+  for (const character of String(value).replace(/\s+/g, " ").trim()) {
+    if (current && ctx.measureText(current + character).width > maxWidth) {
+      const space = current.lastIndexOf(" ");
+      lines.push((space > 0 ? current.slice(0, space) : current).trim());
+      current = (space > 0 ? current.slice(space + 1) : "") + character;
+    } else {
+      current += character;
+    }
+  }
+  if (current.trim()) lines.push(current.trim());
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    const last = Array.from(lines[maxLines - 1]);
+    while (last.length && ctx.measureText(last.join("") + "…").width > maxWidth) last.pop();
+    lines[maxLines - 1] = last.join("").trimEnd() + "…";
+  }
+  return lines;
 }
 
 function roundedRect(ctx, x, y, width, height, radius) {
@@ -474,6 +560,7 @@ function render() {
   document.title = (venue.nameFa || (admin ? "مدیریت منو" : "منوی کافه")) + " — مدیریت منو";
   renderVenueSelect();
   el.venueSelect.hidden = !admin;
+  el.venueSelect.closest(".venue-picker").hidden = !admin;
   el.newVenue.hidden = !admin;
   el.usersButton.hidden = !admin;
   if (venue.slug) {
@@ -489,6 +576,17 @@ function render() {
   el.exportHtml.hidden = !hasVenue;
   el.exportCsv.hidden = !hasVenue;
   el.qrDownload.hidden = !hasVenue;
+  el.exportTools.hidden = !hasVenue;
+  el.menuOverview.hidden = !hasVenue;
+  let itemTotal = 0;
+  let soldOutTotal = 0;
+  for (const category of state.categories) {
+    itemTotal += category.items.length;
+    for (const item of category.items) if (item.isSoldOut) soldOutTotal += 1;
+  }
+  el.categoryTotal.textContent = toFaDigits(state.categories.length);
+  el.itemTotal.textContent = toFaDigits(itemTotal);
+  el.soldOutTotal.textContent = toFaDigits(soldOutTotal);
   el.noVenue.hidden = hasVenue;
   if (!hasVenue) {
     el.noVenueTitle.textContent = admin
@@ -826,7 +924,7 @@ async function deleteCategory(category) {
     const scope = next
       ? document.querySelector('[data-category-id="' + next.id + '"]')
       : null;
-    (scope && scope.querySelector('[data-action="category-rename"]') || el.addCategory).focus();
+    (scope && scope.querySelector(".category-menu > summary") || el.addCategory).focus();
   } catch (error) {
     if (error.status === 401) return;
     if (error.status === 404) await load();
@@ -890,7 +988,9 @@ function findEquivalentTrigger(ref) {
 function restoreDialogFocus(dialog) {
   const target = findEquivalentTrigger(dialog._triggerRef)
     || (dialog._trigger && dialog._trigger.isConnected ? dialog._trigger : null);
-  if (target && !target.disabled) target.focus();
+  const closedMenu = target && target.closest("details:not([open])");
+  if (closedMenu) closedMenu.querySelector("summary").focus();
+  else if (target && !target.disabled) target.focus();
   else if (!el.addCategory.disabled) el.addCategory.focus();
   else if (!el.newVenue.hidden) el.newVenue.focus();
   else el.logoutButton.focus();
